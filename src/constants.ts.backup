@@ -1,0 +1,42 @@
+// Constants — all shared path constants and configuration values.
+// No logic or functions; only export const declarations.
+
+import path from "node:path";
+
+// Numeric / scalar constants
+
+export const PORT = Number(process.env.PORT) || 3333;
+
+/** Maximum entries kept in the in-memory poll-log ring buffer. */
+export const POLL_LOG_MAX = 200;
+
+/** Scan cache TTL in milliseconds (5 s). */
+export const SCAN_CACHE_TTL = 5_000;
+
+/** Maximum time (ms) to wait for in-flight requests during graceful shutdown. */
+export const SHUTDOWN_TIMEOUT_MS = 5_000;
+
+// Workspace root
+
+export const WORKSPACE_ROOT = path.resolve(import.meta.dir, "../..");
+
+// Simple relative paths (relative to cwd / server working directory)
+
+export const OUTPUT_DIR   = "../docs/analysis/prompts/output";
+export const SESSIONS_DIR = "../.kiro/sessions";
+export const CHAINS_DIR   = "../.kiro/sessions";
+
+// Absolute paths derived from WORKSPACE_ROOT
+
+export const CRAWL_JOBS_FILE   = path.join(WORKSPACE_ROOT, "docs", "reference", ".crawl-jobs.jsonl");
+export const CLONE_JOBS_FILE   = path.join(WORKSPACE_ROOT, "docs", "reference", ".clone-jobs.jsonl");
+export const BUILD_QUEUE_FILE  = path.join(WORKSPACE_ROOT, "sw-agent", ".build-queue.jsonl");
+export const KIRO_TOOLS_DIR    = path.join(WORKSPACE_ROOT, ".kiro", "tools");
+export const SPECS_DIR         = path.join(WORKSPACE_ROOT, ".kiro", "specs");
+export const PROMPT_OUTPUT_DIR = path.join(WORKSPACE_ROOT, "docs", "analysis", "prompts", "output");
+
+export const WORKFLOW_DIR = path.join(
+  process.env.APPDATA ?? "",
+  "Kiro", "User", "globalStorage", "kiro.kiroagent",
+  "c63f7a0d8b77479ab89f1bc6e7131b78", "414d1636299d2b9e4ce7e17fb11f63e9"
+);

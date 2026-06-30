@@ -1,0 +1,26 @@
+{
+  "name": "agenthq",
+  "description": "AgentHQ — developer agent monitor and dashboard",
+  "type": "module",
+  "bin": {
+    "agenthq": "src/cli.ts"
+  },
+  "scripts": {
+    "start": "bun run src/cli.ts",
+    "dev": "bun --watch src/cli.ts",
+    "build": "tsc --noEmit",
+    "test": "bun test",
+    "monitor": "bun run src/monitor.ts",
+    "build:dashboard": "bun build src/dashboard/index.html --outdir dist --minify --inline --entry-naming dashboard.html --chunk-naming \"assets/[name]-[hash].[ext]\""
+  },
+  "dependencies": {
+    "@openrouter/agent": "latest",
+    "dotenv": "^17.4.2",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "fast-check": "^4.8.0",
+    "typescript": "latest"
+  }
+}

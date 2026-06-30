@@ -1,0 +1,17 @@
+{
+  "chainId": "chain-beta",
+  "displayName": "Chain Beta",
+  "nextIndex": 1,
+  "sessions": [
+    {
+      "index": 0,
+      "workflowHash": "wh-beta-0",
+      "date": "2026-01-03T09:00:00Z",
+      "messageCount": 8,
+      "status": "idle"
+    }
+  ],
+  "totalMessages": 8,
+  "createdAt": "2026-01-03T09:00:00Z",
+  "lastActiveAt": "2026-01-03T10:30:00Z"
+}

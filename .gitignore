@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+.venv/
+
+# Build outputs
+dist/
+
+# Python
+__pycache__/
+*.pyc
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Exception: keep .env.example
+!.env.example
+
+# Runtime state
+.poll-state.json
+.summarise-state.json
+
+# Memory graph
+workspace/.kiro/memory/graph.json

@@ -1,0 +1,20 @@
+{
+  "workflowHash": "wh-bbb222",
+  "sessionJsonl": "2026-01-02_chain-beta/session-bbb222.jsonl",
+  "chainId": "chain-beta",
+  "chainIndex": 0,
+  "previousSession": "",
+  "topic": "Test session beta",
+  "messageCount": 8,
+  "userMessageCount": 4,
+  "contextUsagePct": 30.0,
+  "lastMessageAt": "2026-01-02T12:00:00Z",
+  "lastSummarisedMessageCount": 0,
+  "lastSummarisedAt": "",
+  "summaryFile": "",
+  "status": "idle",
+  "firstUserMessage": "Hello beta",
+  "lastUserMessage": "Goodbye beta",
+  "lastAgentMessage": "Done beta",
+  "startTime": "2026-01-02T11:00:00Z"
+}

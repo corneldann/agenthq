@@ -1,0 +1,20 @@
+{
+  "workflowHash": "wh-aaa111",
+  "sessionJsonl": "2026-01-01_chain-alpha/session-aaa111.jsonl",
+  "chainId": "chain-alpha",
+  "chainIndex": 0,
+  "previousSession": "",
+  "topic": "Test session alpha",
+  "messageCount": 10,
+  "userMessageCount": 5,
+  "contextUsagePct": 45.0,
+  "lastMessageAt": "2026-01-01T12:00:00Z",
+  "lastSummarisedMessageCount": 0,
+  "lastSummarisedAt": "",
+  "summaryFile": "",
+  "status": "complete",
+  "firstUserMessage": "Hello alpha",
+  "lastUserMessage": "Goodbye alpha",
+  "lastAgentMessage": "Done alpha",
+  "startTime": "2026-01-01T11:00:00Z"
+}

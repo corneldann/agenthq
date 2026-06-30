@@ -1,0 +1,20 @@
+{
+  "workflowHash": "wh-ccc333",
+  "sessionJsonl": "_orphan-chains/orphan-gamma/session-ccc333.jsonl",
+  "chainId": "orphan-gamma",
+  "chainIndex": 0,
+  "previousSession": "",
+  "topic": "Orphan session gamma",
+  "messageCount": 3,
+  "userMessageCount": 2,
+  "contextUsagePct": 10.0,
+  "lastMessageAt": "2026-01-03T12:00:00Z",
+  "lastSummarisedMessageCount": 0,
+  "lastSummarisedAt": "",
+  "summaryFile": "",
+  "status": "active",
+  "firstUserMessage": "Hello orphan",
+  "lastUserMessage": "Still here",
+  "lastAgentMessage": "Processing",
+  "startTime": "2026-01-03T11:00:00Z"
+}
