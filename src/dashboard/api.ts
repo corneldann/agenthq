@@ -11,6 +11,7 @@ import type {
   SystemStatus,
   GitStatus,
   Toast,
+  BuildQueueRecord,
 } from './types.js';
 
 // ---------------------------------------------------------------------------
@@ -144,14 +145,16 @@ export async function fetchAll(): Promise<void> {
       jobChains,
       chains,
       pollLog,
-      gitStatus,
+      gitStatusesOrSingle,
+      buildQueue,
     ] = await Promise.all([
       safeFetch<SystemStatus>('/system-status', current.systemStatus ?? ({} as SystemStatus)),
       safeFetch<Job[]>('/jobs', current.jobs),
       safeFetch<JobChain[]>('/job-chains', current.jobChains),
       safeFetch<Chain[]>('/chains', current.chains),
       safeFetch<PollLogEntry[]>('/poll-log', current.pollLog),
-      safeFetch<GitStatus>('/git-status', current.gitStatus ?? ({} as GitStatus)),
+      safeFetch<GitStatus[] | GitStatus>('/git-status', current.gitStatuses.length > 0 ? current.gitStatuses : (current.gitStatus ?? ({} as GitStatus))),
+      safeFetch<BuildQueueRecord[]>('/build-queue', current.buildQueue),
     ]);
 
     // Build chain index for client-side join (stored implicitly via AppState).
@@ -159,6 +162,23 @@ export async function fetchAll(): Promise<void> {
     // We validate the index is coherent but don't need to expose it separately —
     // renderers read chains[] and jobChains[] from AppState and join themselves.
     buildChainIndex(chains); // called to validate; result used by renderers
+
+    // Normalize git status: if single object, wrap in array; if already array, use as-is
+    let gitStatuses: GitStatus[] = [];
+    let gitStatus: GitStatus | null = current.gitStatus;
+    if (Array.isArray(gitStatusesOrSingle)) {
+      gitStatuses = gitStatusesOrSingle;
+      // For backward compat: if we have a single workspace, also populate gitStatus
+      if (gitStatuses.length === 1) {
+        gitStatus = gitStatuses[0];
+      } else if (gitStatuses.length === 0) {
+        gitStatus = null;
+      }
+    } else if (!isEmptyObject(gitStatusesOrSingle)) {
+      // Single object response (legacy or single workspace)
+      gitStatus = gitStatusesOrSingle as GitStatus;
+      gitStatuses = [gitStatus];
+    }
 
     // Write all results to AppState in a single setState call (atomic update).
     // systemStatus and gitStatus fall back to null if they were not previously
@@ -168,13 +188,13 @@ export async function fetchAll(): Promise<void> {
       systemStatus: isEmptyObject(systemStatus) && current.systemStatus === null
         ? null
         : systemStatus as SystemStatus,
-      gitStatus: isEmptyObject(gitStatus) && current.gitStatus === null
-        ? null
-        : gitStatus as GitStatus,
+      gitStatus,
+      gitStatuses,
       jobs,
       jobChains,
       chains,
       pollLog,
+      buildQueue,
     });
   } finally {
     fetching = false;

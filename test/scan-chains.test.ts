@@ -33,6 +33,7 @@ function makeChainJson(chainId: string, lastActiveAt: string): Chain {
     totalMessages: 4,
     createdAt: '2026-01-01T09:00:00Z',
     lastActiveAt,
+    workspaceId: 'default',
   };
 }
 

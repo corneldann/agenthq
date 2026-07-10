@@ -29,6 +29,7 @@ const jobArb = fc.record({
   logFile: fc.string(),
   agentDone: fc.string(),
   sizeBytes: fc.nat(),
+  workspaceId: fc.string(),
 });
 
 const chainArb = fc.record({
@@ -48,6 +49,7 @@ const chainArb = fc.record({
   unsummarisedDelta: fc.nat(),
   overallStatus: fc.string(),
   workflowCount: fc.nat(),
+  workspaceId: fc.string(),
 });
 
 // JobChain with sessionChainId that is either empty (standalone) or a UUID
@@ -59,6 +61,7 @@ const jobChainArb = fc.record({
   latestTimestamp: fc.string(),
   runCount: fc.nat(),
   runs: fc.array(jobArb, { maxLength: 3 }),
+  workspaceId: fc.string(),
 });
 
 // ---------------------------------------------------------------------------

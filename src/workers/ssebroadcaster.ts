@@ -6,8 +6,9 @@
 //                         routes/system.ts; ES module semantics guarantee one reference.
 //   startSSEBroadcaster — starts the 2-second interval (called once at startup)
 //   stopSSEBroadcaster  — clears the interval (called during graceful shutdown)
+//   emitSSEUpdate       — sends a structured SSEUpdateEvent to all connected clients
 
-import type { SSEController } from '../types.ts';
+import type { SSEController, SSEUpdateEvent } from '../types.ts';
 import { OUTPUT_DIR } from '../constants.ts';
 
 // ---------------------------------------------------------------------------
@@ -88,5 +89,26 @@ export function stopSSEBroadcaster(): void {
   if (_intervalHandle !== null) {
     clearInterval(_intervalHandle);
     _intervalHandle = null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Structured event emission — sends typed SSEUpdateEvent to all clients
+// ---------------------------------------------------------------------------
+
+/**
+ * Emit a structured SSEUpdateEvent to all connected SSE clients.
+ * The event is JSON-serialised and sent as a standard SSE `data:` frame.
+ * Includes workspaceId in all emitted events per Requirements 11.2-11.5.
+ */
+export function emitSSEUpdate(event: SSEUpdateEvent): void {
+  if (sseClients.size === 0) return;
+  const payload = `data: ${JSON.stringify(event)}\n\n`;
+  for (const client of sseClients) {
+    try {
+      if (!client.closed) client.enqueue(payload);
+    } catch {
+      sseClients.delete(client);
+    }
   }
 }

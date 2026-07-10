@@ -1,4 +1,4 @@
-/* styles.css — SW Monitor Dashboard component styles */
+/* styles.css — AgentHQ Dashboard component styles */
 /* Complements the base layout in index.html */
 
 /* ── Stat cards ─────────────────────────────────────────────────────────── */
@@ -630,6 +630,24 @@
 .job-card__ts       { font-size: 11px; color: var(--muted); }
 .job-card__runs     { font-size: 11px; color: var(--muted); }
 .job-card__lastline { font-size: 11px; color: var(--muted); flex-basis: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Workspace identifier badge (Requirement 8.8) */
+.job-card__workspace {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+.job-card__workspace-badge {
+  font-size: 10px;
+  color: var(--accent, #3b82f6);
+  background: color-mix(in srgb, var(--accent, #3b82f6) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent, #3b82f6) 30%, transparent);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  letter-spacing: 0.02em;
+}
 
 .job-card__btn {
   padding: 3px 8px;

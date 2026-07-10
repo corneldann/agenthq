@@ -80,7 +80,10 @@ export function invalidateChainsCache(): void {
  * Scan spec directories and build virtual chains from sessions grouped by spec.
  * allSessions is passed in — no direct dependency on scan/sessions.ts.
  */
-export async function scanSpecChains(allSessions: SessionState[]): Promise<Chain[]> {
+export async function scanSpecChains(
+  allSessions: SessionState[],
+  workspaceId: string = "default"
+): Promise<Chain[]> {
   if (_specChainsCache && Date.now() - _specChainsCacheTime < SCAN_CACHE_TTL) {
     return _specChainsCache;
   }
@@ -180,6 +183,7 @@ export async function scanSpecChains(allSessions: SessionState[]): Promise<Chain
         unsummarisedDelta,
         overallStatus,
         workflowCount: sorted.length,
+        workspaceId,
       });
     }
   } catch (e) {
@@ -199,9 +203,9 @@ export async function scanSpecChains(allSessions: SessionState[]): Promise<Chain
  */
 export async function scanChains(
   chainsDir: string = CHAINS_DIR,
-  allSessions: SessionState[] = []
+  allSessions: SessionState[] = [],
+  workspaceId: string = "default"
 ): Promise<Chain[]> {
-
   if (_chainsCache && Date.now() - _chainsCacheTime < SCAN_CACHE_TTL) {
     return _chainsCache;
   }
@@ -283,6 +287,7 @@ export async function scanChains(
           unsummarisedDelta,
           overallStatus,
           workflowCount: chain.sessions.length,
+          workspaceId,
         });
       } catch {
         // skip malformed
@@ -293,7 +298,7 @@ export async function scanChains(
     chains.sort((a, b) => b.lastActiveAt.localeCompare(a.lastActiveAt));
 
     // Merge in spec-based virtual chains
-    const specChains = await scanSpecChains(allSessions);
+    const specChains = await scanSpecChains(allSessions, workspaceId);
     // Build set of session workflowHashes absorbed by spec chains
     const absorbedChainIds = new Set<string>();
     for (const sc of specChains) {

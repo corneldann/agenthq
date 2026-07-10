@@ -131,4 +131,4 @@ The `memory` MCP server (in agenthq-memory power) is the persistent knowledge gr
 
 ## Memory Server Default Path
 
-Found during Phase 0.5 pre-flight (advisory, best-effort extraction): `if (process.env.MEMORY_FILE_PATH) {`. If this does not clearly show the default path logic, refer to the package source or rely on Phase 9 runtime verification.
+{{MEMORY_SERVER_DEFAULT_PATH_NOTE}}

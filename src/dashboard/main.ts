@@ -1,8 +1,9 @@
 // main.ts — app bootstrap, router, sidebar, keyboard shortcuts
 // Feature: monitor-dashboard-redesign
 // Implements Requirements 2.1, 2.2, 2.5, 12.1–12.6
+// Also implements Requirements 11.6, 11.6.1, 11.7 (SSE client-side filtering)
 
-import { getState, setState, subscribe } from './state';
+import { getState, setState, subscribe, getSelectedWorkspaceId } from './state';
 import { fetchAll } from './api';
 import { togglePalette, isPaletteOpen } from './palette';
 import './toast'; // ensure toast module is loaded so enqueueToast is available
@@ -10,7 +11,11 @@ import { initDrawer } from './components/drawer';
 import { renderDashboard } from './pages/dashboard';
 import { renderWork } from './pages/work';
 import { renderActivity } from './pages/activity';
-import type { Page } from './types';
+import type { Page, SSEUpdateEvent } from './types';
+import { shouldApplySSEUpdate } from './sse-filter';
+
+// Re-export for external consumers (e.g. tests that import from main)
+export { shouldApplySSEUpdate };
 
 // ---------------------------------------------------------------------------
 // Shortcuts overlay data (Requirement 12.4, 12.5)
@@ -175,7 +180,7 @@ function renderSidebar(): void {
   // Brand
   const brand = document.createElement('div');
   brand.className = 'brand';
-  brand.textContent = 'SW Monitor';
+  brand.textContent = 'Agent HQ';
   sidebar.appendChild(brand);
 
   // Nav
@@ -374,6 +379,31 @@ function attach(es: EventSource): void {
   es.onmessage = (_ev: MessageEvent): void => {
     // Reset retry counter — a message means the connection is healthy (Req 9.5)
     _retryCount = 0;
+
+    // Apply client-side SSE filtering based on workspace selection
+    // (Requirements 11.6, 11.6.1, 11.7)
+    //
+    // The broadcaster sends two kinds of messages:
+    //   1. Plain "update" string  — from the change-detection interval
+    //   2. Structured JSON        — from emitSSEUpdate (typed SSEUpdateEvent)
+    //
+    // For structured events we check the workspace filter before fetching.
+    // Plain "update" strings are treated as unfiltered and always applied
+    // (they trigger a full data refresh and carry no workspace context).
+    let applyUpdate = true;
+    try {
+      const parsed = JSON.parse(_ev.data) as SSEUpdateEvent;
+      // Only filter if this looks like a structured SSEUpdateEvent
+      if (parsed && typeof parsed === 'object' && 'type' in parsed) {
+        const selectedWorkspace = getSelectedWorkspaceId();
+        applyUpdate = shouldApplySSEUpdate(parsed, selectedWorkspace);
+      }
+    } catch {
+      // Non-JSON data (e.g. plain "update" string) — always apply
+      applyUpdate = true;
+    }
+
+    if (!applyUpdate) return;
 
     // Snapshot jobs BEFORE the fetch so we can diff afterwards (Req 9.3, 9.4)
     const prevJobs = getState().jobs;

@@ -12,7 +12,10 @@ let _sessionsCacheTime = 0;
 // Exported functions
 // ---------------------------------------------------------------------------
 
-export async function scanSessions(sessionsDir: string = SESSIONS_DIR): Promise<SessionState[]> {
+export async function scanSessions(
+  sessionsDir: string = SESSIONS_DIR,
+  workspaceId: string = "default"
+): Promise<SessionState[]> {
   if (_sessionsCache && Date.now() - _sessionsCacheTime < SCAN_CACHE_TTL) {
     return _sessionsCache;
   }
@@ -30,7 +33,8 @@ export async function scanSessions(sessionsDir: string = SESSIONS_DIR): Promise<
       if (!(await file.exists())) continue;
       try {
         const data = await file.json() as SessionState;
-        sessions.push(data);
+        // Populate workspaceId field
+        sessions.push({ ...data, workspaceId });
       } catch {
         // skip malformed files
       }

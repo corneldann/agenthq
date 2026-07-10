@@ -1007,3 +1007,328 @@ describe('Property 9 — AttentionRow styling and label correctness', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Workspace comparison table sort (Requirements 10.6, 10.6.1)
+// Feature: multi-workspace-monitoring, Property 25: Workspace Comparison Sort Correctness
+// ---------------------------------------------------------------------------
+
+// Pure logic mirroring sortWorkspaceMetrics from pages/dashboard.ts
+// (imported as a plain function test — no browser dependencies)
+
+interface WorkspaceMetrics {
+  workspaceId: string;
+  displayName: string;
+  totalMessages: number;
+  contextUsagePct: number;
+  activeSessions: number;
+  pendingQueueItems: number;
+  hasAttentionItems: boolean;
+}
+
+/**
+ * Inline sort — mirrors sortWorkspaceMetrics in pages/dashboard.ts exactly.
+ * Primary: totalMessages descending. Secondary: displayName alphabetical ascending.
+ */
+function sortWorkspaceMetrics(metrics: WorkspaceMetrics[]): WorkspaceMetrics[] {
+  return [...metrics].sort((a, b) => {
+    if (b.totalMessages !== a.totalMessages) {
+      return b.totalMessages - a.totalMessages;
+    }
+    return a.displayName.localeCompare(b.displayName);
+  });
+}
+
+const workspaceMetricsArb: fc.Arbitrary<WorkspaceMetrics> = fc.record({
+  workspaceId: fc.stringMatching(/^[a-z][a-z0-9-]{0,10}$/),
+  displayName: fc.string({ minLength: 1, maxLength: 20 }),
+  totalMessages: fc.nat({ max: 10000 }),
+  contextUsagePct: fc.nat({ max: 100 }),
+  activeSessions: fc.nat({ max: 50 }),
+  pendingQueueItems: fc.nat({ max: 100 }),
+  hasAttentionItems: fc.boolean(),
+});
+
+describe('Property 25 — Workspace comparison sort correctness', () => {
+  /**
+   * P25.1 — Sort is stable on totalMessages (descending).
+   * For any two adjacent items in sorted output, the first has >= messages than the second.
+   * Validates: Requirements 10.6
+   */
+  test('P25.1: sorted output has totalMessages in descending order', () => {
+    // Feature: multi-workspace-monitoring, Property 25: Workspace Comparison Sort Correctness
+    fc.assert(
+      fc.property(
+        fc.array(workspaceMetricsArb, { minLength: 0, maxLength: 20 }),
+        (metrics) => {
+          const sorted = sortWorkspaceMetrics(metrics);
+          for (let i = 1; i < sorted.length; i++) {
+            expect(sorted[i].totalMessages).toBeLessThanOrEqual(sorted[i - 1].totalMessages);
+          }
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  /**
+   * P25.2 — When totalMessages are equal, secondary sort is alphabetical ascending by displayName.
+   * Validates: Requirement 10.6.1
+   */
+  test('P25.2: tie-breaking by displayName ascending when totalMessages equal', () => {
+    // Feature: multi-workspace-monitoring, Property 25: Workspace Comparison Sort Correctness
+    fc.assert(
+      fc.property(
+        fc.array(workspaceMetricsArb, { minLength: 2, maxLength: 10 }),
+        (rawMetrics) => {
+          // Force all to same message count
+          const sameCount = rawMetrics[0].totalMessages;
+          const metrics = rawMetrics.map((m) => ({ ...m, totalMessages: sameCount }));
+          const sorted = sortWorkspaceMetrics(metrics);
+          for (let i = 1; i < sorted.length; i++) {
+            expect(sorted[i - 1].displayName.localeCompare(sorted[i].displayName)).toBeLessThanOrEqual(0);
+          }
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  /**
+   * P25.3 — Sort preserves all elements — no items added or removed.
+   * Validates: Requirements 10.5
+   */
+  test('P25.3: sorted output contains same elements as input (no loss/duplication)', () => {
+    // Feature: multi-workspace-monitoring, Property 25: Workspace Comparison Sort Correctness
+    fc.assert(
+      fc.property(
+        fc.array(workspaceMetricsArb, { minLength: 0, maxLength: 20 }),
+        (metrics) => {
+          const sorted = sortWorkspaceMetrics(metrics);
+          expect(sorted).toHaveLength(metrics.length);
+          // Every input item appears in sorted output
+          for (const m of metrics) {
+            expect(sorted.some((s) => s.workspaceId === m.workspaceId && s.totalMessages === m.totalMessages)).toBe(true);
+          }
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  /**
+   * P25.4 — Sort is deterministic: same input always produces same output.
+   * Validates: Requirements 10.6.1
+   */
+  test('P25.4: sort is deterministic for identical inputs', () => {
+    // Feature: multi-workspace-monitoring, Property 25: Workspace Comparison Sort Correctness
+    fc.assert(
+      fc.property(
+        fc.array(workspaceMetricsArb, { minLength: 0, maxLength: 15 }),
+        (metrics) => {
+          const sorted1 = sortWorkspaceMetrics(metrics);
+          const sorted2 = sortWorkspaceMetrics(metrics);
+          expect(sorted1.map((m) => m.workspaceId)).toEqual(sorted2.map((m) => m.workspaceId));
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  /**
+   * P25.5 — Sort does not mutate the input array.
+   * Validates: defensive immutability
+   */
+  test('P25.5: input array is not mutated by sort', () => {
+    // Feature: multi-workspace-monitoring, Property 25: Workspace Comparison Sort Correctness
+    fc.assert(
+      fc.property(
+        fc.array(workspaceMetricsArb, { minLength: 1, maxLength: 15 }),
+        (metrics) => {
+          const original = metrics.map((m) => ({ ...m }));
+          sortWorkspaceMetrics(metrics);
+          for (let i = 0; i < metrics.length; i++) {
+            expect(metrics[i].workspaceId).toBe(original[i].workspaceId);
+            expect(metrics[i].totalMessages).toBe(original[i].totalMessages);
+          }
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Git status selection logic (Requirements 7.4, 7.4.1, 7.5, 7.7)
+// Feature: multi-workspace-monitoring, Property 18: Dashboard Filtering Logic Consistency
+// ---------------------------------------------------------------------------
+
+/**
+ * Inline selectGitStatuses — mirrors the function in pages/dashboard.ts exactly.
+ * (Cannot import dashboard.ts because it carries browser DOM dependencies.)
+ */
+interface InlineGitStatus {
+  branch: string;
+  clean: boolean;
+  modified: string[];
+  staged: string[];
+  untracked: string[];
+  ahead: number;
+  behind: number;
+  workspaceId: string;
+}
+
+function selectGitStatuses(
+  gitStatuses: InlineGitStatus[],
+  selectedWorkspaceId: string | null,
+  availableWorkspaces: { id: string; displayName: string }[],
+): { statuses: InlineGitStatus[]; showLabels: boolean } {
+  if (gitStatuses.length === 0) {
+    return { statuses: [], showLabels: false };
+  }
+  if (selectedWorkspaceId === null) {
+    return { statuses: gitStatuses, showLabels: true };
+  }
+  const filtered = gitStatuses.filter((g) => g.workspaceId === selectedWorkspaceId);
+  const knownIds = availableWorkspaces.map((w) => w.id);
+  const selectionIsValid = knownIds.includes(selectedWorkspaceId);
+  if (!selectionIsValid || filtered.length === 0) {
+    return { statuses: gitStatuses, showLabels: true };
+  }
+  return { statuses: filtered, showLabels: filtered.length > 1 };
+}
+
+const inlineGitStatusArb: fc.Arbitrary<InlineGitStatus> = fc.record({
+  branch: fc.string({ minLength: 1, maxLength: 30 }),
+  clean: fc.boolean(),
+  modified: fc.array(fc.string({ minLength: 1 }), { maxLength: 5 }),
+  staged: fc.array(fc.string({ minLength: 1 }), { maxLength: 5 }),
+  untracked: fc.array(fc.string({ minLength: 1 }), { maxLength: 5 }),
+  ahead: fc.nat({ max: 10 }),
+  behind: fc.nat({ max: 10 }),
+  workspaceId: fc.stringMatching(/^[a-z][a-z0-9-]{0,10}$/),
+});
+
+const workspaceEntryArb = fc.record({
+  id: fc.stringMatching(/^[a-z][a-z0-9-]{0,10}$/),
+  displayName: fc.string({ minLength: 1, maxLength: 20 }),
+});
+
+describe('Git status workspace selection logic', () => {
+  /**
+   * G1 — When "All Workspaces" selected (null), ALL git statuses returned with labels.
+   * Validates: Requirements 7.4, 7.7
+   */
+  test('G1: All Workspaces selected → all git statuses returned with showLabels=true', () => {
+    // Feature: multi-workspace-monitoring, Property 18: Dashboard Filtering Logic Consistency
+    fc.assert(
+      fc.property(
+        fc.array(inlineGitStatusArb, { minLength: 1, maxLength: 10 }),
+        fc.array(workspaceEntryArb, { minLength: 0, maxLength: 5 }),
+        (gitStatuses, workspaces) => {
+          const result = selectGitStatuses(gitStatuses, null, workspaces);
+          expect(result.statuses).toHaveLength(gitStatuses.length);
+          expect(result.showLabels).toBe(true);
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  /**
+   * G2 — When empty gitStatuses array, always return empty with showLabels=false.
+   * Validates: Requirements 7.4
+   */
+  test('G2: empty gitStatuses always returns empty result', () => {
+    // Feature: multi-workspace-monitoring, Property 18: Dashboard Filtering Logic Consistency
+    fc.assert(
+      fc.property(
+        fc.option(fc.stringMatching(/^[a-z][a-z0-9-]{0,10}$/), { nil: null }),
+        fc.array(workspaceEntryArb, { minLength: 0, maxLength: 5 }),
+        (selected, workspaces) => {
+          const result = selectGitStatuses([], selected, workspaces);
+          expect(result.statuses).toHaveLength(0);
+          expect(result.showLabels).toBe(false);
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  /**
+   * G3 — Specific workspace selected AND it's known → only matching statuses returned.
+   * Validates: Requirement 7.5
+   */
+  test('G3: specific known workspace → only matching git statuses returned', () => {
+    // Feature: multi-workspace-monitoring, Property 18: Dashboard Filtering Logic Consistency
+    fc.assert(
+      fc.property(
+        fc.array(inlineGitStatusArb, { minLength: 1, maxLength: 5 }),
+        (baseStatuses) => {
+          // Build a workspace ID that definitely appears in the statuses
+          const targetId = baseStatuses[0].workspaceId;
+          const statuses = baseStatuses.map((s, i) => ({
+            ...s,
+            workspaceId: i === 0 ? targetId : `other-${i}`,
+          }));
+          const availableWorkspaces = statuses.map((s) => ({ id: s.workspaceId, displayName: s.workspaceId }));
+
+          const result = selectGitStatuses(statuses, targetId, availableWorkspaces);
+          // All returned statuses must have the target workspaceId
+          for (const s of result.statuses) {
+            expect(s.workspaceId).toBe(targetId);
+          }
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  /**
+   * G4 — Selection is invalid (not in availableWorkspaces) → fallback to all statuses.
+   * Validates: Requirement 7.4.1
+   */
+  test('G4: invalid workspace selection → fallback to all workspaces', () => {
+    // Feature: multi-workspace-monitoring, Property 18: Dashboard Filtering Logic Consistency
+    fc.assert(
+      fc.property(
+        fc.array(inlineGitStatusArb, { minLength: 1, maxLength: 5 }),
+        (gitStatuses) => {
+          // Use a workspace ID that is NOT in availableWorkspaces
+          const unknownId = 'definitely-not-a-workspace';
+          const availableWorkspaces = gitStatuses
+            .map((s) => s.workspaceId)
+            .filter((id) => id !== unknownId)
+            .map((id) => ({ id, displayName: id }));
+
+          const result = selectGitStatuses(gitStatuses, unknownId, availableWorkspaces);
+          // Fallback: all statuses returned
+          expect(result.statuses).toHaveLength(gitStatuses.length);
+          expect(result.showLabels).toBe(true);
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  /**
+   * G5 — Selection is valid but no git statuses match → fallback to all.
+   * Validates: Requirement 7.4.1
+   */
+  test('G5: valid selection but no matching statuses → fallback to all workspaces', () => {
+    // Feature: multi-workspace-monitoring, Property 18: Dashboard Filtering Logic Consistency
+    const targetId = 'empty-workspace';
+    const statuses: InlineGitStatus[] = [
+      { branch: 'main', clean: true, modified: [], staged: [], untracked: [], ahead: 0, behind: 0, workspaceId: 'other-workspace' },
+    ];
+    const availableWorkspaces = [
+      { id: targetId, displayName: 'Empty Workspace' },
+      { id: 'other-workspace', displayName: 'Other Workspace' },
+    ];
+
+    const result = selectGitStatuses(statuses, targetId, availableWorkspaces);
+    // Fallback: return all because nothing matched
+    expect(result.statuses).toHaveLength(statuses.length);
+    expect(result.showLabels).toBe(true);
+  });
+});

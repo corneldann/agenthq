@@ -1,9 +1,9 @@
 // pages/work.ts — Work page renderer
 // Feature: monitor-dashboard-redesign
-// Requirements 7.1–7.11
+// Requirements 7.1–7.11, 6.5
 
 import { el } from '../utils.js';
-import { getState } from '../state.js';
+import { getState, getSelectedWorkspaceId } from '../state.js';
 import type { Chain, JobChain, Job } from '../types.js';
 import { renderChainCard } from '../components/chainCard.js';
 import { renderJobCard } from '../components/jobCard.js';
@@ -279,7 +279,23 @@ function buildUnknownSection(
  * @param root - The container HTMLElement to render into.
  */
 export function renderWork(root: HTMLElement): void {
-  const { chains, jobChains, jobs } = getState();
+  const state = getState();
+  const selectedWorkspaceId = getSelectedWorkspaceId();
+
+  // ── Apply workspace filter (Requirements 6.5, 6.7) ───────────────────────
+  // When selectedWorkspaceId is null ("All Workspaces"), show everything.
+  // When a specific workspace is selected, filter to matching workspaceId only.
+  const chains: Chain[] = selectedWorkspaceId === null
+    ? state.chains
+    : state.chains.filter(c => c.workspaceId === selectedWorkspaceId);
+
+  const jobChains: JobChain[] = selectedWorkspaceId === null
+    ? state.jobChains
+    : state.jobChains.filter(jc => jc.workspaceId === selectedWorkspaceId);
+
+  const jobs: Job[] = selectedWorkspaceId === null
+    ? state.jobs
+    : state.jobs.filter(j => j.workspaceId === selectedWorkspaceId);
 
   // ── Build index: chainId → individual Jobs (all types, for chain card panel) ──
   const jobsByChainId = new Map<string, import('../types.js').Job[]>();

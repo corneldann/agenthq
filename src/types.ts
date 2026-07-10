@@ -21,6 +21,7 @@ export interface Job {
   logFile: string;
   agentDone: string;
   sizeBytes: number;
+  workspaceId: string;
 }
 
 export interface SessionState {
@@ -44,6 +45,7 @@ export interface SessionState {
   startTime: string;
   /** Unique Kiro chat-session identifier — used to deduplicate multi-snapshot sessions. */
   chatSessionId?: string;
+  workspaceId: string;
 }
 
 export interface Chain {
@@ -66,6 +68,7 @@ export interface Chain {
   overallStatus?: string;
   workflowCount?: number;  // raw snapshot count before dedup
   specChainId?: string;    // set when this chain is absorbed into a spec chain
+  workspaceId: string;
 }
 
 export interface JobChain {
@@ -76,6 +79,7 @@ export interface JobChain {
   latestTimestamp: string;
   runCount: number;
   runs: Job[];             // all runs, newest first
+  workspaceId: string;
 }
 
 export interface PollLogEntry {
@@ -94,6 +98,7 @@ export interface BackgroundJobRecord {
   count: number;         // number of URLs/repos
   detail: string;        // comma-separated URLs or repo names
   status: "done" | "running" | "error";
+  workspaceId: string;
 }
 
 export interface BuildQueueRecord {
@@ -101,6 +106,7 @@ export interface BuildQueueRecord {
   ts: number;            // Date.now() when queued
   status: "pending" | "building" | "done" | "error";
   stem: string;          // e.g. "2026-06-26-1800-build-dashboard"
+  workspaceId: string;
 }
 
 export interface GitStatus {
@@ -111,6 +117,7 @@ export interface GitStatus {
   untracked: string[];
   ahead: number;
   behind: number;
+  workspaceId: string;
 }
 
 export interface GitCommitResult {
@@ -118,3 +125,13 @@ export interface GitCommitResult {
 }
 
 export type SSEController = { enqueue: (data: string) => void; closed: boolean };
+
+// ---------------------------------------------------------------------------
+// SSE Event Types — structured update events with workspace identification
+// ---------------------------------------------------------------------------
+
+export interface SSEUpdateEvent {
+  type: 'chain-update' | 'job-update' | 'session-update' | 'git-update';
+  workspaceId: string;
+  data: Chain | Job | SessionState | GitStatus;
+}

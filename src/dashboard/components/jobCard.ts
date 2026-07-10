@@ -1,5 +1,6 @@
 // components/jobCard.ts — standalone JobCard
 // Feature: monitor-dashboard-redesign
+// Implements Requirements 7.6, 8.8 (display Workspace_Identifier for each queue entry)
 
 import { el, formatDate } from '../utils.js';
 import type { JobChain } from '../types.js';
@@ -34,9 +35,10 @@ function statusBadgeClass(status: string): string {
  *   <article class="job-card">
  *     header row: <h3> name + <span class="status-badge status-badge--{status}">
  *     meta row:   latest timestamp (formatted), run count, last output line
+ *     workspace row: workspace identifier badge (when workspaceId is non-empty)
  *     actions row: [Out] button (if mdFile non-empty), [Log] button (if logFile non-empty)
  *
- * Requirements: 7.6
+ * Requirements: 7.6, 8.8
  *
  * @param jc - The JobChain record to render.
  * @returns  The completed <article> HTMLElement.
@@ -73,6 +75,16 @@ export function renderJobCard(jc: JobChain): HTMLElement {
     attachLogPreview(meta, latestRun.id);
   }
 
+  // -- Workspace identifier badge (Requirement 8.8) --
+  // Display the workspace identifier for each queue entry when workspaceId is set.
+  const workspaceRow = jc.workspaceId
+    ? el('div', { class: 'job-card__workspace' }, [
+        el('span', { class: 'job-card__workspace-badge' }, [
+          `⊞ ${jc.workspaceId}`,
+        ]),
+      ])
+    : null;
+
   // -- Actions row: [Out] and [Log] buttons conditionally --
   const actionChildren: (HTMLElement | string)[] = [];
 
@@ -95,5 +107,9 @@ export function renderJobCard(jc: JobChain): HTMLElement {
   const actions = el('div', { class: 'job-card__actions' }, actionChildren);
 
   // -- Assemble card --
-  return el('article', { class: 'job-card' }, [header, meta, actions]);
+  const children: HTMLElement[] = [header, meta];
+  if (workspaceRow !== null) children.push(workspaceRow);
+  children.push(actions);
+
+  return el('article', { class: 'job-card' }, children);
 }

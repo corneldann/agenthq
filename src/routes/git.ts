@@ -5,74 +5,49 @@ import path from 'node:path';
 import type { Router } from '../router.ts';
 import type { GitStatus, GitCommitResult } from '../types.ts';
 import { WORKSPACE_ROOT, KIRO_TOOLS_DIR } from '../constants.ts';
+import { DefaultConfigurationLoader, type WorkspaceConfig } from '../config/workspace-config.ts';
+import { filterByWorkspace, createFilterResponse } from './helpers/filter.ts';
+import { scanGitStatus } from '../scan/git.ts';
 
 export function register(router: Router): void {
   // GET /git-status — repository state via git status --porcelain -b
-  router.get('/git-status', async (_req, _params) => {
+  // Accepts optional workspaceId query parameter for workspace filtering
+  router.get('/git-status', async (req, _params) => {
+    // Load workspace configurations for validation
+    const configLoader = new DefaultConfigurationLoader();
+    let workspaces: WorkspaceConfig[] = [];
     try {
-      const proc = Bun.spawn(
-        ['git', 'status', '--porcelain', '-b'],
-        { cwd: WORKSPACE_ROOT, stdout: 'pipe', stderr: 'pipe' }
-      );
-      const exitCode = await proc.exited;
-      if (exitCode !== 0) {
-        const stderr = await new Response(proc.stderr).text();
-        return new Response(
-          JSON.stringify({ error: `git status failed: ${stderr.trim()}` }),
-          { status: 500, headers: { 'content-type': 'application/json' } }
-        );
-      }
-      const stdout = await new Response(proc.stdout).text();
-      const lines = stdout.split('\n');
-
-      let branch = '';
-      let ahead = 0;
-      let behind = 0;
-      const staged: string[] = [];
-      const modified: string[] = [];
-      const untracked: string[] = [];
-
-      for (const line of lines) {
-        if (line.startsWith('## ')) {
-          // ## main...origin/main [ahead 2] [behind 1]
-          const branchMatch = line.match(/^## ([^\.\s]+)/);
-          if (branchMatch) branch = branchMatch[1];
-          const aheadMatch = line.match(/\[ahead (\d+)\]/);
-          if (aheadMatch) ahead = parseInt(aheadMatch[1], 10);
-          const behindMatch = line.match(/\[behind (\d+)\]/);
-          if (behindMatch) behind = parseInt(behindMatch[1], 10);
-          continue;
-        }
-        if (line.length < 3) continue;
-
-        const indexCol = line[0];
-        const worktreeCol = line[1];
-        // Path starts at char 3 (after "XY ")
-        const filePath = line.slice(3);
-
-        if (indexCol === '?' && worktreeCol === '?') {
-          untracked.push(filePath);
-        } else if (indexCol !== ' ') {
-          // staged takes precedence — index column is non-space
-          staged.push(filePath);
-        } else if (worktreeCol !== ' ') {
-          // modified — index is space, worktree is non-space
-          modified.push(filePath);
-        }
-      }
-
-      const clean = staged.length === 0 && modified.length === 0 && untracked.length === 0;
-      const gitStatus: GitStatus = { branch, clean, modified, staged, untracked, ahead, behind };
-      return new Response(JSON.stringify(gitStatus), {
-        headers: { 'content-type': 'application/json', 'connection': 'close' },
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      workspaces = await configLoader.loadWorkspaces();
+    } catch (error) {
+      // If workspace config fails to load, return error
       return new Response(
-        JSON.stringify({ error: `failed to spawn git: ${msg}` }),
+        JSON.stringify({ error: 'Failed to load workspace configuration' }),
         { status: 500, headers: { 'content-type': 'application/json' } }
       );
     }
+
+    // Extract workspaceId query parameter
+    const url = new URL(req.url);
+    const workspaceId = url.searchParams.get('workspaceId') || undefined;
+
+    // Handle zero workspaces case per Requirement 7.3.1
+    if (workspaces.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'No workspaces configured' }),
+        { status: 500, headers: { 'content-type': 'application/json' } }
+      );
+    }
+
+    // Scan git status for all configured workspaces
+    const gitStatuses: GitStatus[] = await Promise.all(
+      workspaces.map(workspace => 
+        scanGitStatus(workspace.WORKSPACE_ROOT, workspace.id)
+      )
+    );
+
+    // Apply workspace filtering using common helper
+    const filterResult = filterByWorkspace(gitStatuses, workspaceId, workspaces);
+    return createFilterResponse(filterResult);
   });
 
   // POST /git-commit — spawn git-commit-worker.ps1 and return jobStem

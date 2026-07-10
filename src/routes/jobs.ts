@@ -4,16 +4,38 @@ import type { Router } from '../router.ts';
 import type { BuildQueueRecord } from '../types.ts';
 import { OUTPUT_DIR, BUILD_QUEUE_FILE } from '../constants.ts';
 import { scanJobs } from '../scan/jobs.ts';
+import { DefaultConfigurationLoader, type WorkspaceConfig } from '../config/workspace-config.ts';
+import { filterByWorkspace, createFilterResponse } from './helpers/filter.ts';
 
 export function register(router: Router): void {
   // ------------------------------------------------------------------
   // GET /jobs — full list of Job objects from OUTPUT_DIR
+  // Accepts optional workspaceId query parameter for workspace filtering
   // ------------------------------------------------------------------
-  router.get('/jobs', async (_req, _params) => {
+  router.get('/jobs', async (req, _params) => {
+    // Load workspace configurations for validation
+    const configLoader = new DefaultConfigurationLoader();
+    let workspaces: WorkspaceConfig[] = [];
+    try {
+      workspaces = await configLoader.loadWorkspaces();
+    } catch (error) {
+      // If workspace config fails to load, return error
+      return new Response(
+        JSON.stringify({ error: 'Failed to load workspace configuration' }),
+        { status: 500, headers: { 'content-type': 'application/json' } }
+      );
+    }
+
+    // Extract workspaceId query parameter
+    const url = new URL(req.url);
+    const workspaceId = url.searchParams.get('workspaceId') || undefined;
+
+    // Scan all jobs
     const jobs = await scanJobs();
-    return new Response(JSON.stringify(jobs), {
-      headers: { "content-type": "application/json", "connection": "close" },
-    });
+
+    // Apply workspace filtering using common helper
+    const filterResult = filterByWorkspace(jobs, workspaceId, workspaces);
+    return createFilterResponse(filterResult);
   });
 
   // ------------------------------------------------------------------
@@ -34,8 +56,26 @@ export function register(router: Router): void {
 
   // ------------------------------------------------------------------
   // GET /build-queue — parsed records from BUILD_QUEUE_FILE
+  // Accepts optional workspaceId query parameter for workspace filtering
   // ------------------------------------------------------------------
-  router.get('/build-queue', async (_req, _params) => {
+  router.get('/build-queue', async (req, _params) => {
+    // Load workspace configurations for validation
+    const configLoader = new DefaultConfigurationLoader();
+    let workspaces: WorkspaceConfig[] = [];
+    try {
+      workspaces = await configLoader.loadWorkspaces();
+    } catch (error) {
+      // If workspace config fails to load, return error
+      return new Response(
+        JSON.stringify({ error: 'Failed to load workspace configuration' }),
+        { status: 500, headers: { 'content-type': 'application/json' } }
+      );
+    }
+
+    // Extract workspaceId query parameter
+    const url = new URL(req.url);
+    const workspaceId = url.searchParams.get('workspaceId') || undefined;
+
     try {
       const text = await Bun.file(BUILD_QUEUE_FILE).text().catch(() => "");
       const records: BuildQueueRecord[] = text
@@ -45,9 +85,10 @@ export function register(router: Router): void {
           try { return JSON.parse(l) as BuildQueueRecord; } catch { return null; }
         })
         .filter((r): r is BuildQueueRecord => r !== null && !!r.stem);
-      return new Response(JSON.stringify(records), {
-        headers: { "content-type": "application/json", "connection": "close" },
-      });
+      
+      // Apply workspace filtering using common helper
+      const filterResult = filterByWorkspace(records, workspaceId, workspaces);
+      return createFilterResponse(filterResult);
     } catch {
       return new Response("[]", {
         headers: { "content-type": "application/json", "connection": "close" },

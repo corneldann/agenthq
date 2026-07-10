@@ -160,6 +160,7 @@ async function backfillBackgroundJobs(): Promise<void> {
                   parsed.map(p => p.url ?? "?").slice(0, 5).join(", ") +
                   (parsed.length > 5 ? ` +${parsed.length - 5} more` : ""),
                 status: "done",
+                workspaceId: "default",
               });
             }
           } catch { /* malformed CRAWL_QUEUE */ }
@@ -182,6 +183,7 @@ async function backfillBackgroundJobs(): Promise<void> {
                   parsed.map(p => p.repo ?? "?").slice(0, 5).join(", ") +
                   (parsed.length > 5 ? ` +${parsed.length - 5} more` : ""),
                 status: "done",
+                workspaceId: "default",
               });
             }
           } catch { /* malformed CLONE_QUEUE */ }

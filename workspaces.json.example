@@ -1,0 +1,60 @@
+{
+  "_comment": "Copy this file to workspaces.json and fill in the paths for each engagement.",
+  "_comment_id": "Workspace IDs must be unique, lowercase alphanumeric + hyphens only, 1-50 chars (e.g. 'scottish-water', 'project-alpha'). Regex: ^[a-z0-9-]{1,50}$",
+  "_comment_required": "OUTPUT_DIR, SESSIONS_DIR, WORKSPACE_ROOT are required absolute paths. AgentHQ will skip any workspace where these paths do not exist on disk.",
+  "_comment_optional": "CHAINS_DIR, SPECS_DIR, PROMPT_OUTPUT_DIR are optional absolute paths. CHAINS_DIR defaults to SESSIONS_DIR. PROMPT_OUTPUT_DIR defaults to OUTPUT_DIR.",
+  "_comment_queues": "CRAWL_JOBS_FILE, CLONE_JOBS_FILE, BUILD_QUEUE_FILE are optional relative paths interpreted relative to WORKSPACE_ROOT.",
+  "_comment_limit": "Maximum 50 workspaces are supported in this array.",
+  "workspaces": [
+    {
+      "_comment": "--- Workspace 1: Full example showing all available fields ---",
+      "id": "scottish-water",
+
+      "_comment_OUTPUT_DIR": "Required. Absolute path to the directory where agent output files (prompts, analysis) are written.",
+      "OUTPUT_DIR": "C:\\repos\\scottish-water\\docs\\analysis\\prompts\\output",
+
+      "_comment_SESSIONS_DIR": "Required. Absolute path to the directory where Kiro agent session .jsonl files are stored.",
+      "SESSIONS_DIR": "C:\\repos\\scottish-water\\.kiro\\sessions",
+
+      "_comment_WORKSPACE_ROOT": "Required. Absolute path to the root of the engagement repository. Used for git operations and resolving relative queue file paths.",
+      "WORKSPACE_ROOT": "C:\\repos\\scottish-water",
+
+      "_comment_CHAINS_DIR": "Optional. Absolute path to chain execution log files. Defaults to SESSIONS_DIR if omitted.",
+      "CHAINS_DIR": "C:\\repos\\scottish-water\\.kiro\\sessions",
+
+      "_comment_SPECS_DIR": "Optional. Absolute path to Kiro specs directory. No default — omit if not using specs.",
+      "SPECS_DIR": "C:\\repos\\scottish-water\\.kiro\\specs",
+
+      "_comment_PROMPT_OUTPUT_DIR": "Optional. Absolute path for prompt outputs. Defaults to OUTPUT_DIR if omitted.",
+      "PROMPT_OUTPUT_DIR": "C:\\repos\\scottish-water\\docs\\analysis\\prompts\\output",
+
+      "_comment_CRAWL_JOBS_FILE": "Optional. Relative path (from WORKSPACE_ROOT) to the crawl queue JSON file.",
+      "CRAWL_JOBS_FILE": "docs/reference/.crawl-queue.json",
+
+      "_comment_CLONE_JOBS_FILE": "Optional. Relative path (from WORKSPACE_ROOT) to the clone queue JSON file.",
+      "CLONE_JOBS_FILE": "docs/reference/.clone-queue.json",
+
+      "_comment_BUILD_QUEUE_FILE": "Optional. Relative path (from WORKSPACE_ROOT) to the build queue JSON file.",
+      "BUILD_QUEUE_FILE": "docs/reference/.build-queue.json"
+    },
+    {
+      "_comment": "--- Workspace 2: Minimal example showing required fields only ---",
+      "id": "project-alpha",
+
+      "OUTPUT_DIR": "C:\\repos\\project-alpha\\output",
+      "SESSIONS_DIR": "C:\\repos\\project-alpha\\.kiro\\sessions",
+      "WORKSPACE_ROOT": "C:\\repos\\project-alpha"
+    },
+    {
+      "_comment": "--- Workspace 3: Another engagement with specs and custom prompt output ---",
+      "id": "my-engagement",
+
+      "OUTPUT_DIR": "C:\\repos\\my-engagement\\output",
+      "SESSIONS_DIR": "C:\\repos\\my-engagement\\.kiro\\sessions",
+      "WORKSPACE_ROOT": "C:\\repos\\my-engagement",
+
+      "SPECS_DIR": "C:\\repos\\my-engagement\\.kiro\\specs",
+      "PROMPT_OUTPUT_DIR": "C:\\repos\\my-engagement\\output\\prompts"
+    }
+  ]
+}

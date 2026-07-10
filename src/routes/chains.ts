@@ -6,6 +6,8 @@ import { CHAINS_DIR } from '../constants.ts';
 import { scanChains } from '../scan/chains.ts';
 import { scanSessions } from '../scan/sessions.ts';
 import { scanJobs } from '../scan/jobs.ts';
+import { DefaultConfigurationLoader, type WorkspaceConfig } from '../config/workspace-config.ts';
+import { filterByWorkspace, createFilterResponse } from './helpers/filter.ts';
 
 export function register(router: Router): void {
   // ------------------------------------------------------------------
@@ -24,6 +26,8 @@ export function register(router: Router): void {
       runs.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
       const latest = runs[0];
       const sessionChainId = runs.find(r => r.sessionChainId)?.sessionChainId ?? "";
+      // Use the workspaceId from the most recent run (all runs in a chain should share workspaceId)
+      const workspaceId = latest.workspaceId ?? "";
       chains.push({
         jobChain,
         sessionChainId,
@@ -32,6 +36,7 @@ export function register(router: Router): void {
         latestTimestamp: latest.timestamp,
         runCount: runs.length,
         runs,
+        workspaceId,
       });
     }
     chains.sort((a, b) => b.latestTimestamp.localeCompare(a.latestTimestamp));
@@ -42,24 +47,65 @@ export function register(router: Router): void {
 
   // ------------------------------------------------------------------
   // GET /sessions — full list of SessionState objects
+  // Accepts optional workspaceId query parameter for workspace filtering
   // ------------------------------------------------------------------
-  router.get('/sessions', async (_req, _params) => {
+  router.get('/sessions', async (req, _params) => {
+    // Load workspace configurations for validation
+    const configLoader = new DefaultConfigurationLoader();
+    let workspaces: WorkspaceConfig[] = [];
+    try {
+      workspaces = await configLoader.loadWorkspaces();
+    } catch (error) {
+      // If workspace config fails to load, return error
+      return new Response(
+        JSON.stringify({ error: 'Failed to load workspace configuration' }),
+        { status: 500, headers: { 'content-type': 'application/json' } }
+      );
+    }
+
+    // Extract workspaceId query parameter
+    const url = new URL(req.url);
+    const workspaceId = url.searchParams.get('workspaceId') || undefined;
+
+    // Scan all sessions
     const sessions = await scanSessions();
-    return new Response(JSON.stringify(sessions), {
-      headers: { "content-type": "application/json", "connection": "close" },
-    });
+
+    // Apply workspace filtering using common helper
+    const filterResult = filterByWorkspace(sessions, workspaceId, workspaces);
+    return createFilterResponse(filterResult);
   });
 
   // ------------------------------------------------------------------
   // GET /chains — filtered array of Chain objects (totalMessages > 1)
+  // Accepts optional workspaceId query parameter for workspace filtering
   // ------------------------------------------------------------------
-  router.get('/chains', async (_req, _params) => {
+  router.get('/chains', async (req, _params) => {
+    // Load workspace configurations for validation
+    const configLoader = new DefaultConfigurationLoader();
+    let workspaces: WorkspaceConfig[] = [];
+    try {
+      workspaces = await configLoader.loadWorkspaces();
+    } catch (error) {
+      // If workspace config fails to load, return error
+      return new Response(
+        JSON.stringify({ error: 'Failed to load workspace configuration' }),
+        { status: 500, headers: { 'content-type': 'application/json' } }
+      );
+    }
+
+    // Extract workspaceId query parameter
+    const url = new URL(req.url);
+    const workspaceId = url.searchParams.get('workspaceId') || undefined;
+
+    // Scan all chains
     const chains = await scanChains(CHAINS_DIR, await scanSessions());
+    
     // Filter out stub chains (≤1 message) — these are corrupt/truncated session artifacts
     const filtered = chains.filter(c => (c.totalMessages ?? 0) > 1);
-    return new Response(JSON.stringify(filtered), {
-      headers: { "content-type": "application/json", "connection": "close" },
-    });
+
+    // Apply workspace filtering using common helper
+    const filterResult = filterByWorkspace(filtered, workspaceId, workspaces);
+    return createFilterResponse(filterResult);
   });
 
   // ------------------------------------------------------------------

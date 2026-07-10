@@ -36,6 +36,7 @@ function makeSession(chainId: string, status: SessionState['status'] = 'idle'): 
     lastUserMessage: 'bye',
     lastAgentMessage: 'done',
     startTime: '2026-01-01T00:00:00Z',
+    workspaceId: 'default',
   };
 }
 

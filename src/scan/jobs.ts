@@ -48,7 +48,10 @@ export async function readBackgroundJobRecords(
   }
 }
 
-export async function scanJobs(outputDir: string = OUTPUT_DIR): Promise<Job[]> {
+export async function scanJobs(
+  outputDir: string = OUTPUT_DIR,
+  workspaceId: string = "default"
+): Promise<Job[]> {
   const filenames: string[] = await Array.fromAsync(
     new Bun.Glob("*.md").scan(outputDir)
   );
@@ -121,6 +124,7 @@ export async function scanJobs(outputDir: string = OUTPUT_DIR): Promise<Job[]> {
         logFile: filename.replace(/\.md$/, ".log"),
         agentDone,
         sizeBytes,
+        workspaceId,
       } satisfies Job;
     })
   );
@@ -166,6 +170,7 @@ export async function scanJobs(outputDir: string = OUTPUT_DIR): Promise<Job[]> {
       logFile:        "",
       agentDone:      "",
       sizeBytes:      0,
+      workspaceId,
     } satisfies Job;
   });
 
@@ -193,6 +198,7 @@ export async function scanJobs(outputDir: string = OUTPUT_DIR): Promise<Job[]> {
       logFile:        "",
       agentDone:      "",
       sizeBytes:      0,
+      workspaceId,
     } satisfies Job;
   });
 

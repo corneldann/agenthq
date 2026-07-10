@@ -20,6 +20,16 @@ __pycache__/
 # Runtime state
 .poll-state.json
 .summarise-state.json
+monitor-pid.txt
+server.log
+
+# Logs
+*.log
+
+# SQLite databases (runtime, not source)
+*.db
+*.db-shm
+*.db-wal
 
 # Memory graph
 workspace/.kiro/memory/graph.json
