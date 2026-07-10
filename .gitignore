@@ -9,12 +9,12 @@ dist/
 __pycache__/
 *.pyc
 
-# Environment files
-.env
-.env.local
-.env.*.local
+# Environment files — excluded for public repos, committed for private
+# .env
+# .env.local
+# .env.*.local
 
-# Exception: keep .env.example
+# Keep .env.example always
 !.env.example
 
 # Runtime state
