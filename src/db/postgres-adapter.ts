@@ -6,7 +6,7 @@
  * can start without crashing when only SQLite is configured and `pg` is not
  * installed.
  *
- * Requirements: 1.2, 11.3
+ * Requirements: 1.2, 10.1, 11.3
  */
 
 // ---------------------------------------------------------------------------
@@ -34,6 +34,64 @@ type PgQueryResult<T> = {
   rowCount: number | null;
 };
 import type { DbAdapter, ExecResult, QueryResult } from './adapter.js';
+
+// ---------------------------------------------------------------------------
+// Slow-query helpers (Requirement 10.1)
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the primary table name from a SQL string.
+ *
+ * Handles the four most common DML forms:
+ *  - `SELECT ... FROM table_name ...`
+ *  - `INSERT INTO table_name ...`
+ *  - `UPDATE table_name ...`
+ *  - `DELETE FROM table_name ...`
+ *
+ * Returns `"unknown"` when the pattern cannot be matched.
+ *
+ * @param sql Raw SQL string (may be multi-line / mixed case)
+ */
+function extractTableName(sql: string): string {
+  const normalised = sql.replace(/\s+/g, ' ').trim();
+
+  const patterns: RegExp[] = [
+    /\bFROM\s+(\w+)/i,
+    /\bINTO\s+(\w+)/i,
+    /\bUPDATE\s+(\w+)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = pattern.exec(normalised);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+
+  return 'unknown';
+}
+
+/**
+ * Emit a slow-query warning when `duration_ms` exceeds 100ms (strictly >).
+ */
+function logSlowQueryIfNeeded(
+  query_type: 'query' | 'execute',
+  duration_ms: number,
+  sql: string,
+  params: unknown[],
+): void {
+  if (duration_ms > 100) {
+    console.warn(
+      JSON.stringify({
+        level: 'WARN',
+        query_type,
+        duration_ms: Math.round(duration_ms),
+        table_name: extractTableName(sql),
+        filter_conditions: params,
+      }),
+    );
+  }
+}
 
 export class PostgresAdapter implements DbAdapter {
   private pool: PgPool;
@@ -72,23 +130,39 @@ export class PostgresAdapter implements DbAdapter {
   /**
    * Execute a SELECT (or any row-returning) statement.
    *
+   * Times the operation and emits a WARN log when execution exceeds 100ms
+   * (Requirement 10.1).
+   *
    * @param sql    Parameterized SQL with `$1`, `$2`, … placeholders
    * @param params Positional parameter values
    */
   async query<T>(sql: string, params: unknown[] = []): Promise<QueryResult<T>> {
-    const result = await this.pool.query(sql, params) as PgQueryResult<T>;
-    return { rows: result.rows, rowCount: result.rowCount ?? 0 };
+    const start = performance.now();
+    try {
+      const result = await this.pool.query(sql, params) as PgQueryResult<T>;
+      return { rows: result.rows, rowCount: result.rowCount ?? 0 };
+    } finally {
+      logSlowQueryIfNeeded('query', performance.now() - start, sql, params);
+    }
   }
 
   /**
    * Execute a non-SELECT statement (INSERT, UPDATE, DELETE, DDL).
    *
+   * Times the operation and emits a WARN log when execution exceeds 100ms
+   * (Requirement 10.1).
+   *
    * @param sql    Parameterized SQL with `$1`, `$2`, … placeholders
    * @param params Positional parameter values
    */
   async execute(sql: string, params: unknown[] = []): Promise<ExecResult> {
-    const result = await this.pool.query(sql, params);
-    return { rowsAffected: result.rowCount ?? 0 };
+    const start = performance.now();
+    try {
+      const result = await this.pool.query(sql, params);
+      return { rowsAffected: result.rowCount ?? 0 };
+    } finally {
+      logSlowQueryIfNeeded('execute', performance.now() - start, sql, params);
+    }
   }
 
   /**

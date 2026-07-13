@@ -11,7 +11,7 @@
  *  - All SQL is fully parameterised — no string interpolation of user data.
  *  - `filePath` is validated against path-traversal sequences before use.
  *
- * Requirements: 2.1, 2.4, 2.5, 2.7, 6.1, 6.2, 6.3, 6.4, 6.5, 11.1, 11.2
+ * Requirements: 2.1, 2.4, 2.5, 2.7, 6.1, 6.2, 6.3, 6.4, 6.5, 9.3, 11.1, 11.2
  */
 
 import { statSync } from 'node:fs';
@@ -165,11 +165,75 @@ async function upsertSession(
 }
 
 // ---------------------------------------------------------------------------
+// Disk-space monitoring helper (Requirement 9.3)
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute `db_size / available_space` for the SQLite file at `dbPath` and
+ * emit a critical warning when the ratio is ≥ 0.9.
+ *
+ * Wraps all I/O in try/catch — if the stat fails (PostgreSQL mode, missing
+ * file, permission error) the function silently returns without logging.
+ *
+ * @param dbPath Absolute filesystem path to the SQLite `.db` file.
+ */
+function checkDiskSpace(dbPath: string): void {
+  try {
+    const fileStat = statSync(dbPath, { throwIfNoEntry: false });
+    if (!fileStat) {
+      // File does not exist yet — skip check.
+      return;
+    }
+
+    // statfsSync is available in Node ≥18.15 / Bun ≥1.0. Guard with a
+    // try/catch so that environments lacking it fail silently.
+    let available: number;
+    try {
+      // Dynamic import keeps TypeScript happy in environments where the type
+      // declaration may not include statfsSync.
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { statfsSync } = require('node:fs') as {
+        statfsSync: (path: string) => { bavail: number; bsize: number };
+      };
+      const fsStat = statfsSync(dbPath);
+      available = fsStat.bavail * fsStat.bsize;
+    } catch {
+      // statfsSync unavailable in this runtime — skip check.
+      return;
+    }
+
+    if (available <= 0) {
+      // Cannot compute a meaningful ratio — skip.
+      return;
+    }
+
+    const ratio = fileStat.size / available;
+    if (ratio >= 0.9) {
+      console.error(
+        `Database approaching disk limit: ${Math.round(ratio * 100)}% used`,
+      );
+    }
+  } catch {
+    // Any unexpected I/O error — fail silently per Requirement 9.3.
+  }
+}
+
+// ---------------------------------------------------------------------------
 // DbSyncTool
 // ---------------------------------------------------------------------------
 
 export class DbSyncTool {
-  constructor(private readonly db: DbAdapter) {}
+  /**
+   * @param db     Database adapter for all persistence operations.
+   * @param dbPath Optional path to the SQLite `.db` file.  When provided,
+   *               disk-space usage is checked after every {@link runFullSync}
+   *               (Requirement 9.3).  Pass `undefined` for PostgreSQL or when
+   *               disk-space monitoring is not desired.
+   */
+  constructor(
+    private readonly db: DbAdapter,
+    private readonly dbPath?: string,
+  ) {}
 
   /**
    * Full workspace sync — scans all jobs, chains, and sessions then upserts
@@ -201,6 +265,13 @@ export class DbSyncTool {
         await upsertSession(tx, session, now);
       }
     });
+
+    // Disk-space check after the transaction commits (Requirement 9.3).
+    // Only performed when a SQLite path was provided — silently skipped
+    // for PostgreSQL or in-memory databases.
+    if (this.dbPath !== undefined) {
+      checkDiskSpace(this.dbPath);
+    }
   }
 
   /**

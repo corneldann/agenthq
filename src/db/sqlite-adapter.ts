@@ -5,10 +5,77 @@
  * Foreign keys are enabled on construction; WAL mode is enabled lazily
  * via {@link SQLiteAdapter.enableWal} (called by `createDbAdapter` after
  * construction so that in-memory test databases can skip WAL if desired).
+ *
+ * Requirements: 10.1
  */
 
 import { Database } from 'bun:sqlite';
 import type { DbAdapter, ExecResult, QueryResult } from './adapter.js';
+
+// ---------------------------------------------------------------------------
+// Slow-query helpers (Requirement 10.1)
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the primary table name from a SQL string.
+ *
+ * Handles the four most common DML forms:
+ *  - `SELECT ... FROM table_name ...`
+ *  - `INSERT INTO table_name ...`
+ *  - `UPDATE table_name ...`
+ *  - `DELETE FROM table_name ...`
+ *
+ * Returns `"unknown"` when the pattern cannot be matched.
+ *
+ * @param sql Raw SQL string (may be multi-line / mixed case)
+ */
+export function extractTableName(sql: string): string {
+  // Normalise whitespace so multi-line SQL matches reliably.
+  const normalised = sql.replace(/\s+/g, ' ').trim();
+
+  // Each pattern captures the word immediately after the keyword pair.
+  const patterns: RegExp[] = [
+    /\bFROM\s+(\w+)/i,    // SELECT … FROM <table>, DELETE FROM <table>
+    /\bINTO\s+(\w+)/i,    // INSERT INTO <table>
+    /\bUPDATE\s+(\w+)/i,  // UPDATE <table>
+  ];
+
+  for (const pattern of patterns) {
+    const match = pattern.exec(normalised);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+
+  return 'unknown';
+}
+
+/**
+ * Emit a slow-query warning when `duration_ms` exceeds 100ms (strictly >).
+ *
+ * @param query_type  `"query"` or `"execute"`
+ * @param duration_ms Wall-clock milliseconds for the operation
+ * @param sql         The SQL string (used to extract table name)
+ * @param params      Bound parameter values (logged as filter_conditions)
+ */
+function logSlowQueryIfNeeded(
+  query_type: 'query' | 'execute',
+  duration_ms: number,
+  sql: string,
+  params: unknown[],
+): void {
+  if (duration_ms > 100) {
+    console.warn(
+      JSON.stringify({
+        level: 'WARN',
+        query_type,
+        duration_ms: Math.round(duration_ms),
+        table_name: extractTableName(sql),
+        filter_conditions: params,
+      }),
+    );
+  }
+}
 
 export class SQLiteAdapter implements DbAdapter {
   private db: Database;
@@ -41,32 +108,48 @@ export class SQLiteAdapter implements DbAdapter {
   /**
    * Execute a SELECT (or any row-returning) statement.
    *
+   * Times the operation and emits a WARN log when execution exceeds 100ms
+   * (Requirement 10.1).
+   *
    * @param sql    Parameterized SQL with `?` placeholders
    * @param params Positional parameter values (spread into `stmt.all`)
    */
   async query<T>(sql: string, params: unknown[] = []): Promise<QueryResult<T>> {
-    const stmt = this.db.prepare(sql);
-    // bun:sqlite's overloaded signature requires SQLQueryBindings[]; unknown[]
-    // satisfies the runtime contract and a cast is the least-invasive fix.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows = stmt.all(...(params as any[])) as T[];
-    return { rows, rowCount: rows.length };
+    const start = performance.now();
+    try {
+      const stmt = this.db.prepare(sql);
+      // bun:sqlite's overloaded signature requires SQLQueryBindings[]; unknown[]
+      // satisfies the runtime contract and a cast is the least-invasive fix.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rows = stmt.all(...(params as any[])) as T[];
+      return { rows, rowCount: rows.length };
+    } finally {
+      logSlowQueryIfNeeded('query', performance.now() - start, sql, params);
+    }
   }
 
   /**
    * Execute a non-SELECT statement (INSERT, UPDATE, DELETE, DDL).
    *
+   * Times the operation and emits a WARN log when execution exceeds 100ms
+   * (Requirement 10.1).
+   *
    * @param sql    Parameterized SQL with `?` placeholders
    * @param params Positional parameter values (spread into `stmt.run`)
    */
   async execute(sql: string, params: unknown[] = []): Promise<ExecResult> {
-    const stmt = this.db.prepare(sql);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = stmt.run(...(params as any[]));
-    return {
-      rowsAffected: result.changes,
-      lastInsertRowid: result.lastInsertRowid,
-    };
+    const start = performance.now();
+    try {
+      const stmt = this.db.prepare(sql);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = stmt.run(...(params as any[]));
+      return {
+        rowsAffected: result.changes,
+        lastInsertRowid: result.lastInsertRowid,
+      };
+    } finally {
+      logSlowQueryIfNeeded('execute', performance.now() - start, sql, params);
+    }
   }
 
   /**

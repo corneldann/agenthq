@@ -6,13 +6,13 @@
  * The WAL test uses a temporary file-backed database because SQLite does not
  * support WAL journal mode on in-memory databases (it always reports "memory").
  *
- * Requirements: 12.1
+ * Requirements: 10.1, 12.1
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test';
 import { rmSync } from 'fs';
 import { join } from 'path';
-import { SQLiteAdapter } from '../../src/db/sqlite-adapter';
+import { SQLiteAdapter, extractTableName } from '../../src/db/sqlite-adapter';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -236,5 +236,220 @@ describe('SQLiteAdapter', () => {
         [20, 999]
       )
     ).rejects.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// extractTableName — pure helper unit tests (Requirement 10.1)
+// ---------------------------------------------------------------------------
+
+describe('extractTableName', () => {
+  it('should extract table from SELECT … FROM', () => {
+    expect(extractTableName('SELECT id, name FROM jobs WHERE id = ?')).toBe('jobs');
+  });
+
+  it('should extract table from INSERT INTO', () => {
+    expect(extractTableName('INSERT INTO chains (chain_id) VALUES (?)')).toBe('chains');
+  });
+
+  it('should extract table from UPDATE', () => {
+    expect(extractTableName('UPDATE sessions SET status = ? WHERE chain_id = ?')).toBe('sessions');
+  });
+
+  it('should extract table from DELETE FROM', () => {
+    expect(extractTableName('DELETE FROM jobs WHERE deleted_at IS NOT NULL')).toBe('jobs');
+  });
+
+  it('should return "unknown" for unrecognised SQL', () => {
+    expect(extractTableName('PRAGMA journal_mode')).toBe('unknown');
+  });
+
+  it('should be case-insensitive', () => {
+    expect(extractTableName('select * from WORKSPACES')).toBe('WORKSPACES');
+  });
+
+  it('should handle multi-line SQL (whitespace normalised)', () => {
+    const sql = `
+      SELECT *
+      FROM   job_status_history
+      WHERE  job_id = ?
+    `;
+    expect(extractTableName(sql)).toBe('job_status_history');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Slow-query logging (Requirement 10.1)
+// ---------------------------------------------------------------------------
+
+describe('SQLiteAdapter slow-query logging', () => {
+  let adapter: SQLiteAdapter;
+
+  beforeEach(() => {
+    adapter = new SQLiteAdapter(':memory:');
+  });
+
+  afterEach(async () => {
+    try { await adapter.close(); } catch { /* already closed */ }
+  });
+
+  it('should NOT log when query() completes within 100ms', async () => {
+    const warnSpy = spyOn(console, 'warn');
+    await adapter.execute(
+      'CREATE TABLE IF NOT EXISTS t (id INTEGER PRIMARY KEY, val TEXT)'
+    );
+    await adapter.query('SELECT * FROM t');
+    // Fast in-memory query should never trigger the slow-query threshold.
+    // We assert no warn was emitted; if it somehow was, it must NOT contain
+    // the slow-query payload.
+    const slowCalls = warnSpy.mock.calls.filter((args) => {
+      const msg = String(args[0] ?? '');
+      try {
+        const parsed = JSON.parse(msg);
+        return parsed?.level === 'WARN' && typeof parsed?.duration_ms === 'number';
+      } catch {
+        return false;
+      }
+    });
+    expect(slowCalls).toHaveLength(0);
+    warnSpy.mockRestore();
+  });
+
+  it('should NOT log when execute() completes within 100ms', async () => {
+    const warnSpy = spyOn(console, 'warn');
+    await adapter.execute(
+      'CREATE TABLE IF NOT EXISTS t2 (id INTEGER PRIMARY KEY)'
+    );
+    await adapter.execute('INSERT INTO t2 (id) VALUES (?)', [1]);
+    const slowCalls = warnSpy.mock.calls.filter((args) => {
+      const msg = String(args[0] ?? '');
+      try {
+        const parsed = JSON.parse(msg);
+        return parsed?.level === 'WARN' && typeof parsed?.duration_ms === 'number';
+      } catch {
+        return false;
+      }
+    });
+    expect(slowCalls).toHaveLength(0);
+    warnSpy.mockRestore();
+  });
+
+  it('should log a structured WARN entry when query() exceeds 100ms', async () => {
+    const warnSpy = spyOn(console, 'warn');
+
+    // Patch performance.now() so the adapter sees >100ms elapsed.
+    let callCount = 0;
+    const origNow = performance.now.bind(performance);
+    const patchedNow = () => {
+      callCount++;
+      // First call (start): return 0. Second call (end): return 101.
+      return callCount === 1 ? 0 : 101;
+    };
+    // Replace the global via Object.defineProperty for the duration of the test.
+    Object.defineProperty(performance, 'now', { value: patchedNow, configurable: true });
+
+    try {
+      await adapter.execute('CREATE TABLE IF NOT EXISTS slow_q (id INTEGER PRIMARY KEY)');
+      callCount = 0; // reset for the timed query
+      await adapter.query('SELECT * FROM slow_q');
+    } finally {
+      Object.defineProperty(performance, 'now', { value: origNow, configurable: true });
+    }
+
+    const slowCalls = warnSpy.mock.calls.filter((args) => {
+      const msg = String(args[0] ?? '');
+      try {
+        const parsed = JSON.parse(msg);
+        return parsed?.level === 'WARN' && parsed?.query_type === 'query';
+      } catch {
+        return false;
+      }
+    });
+    expect(slowCalls.length).toBeGreaterThanOrEqual(1);
+
+    const payload = JSON.parse(String(slowCalls[0]![0]));
+    expect(payload.level).toBe('WARN');
+    expect(payload.query_type).toBe('query');
+    expect(typeof payload.duration_ms).toBe('number');
+    expect(payload.duration_ms).toBeGreaterThan(100);
+    expect(typeof payload.table_name).toBe('string');
+    expect(Array.isArray(payload.filter_conditions)).toBe(true);
+
+    warnSpy.mockRestore();
+  });
+
+  it('should log a structured WARN entry when execute() exceeds 100ms', async () => {
+    const warnSpy = spyOn(console, 'warn');
+
+    await adapter.execute('CREATE TABLE IF NOT EXISTS slow_e (id INTEGER PRIMARY KEY)');
+
+    let callCount = 0;
+    const origNow = performance.now.bind(performance);
+    const patchedNow = () => {
+      callCount++;
+      return callCount === 1 ? 0 : 150;
+    };
+    Object.defineProperty(performance, 'now', { value: patchedNow, configurable: true });
+
+    try {
+      callCount = 0;
+      await adapter.execute('INSERT INTO slow_e (id) VALUES (?)', [42]);
+    } finally {
+      Object.defineProperty(performance, 'now', { value: origNow, configurable: true });
+    }
+
+    const slowCalls = warnSpy.mock.calls.filter((args) => {
+      const msg = String(args[0] ?? '');
+      try {
+        const parsed = JSON.parse(msg);
+        return parsed?.level === 'WARN' && parsed?.query_type === 'execute';
+      } catch {
+        return false;
+      }
+    });
+    expect(slowCalls.length).toBeGreaterThanOrEqual(1);
+
+    const payload = JSON.parse(String(slowCalls[0]![0]));
+    expect(payload.level).toBe('WARN');
+    expect(payload.query_type).toBe('execute');
+    expect(payload.duration_ms).toBeGreaterThan(100);
+    expect(payload.table_name).toBe('slow_e');
+    expect(payload.filter_conditions).toEqual([42]);
+
+    warnSpy.mockRestore();
+  });
+
+  it('should NOT log when duration is exactly 100ms (strictly greater than required)', async () => {
+    const warnSpy = spyOn(console, 'warn');
+
+    await adapter.execute('CREATE TABLE IF NOT EXISTS exact_t (id INTEGER PRIMARY KEY)');
+
+    let callCount = 0;
+    const origNow = performance.now.bind(performance);
+    const patchedNow = () => {
+      callCount++;
+      return callCount === 1 ? 0 : 100; // exactly 100 — must NOT log
+    };
+    Object.defineProperty(performance, 'now', { value: patchedNow, configurable: true });
+
+    try {
+      callCount = 0;
+      await adapter.query('SELECT * FROM exact_t');
+    } finally {
+      Object.defineProperty(performance, 'now', { value: origNow, configurable: true });
+    }
+
+    const slowCalls = warnSpy.mock.calls.filter((args) => {
+      const msg = String(args[0] ?? '');
+      try {
+        const parsed = JSON.parse(msg);
+        return parsed?.level === 'WARN' && typeof parsed?.duration_ms === 'number';
+      } catch {
+        return false;
+      }
+    });
+    expect(slowCalls).toHaveLength(0);
+
+    warnSpy.mockRestore();
   });
 });
