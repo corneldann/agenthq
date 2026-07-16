@@ -85,7 +85,7 @@ describe('Chains Route - Combined Filtering Logic', () => {
         chainId: 'undefined-messages',
         displayName: 'Undefined Messages',
         workspaceId: 'workspace-1',
-        totalMessages: undefined,
+        totalMessages: undefined as unknown as number, // Tests the (c.totalMessages ?? 0) guard
         nextIndex: 0,
         sessions: [],
         createdAt: '2024-01-01',

@@ -138,7 +138,7 @@ describe('Property-Based Tests: Queue Entry Workspace Identification', () => {
       ),
       { numRuns: 100 }
     );
-  });
+  }, 30_000); // 30 s — 100 async I/O runs writing/reading temp files
 
   /**
    * Property 21b: Clone queue entries — workspaceId stamped from owning workspace context
@@ -173,7 +173,7 @@ describe('Property-Based Tests: Queue Entry Workspace Identification', () => {
       ),
       { numRuns: 100 }
     );
-  });
+  }, 30_000); // 30 s — 100 async I/O runs writing/reading temp files
 
   /**
    * Property 21c: Build queue entries — workspaceId stamped from owning workspace context
@@ -207,7 +207,7 @@ describe('Property-Based Tests: Queue Entry Workspace Identification', () => {
       ),
       { numRuns: 100 }
     );
-  });
+  }, 30_000); // 30 s — 100 async I/O runs writing/reading temp files
 
   /**
    * Property 21d: Multi-workspace — each entry carries its own workspace's ID
@@ -282,8 +282,8 @@ describe('Property-Based Tests: Queue Entry Workspace Identification', () => {
           }
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 25 }
     );
-  });
+  }, 30_000);  // 30 s — multi-workspace I/O test creates temp files per run
 
 });

@@ -199,46 +199,46 @@ All code is TypeScript targeting Bun. Tests use `bun test` + `fast-check`.
   - Config error: `process.exit(1)` before `Bun.serve()`; migration failure: server never starts
   - _Requirements: 5.6, 8.3, 8.4, 9.1, 12.1_
 
-- [ ] 25. Add disk-space monitoring and slow-query logging
+- [x] 25. Add disk-space monitoring and slow-query logging
   - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` and `disclose_context("accelint-ts-performance")` before writing any code
   - After each `runFullSync` compute `db_size / available_space`; log critical `"Database approaching disk limit: <percent>% used"` only when ratio ≥ 0.9
   - Wrap `query()` and `execute()` in both adapters with `performance.now()` timing; log `{ level: "WARN", query_type, duration_ms, table_name, filter_conditions }` when `duration_ms > 100`
   - _Requirements: 9.3, 10.1_
 
-- [ ] 26. Write unit tests for all `DbAdapter` operations against in-memory SQLite in `test/db/adapter.test.ts`
+- [x] 26. Write unit tests for all `DbAdapter` operations against in-memory SQLite in `test/db/adapter.test.ts`
   - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` before writing any code
   - Insert job row; update status; query by workspace+status; soft-delete; aggregate count
   - FK constraint rejects insert with unknown `workspace_id`
   - _Requirements: 1.5, 12.1_
 
-- [ ] 27. Write property test for foreign-key integrity (Property 3) in `test/db/fk-integrity.property.test.ts`
+- [x] 27. Write property test for foreign-key integrity (Property 3) in `test/db/fk-integrity.property.test.ts`
   - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` before writing any code
   - **Property 3: Foreign Key Integrity**
   - Arbitrary job inserts with random `workspace_id`; assert insert without prior workspace is rejected
   - Use `fc.property` and `fc.assert` from `fast-check`
   - **Validates: Requirements 1.5**
 
-- [ ] 28. Write property test for monotonic status-history timestamps (Property 2) in `test/db/monotonic-timestamps.property.test.ts`
+- [x] 28. Write property test for monotonic status-history timestamps (Property 2) in `test/db/monotonic-timestamps.property.test.ts`
   - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` before writing any code
   - **Property 2: Monotonic Status History Timestamps**
   - Insert N transitions in wall-clock order; assert `changed_at` values are non-decreasing ordered by `id`
   - Use `fc.property` and `fc.assert` from `fast-check`
   - **Validates: Requirements 4.1, 4.4**
 
-- [ ] 29. Write property test for query result stability (Property 7) in `test/db/query-stability.property.test.ts`
+- [x] 29. Write property test for query result stability (Property 7) in `test/db/query-stability.property.test.ts`
   - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` before writing any code
   - **Property 7: Query Result Stability**
   - Run identical parameterized query twice with no intervening writes; assert identical result sets
   - Use `fc.property` and `fc.assert` from `fast-check`
   - **Validates: Requirements 3.1, 3.3, 3.5**
 
-- [ ] 30. Write fallback resilience test in `test/db/fallback-resilience.test.ts`
+- [x] 30. Write fallback resilience test in `test/db/fallback-resilience.test.ts`
   - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` and `disclose_context("error-handling-patterns")` before writing any code
   - `DB_ENABLED=false` or closed adapter: `scanJobs/scanChains/scanSessions` return valid arrays
   - Simulate DB unavailability; assert route falls back to file scan without throwing
   - _Requirements: 1.8, 3.6, 8.1, 9.1, 12.3_
 
-- [ ] 31. Write performance tests for indexed query bounds in `test/db/performance.test.ts`
+- [x] 31. Write performance tests for indexed query bounds in `test/db/performance.test.ts`
   - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` and `disclose_context("accelint-ts-performance")` before writing any code
   - Seed SQLite with 8,000 job rows; measure workspace+status filter query; assert p99 response time ≤ 75 ms — **Property 8 (workspace+status filter) — Validates: Requirements 3.1, 12.2**
   - Seed with 1,000 chain rows; measure time-range filter query; assert p99 response time ≤ 50 ms — **Property 8 (time-range filter) — Validates: Requirements 3.3, 3.4, 12.2**
@@ -246,7 +246,7 @@ All code is TypeScript targeting Bun. Tests use `bun test` + `fast-check`.
   - Mock scanners returning 10,000 records; assert `runFullSync` completes within 30 minutes — **Property 10: Bounded Full Sync Duration — Validates: Requirements 6.2, 2.6**
   - Run `runMigrations` against fresh SQLite; assert total wall-clock time ≤ 10 seconds — **Property 9: Bounded Migration Duration — Validates: Requirements 5.6**
 
-- [ ] 32. Final checkpoint — full test suite and type check
+- [x] 32. Final checkpoint — full test suite and type check
   - **Skills**: call `disclose_context("accelint-ts-best-practices")` before proceeding
   - Run `bun test test/` — all tests pass
   - Run `node_modules\.bin\tsc.exe --noEmit` — zero type errors

@@ -1,0 +1,34 @@
+{
+  "pbtResults": {
+    "2.3 Write property-based round-trip test for message serialization in `test/ws/protocol.test.ts`": {
+      "status": "passed",
+      "lastRunTimestamp": 1784231787414
+    }
+  },
+  "executionHistory": {
+    "1. WebSocket configuration — `src/config/ws-config.ts` and `test/config/ws-config.test.ts`": [
+      {
+        "executionId": "34886165-d157-45cc-b46a-bbd7ceb76b0d",
+        "chatSessionId": "sess_42b4f450-9cb5-4c7c-9822-12a045189f96",
+        "timestamp": 1784229447796
+      },
+      {
+        "executionId": "34886165-d157-45cc-b46a-bbd7ceb76b0d",
+        "chatSessionId": "sess_42b4f450-9cb5-4c7c-9822-12a045189f96",
+        "timestamp": 1784229806703
+      }
+    ],
+    "2. Message protocol — `src/ws/protocol.ts` and `test/ws/protocol.test.ts`": [
+      {
+        "executionId": "ff5cec71-6d37-46cb-861a-2130ba3d4f1b",
+        "chatSessionId": "sess_bf98a32b-f241-4906-a19a-41927272d54c",
+        "timestamp": 1784230049440
+      },
+      {
+        "executionId": "ff5cec71-6d37-46cb-861a-2130ba3d4f1b",
+        "chatSessionId": "sess_bf98a32b-f241-4906-a19a-41927272d54c",
+        "timestamp": 1784231823672
+      }
+    ]
+  }
+}

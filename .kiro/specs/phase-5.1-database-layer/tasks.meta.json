@@ -1,0 +1,134 @@
+{
+  "pbtResults": {
+    "27. Write property test for foreign-key integrity (Property 3) in `test/db/fk-integrity.property.test.ts`": {
+      "status": "passed",
+      "lastRunTimestamp": 1783958925440
+    },
+    "28. Write property test for monotonic status-history timestamps (Property 2) in `test/db/monotonic-timestamps.property.test.ts`": {
+      "status": "passed",
+      "lastRunTimestamp": 1783959153592
+    },
+    "29. Write property test for query result stability (Property 7) in `test/db/query-stability.property.test.ts`": {
+      "status": "passed",
+      "lastRunTimestamp": 1783959382653
+    }
+  },
+  "executionHistory": {
+    "25. Add disk-space monitoring and slow-query logging": [
+      {
+        "executionId": "18c79807-2c90-4cbc-8001-05c84aef210f",
+        "chatSessionId": "sess_cd1ed6ce-d8f0-4f42-b589-27b07415c46a",
+        "timestamp": 1783957302986
+      },
+      {
+        "executionId": "b9228c4b-3397-45aa-9316-2d60bc15c13c",
+        "chatSessionId": "sess_b4985a79-0175-41cb-944d-211746a0e86d",
+        "timestamp": 1783958141355
+      },
+      {
+        "executionId": "b9228c4b-3397-45aa-9316-2d60bc15c13c",
+        "chatSessionId": "sess_b4985a79-0175-41cb-944d-211746a0e86d",
+        "timestamp": 1783958465400
+      }
+    ],
+    "26. Write unit tests for all `DbAdapter` operations against in-memory SQLite in `test/db/adapter.test.ts`": [
+      {
+        "executionId": "36627b92-da41-4933-a807-c88adfe14644",
+        "chatSessionId": "sess_5689f61c-c6f9-4a4b-b333-532088e499e0",
+        "timestamp": 1783958517871
+      },
+      {
+        "executionId": "36627b92-da41-4933-a807-c88adfe14644",
+        "chatSessionId": "sess_5689f61c-c6f9-4a4b-b333-532088e499e0",
+        "timestamp": 1783958710541
+      }
+    ],
+    "27. Write property test for foreign-key integrity (Property 3) in `test/db/fk-integrity.property.test.ts`": [
+      {
+        "executionId": "0ce4e56b-e003-4498-9299-a71bbe298534",
+        "chatSessionId": "sess_24aaa727-14f3-41b5-aaf0-ba2c1cf2a165",
+        "timestamp": 1783958776452
+      },
+      {
+        "executionId": "0ce4e56b-e003-4498-9299-a71bbe298534",
+        "chatSessionId": "sess_24aaa727-14f3-41b5-aaf0-ba2c1cf2a165",
+        "timestamp": 1783958946166
+      }
+    ],
+    "28. Write property test for monotonic status-history timestamps (Property 2) in `test/db/monotonic-timestamps.property.test.ts`": [
+      {
+        "executionId": "ecee430b-2241-4071-9dde-f47eca2221b3",
+        "chatSessionId": "sess_f9ec96f8-f02f-434f-8dfc-a52f426d6bcd",
+        "timestamp": 1783959026291
+      },
+      {
+        "executionId": "ecee430b-2241-4071-9dde-f47eca2221b3",
+        "chatSessionId": "sess_f9ec96f8-f02f-434f-8dfc-a52f426d6bcd",
+        "timestamp": 1783959169354
+      }
+    ],
+    "29. Write property test for query result stability (Property 7) in `test/db/query-stability.property.test.ts`": [
+      {
+        "executionId": "08b90462-1f43-46fe-bbd7-d4dd5824b957",
+        "chatSessionId": "sess_18cb722b-7e86-4532-a6e9-07f8a71f8f36",
+        "timestamp": 1783959235100
+      },
+      {
+        "executionId": "08b90462-1f43-46fe-bbd7-d4dd5824b957",
+        "chatSessionId": "sess_18cb722b-7e86-4532-a6e9-07f8a71f8f36",
+        "timestamp": 1783959400462
+      }
+    ],
+    "30. Write fallback resilience test in `test/db/fallback-resilience.test.ts`": [
+      {
+        "executionId": "ec777b65-95aa-4c38-ae6a-47be4278a153",
+        "chatSessionId": "sess_72051f16-5c83-4e89-bf12-d3b4defda974",
+        "timestamp": 1783959439728
+      },
+      {
+        "executionId": "ec777b65-95aa-4c38-ae6a-47be4278a153",
+        "chatSessionId": "sess_72051f16-5c83-4e89-bf12-d3b4defda974",
+        "timestamp": 1783959637750
+      }
+    ],
+    "31. Write performance tests for indexed query bounds in `test/db/performance.test.ts`": [
+      {
+        "executionId": "d2ddc04a-1e88-4ad2-af15-18a4fcdcb22e",
+        "chatSessionId": "sess_16e56d75-724b-4e0b-8459-28eb4bcb0bc5",
+        "timestamp": 1783960010103
+      },
+      {
+        "executionId": "d2ddc04a-1e88-4ad2-af15-18a4fcdcb22e",
+        "chatSessionId": "sess_16e56d75-724b-4e0b-8459-28eb4bcb0bc5",
+        "timestamp": 1783960225155
+      }
+    ],
+    "32. Final checkpoint — full test suite and type check": [
+      {
+        "executionId": "1493e5fd-388e-4647-acc8-98a1e4797564",
+        "chatSessionId": "sess_d41fd855-7edf-4216-9e3e-0fd6a7589724",
+        "timestamp": 1783960318283
+      },
+      {
+        "executionId": "2bf8e483-15df-4ab8-b96a-db5ded1529d3",
+        "chatSessionId": "sess_f4e9c604-2da3-4bc4-a171-f2d43106a35d",
+        "timestamp": 1783965249395
+      },
+      {
+        "executionId": "52676a43-5692-47b4-95f9-af61ca5c2bac",
+        "chatSessionId": "sess_f4e9c604-2da3-4bc4-a171-f2d43106a35d",
+        "timestamp": 1784026878774
+      },
+      {
+        "executionId": "52676a43-5692-47b4-95f9-af61ca5c2bac",
+        "chatSessionId": "sess_f4e9c604-2da3-4bc4-a171-f2d43106a35d",
+        "timestamp": 1784026883491
+      },
+      {
+        "executionId": "52676a43-5692-47b4-95f9-af61ca5c2bac",
+        "chatSessionId": "sess_f4e9c604-2da3-4bc4-a171-f2d43106a35d",
+        "timestamp": 1784027782805
+      }
+    ]
+  }
+}

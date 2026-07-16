@@ -62,6 +62,7 @@ const jobArb = fc.record({
   logFile: fc.string(),
   agentDone: fc.string(),
   sizeBytes: fc.nat(),
+  workspaceId: fc.string({ minLength: 1 }),
 });
 
 const pollLogEntryArb = fc.record({
@@ -89,6 +90,7 @@ const gitStatusArb = fc.record({
   untracked: fc.array(fc.string()),
   ahead: fc.nat(),
   behind: fc.nat(),
+  workspaceId: fc.string({ minLength: 1 }),
 });
 
 const toastArb = fc.record({
@@ -131,6 +133,7 @@ const appStateArb = fc.record({
     unsummarisedDelta: fc.nat(),
     overallStatus: fc.string(),
     workflowCount: fc.nat(),
+    workspaceId: fc.string({ minLength: 1 }),
   })),
   jobChains: fc.array(fc.record({
     jobChain: fc.string(),
@@ -140,17 +143,50 @@ const appStateArb = fc.record({
     latestTimestamp: fc.string(),
     runCount: fc.nat(),
     runs: fc.array(jobArb),
+    workspaceId: fc.string({ minLength: 1 }),
   })),
   jobs: fc.array(jobArb),
   pollLog: fc.array(pollLogEntryArb),
   systemStatus: fc.option(systemStatusArb, { nil: null }),
   gitStatus: fc.option(gitStatusArb, { nil: null }),
+  gitStatuses: fc.array(fc.record({
+    branch: fc.string(),
+    clean: fc.boolean(),
+    modified: fc.array(fc.string()),
+    staged: fc.array(fc.string()),
+    untracked: fc.array(fc.string()),
+    ahead: fc.nat(),
+    behind: fc.nat(),
+    workspaceId: fc.string({ minLength: 1 }),
+  })),
+  buildQueue: fc.array(fc.record({
+    target: fc.constant('dashboard' as const),
+    ts: fc.integer({ min: 0 }),
+    status: fc.constantFrom('pending', 'building', 'done', 'error' as const),
+    stem: fc.string(),
+    workspaceId: fc.string({ minLength: 1 }),
+  })),
   summariseStatus: summariseStatusArb,
   hiddenChains: hiddenChainsArb,
   currentPage: pageArb,
   drawerChainId: fc.option(fc.uuid(), { nil: null }),
   commitState: commitStateArb,
   toasts: fc.array(toastArb),
+  workspaceFilter: fc.array(fc.record({
+    id: fc.string({ minLength: 1, maxLength: 10 }),
+    displayName: fc.string(),
+  }), { minLength: 0, maxLength: 5 }).chain((availableWorkspaces) => {
+    const idOrNull = availableWorkspaces.length === 0
+      ? fc.constant(null)
+      : fc.oneof(
+          fc.constant(null),
+          fc.integer({ min: 0, max: availableWorkspaces.length - 1 }).map((i) => availableWorkspaces[i].id),
+        );
+    return idOrNull.map((selectedWorkspaceId) => ({
+      selectedWorkspaceId,
+      availableWorkspaces,
+    }));
+  }),
 });
 
 // Partial<AppState>: pick a random subset of top-level keys

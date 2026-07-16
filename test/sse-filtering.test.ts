@@ -5,7 +5,7 @@
  * Requirements: 11.6, 11.6.1, 11.7
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { shouldApplySSEUpdate } from '../src/dashboard/sse-filter';
 import type { SSEUpdateEvent } from '../src/dashboard/types';
 

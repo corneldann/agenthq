@@ -260,11 +260,16 @@ export class DefaultConfigurationLoader implements ConfigurationLoader {
   /**
    * Extract workspace ID from Zod error path for better error messages
    */
-  private extractWorkspaceIdFromPath(data: any, path: (string | number)[]): string | null {
+  private extractWorkspaceIdFromPath(data: unknown, path: PropertyKey[]): string | null {
     if (path.length >= 2 && path[0] === 'workspaces' && typeof path[1] === 'number') {
       const workspaceIndex = path[1];
-      const workspace = data?.workspaces?.[workspaceIndex];
-      return workspace?.id || null;
+      const d = data as Record<string, unknown>;
+      const workspaces = d?.workspaces;
+      if (Array.isArray(workspaces)) {
+        const workspace = workspaces[workspaceIndex] as Record<string, unknown> | undefined;
+        const id = workspace?.id;
+        return typeof id === 'string' ? id : null;
+      }
     }
     return null;
   }

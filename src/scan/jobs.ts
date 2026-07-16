@@ -52,9 +52,14 @@ export async function scanJobs(
   outputDir: string = OUTPUT_DIR,
   workspaceId: string = "default"
 ): Promise<Job[]> {
-  const filenames: string[] = await Array.fromAsync(
-    new Bun.Glob("*.md").scan(outputDir)
-  );
+  let filenames: string[];
+  try {
+    filenames = await Array.fromAsync(
+      new Bun.Glob("*.md").scan(outputDir)
+    );
+  } catch {
+    return [];
+  }
   if (filenames.length === 0) return [];
 
   const promptJobs = await Promise.all(

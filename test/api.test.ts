@@ -290,6 +290,7 @@ const sessionStateArb = fc.record({
   lastUserMessage: fc.string(),
   lastAgentMessage: fc.string(),
   startTime: fc.string(),
+  workspaceId: fc.string(),
 });
 
 const sessionEntryArb = fc.record({
@@ -312,7 +313,8 @@ const chainFullArb: fc.Arbitrary<Chain> = fc.record({
   totalMessages: fc.nat(),
   createdAt: fc.string(),
   lastActiveAt: fc.string(),
-}, { requiredKeys: ['chainId', 'displayName', 'nextIndex', 'sessions', 'totalMessages', 'createdAt', 'lastActiveAt'] }).chain((required) =>
+  workspaceId: fc.string(),
+}, { requiredKeys: ['chainId', 'displayName', 'nextIndex', 'sessions', 'totalMessages', 'createdAt', 'lastActiveAt', 'workspaceId'] }).chain((required) =>
   fc.record({
     latestSession: fc.option(sessionStateArb, { nil: undefined }),
     unsummarisedDelta: fc.option(fc.nat(), { nil: undefined }),

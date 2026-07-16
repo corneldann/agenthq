@@ -367,18 +367,12 @@ describe('Requirement 2.7: Multi-workspace scanner handles non-existent paths', 
     expect(jobs1.length).toBe(2);
     expect(jobs1.every(j => j.workspaceId === 'workspace-jobs-1')).toBe(true);
 
-    // Scan non-existent path (should throw error, which simulates scan failure)
+    // Scan non-existent path (should return empty array — scanJobs catches the error gracefully)
     const nonExistentPath = join(TEST_BASE_DIR, 'non-existent-workspace', 'output');
-    let scanFailed = false;
-    try {
-      await scanJobs(nonExistentPath, 'workspace-non-existent');
-    } catch (error) {
-      // Expected behavior: scanner fails when path doesn't exist
-      // In a real multi-workspace scenario, the orchestrator would catch this
-      // and continue with other workspaces
-      scanFailed = true;
-    }
-    expect(scanFailed).toBe(true);
+    const jobsNonExistent = await scanJobs(nonExistentPath, 'workspace-non-existent');
+    // scanJobs catches the directory-read error and returns [] rather than throwing,
+    // so the orchestrator (or caller) always gets a valid array even for missing paths.
+    expect(jobsNonExistent.length).toBe(0);
 
     // Scan workspace 2 (should still succeed after failed scan)
     const jobs2 = await scanJobs(workspace2Dirs.OUTPUT_DIR, 'workspace-jobs-2');
