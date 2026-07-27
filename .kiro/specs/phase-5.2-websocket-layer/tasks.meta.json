@@ -29,6 +29,57 @@
         "chatSessionId": "sess_bf98a32b-f241-4906-a19a-41927272d54c",
         "timestamp": 1784231823672
       }
+    ],
+    "3. Subscription manager — `src/ws/subscriptions.ts` and `test/ws/subscriptions.test.ts`": [
+      {
+        "executionId": "64641ee4-ebab-42c5-8732-16d8f7909a68",
+        "chatSessionId": "sess_91116f4d-ae8e-4ac2-bc76-2bb6bbf293a7",
+        "timestamp": 1784237578268
+      }
+    ],
+    "3.1 Implement `SubscriptionManager` in `src/ws/subscriptions.ts`": [
+      {
+        "executionId": "79568fc7-4211-48a9-a590-426a759044bc",
+        "chatSessionId": "sess_6de493fa-468b-4203-b743-49fa5c06bdc3",
+        "timestamp": 1784239209446
+      },
+      {
+        "executionId": "f12e1c85-beb0-47ba-abbf-8132ec9e111f",
+        "chatSessionId": "sess_9ea6d63f-b33e-454c-9891-5cc3aa1daf96",
+        "timestamp": 1784241041664
+      },
+      {
+        "executionId": "f12e1c85-beb0-47ba-abbf-8132ec9e111f",
+        "chatSessionId": "sess_9ea6d63f-b33e-454c-9891-5cc3aa1daf96",
+        "timestamp": 1784241173456
+      },
+      {
+        "executionId": "0a1ca98b-5bd1-4ec1-bfe5-85209aa9963a",
+        "chatSessionId": "sess_9bab1939-316e-49e6-957a-da449a276f3c",
+        "timestamp": 1784243164207
+      },
+      {
+        "executionId": "0a1ca98b-5bd1-4ec1-bfe5-85209aa9963a",
+        "chatSessionId": "sess_9bab1939-316e-49e6-957a-da449a276f3c",
+        "timestamp": 1784243307520
+      },
+      {
+        "executionId": "effca947-b4bc-4fea-a56f-8bf6a26c7c6e",
+        "chatSessionId": "sess_43cd6095-433f-4ec7-934d-ff895a314dba",
+        "timestamp": 1784299556052
+      },
+      {
+        "executionId": "effca947-b4bc-4fea-a56f-8bf6a26c7c6e",
+        "chatSessionId": "sess_43cd6095-433f-4ec7-934d-ff895a314dba",
+        "timestamp": 1784299752568
+      }
+    ],
+    "3.2 Write unit tests for `SubscriptionManager` in `test/ws/subscriptions.test.ts`": [
+      {
+        "executionId": "79568fc7-4211-48a9-a590-426a759044bc",
+        "chatSessionId": "sess_6de493fa-468b-4203-b743-49fa5c06bdc3",
+        "timestamp": 1784239214121
+      }
     ]
   }
 }

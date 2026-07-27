@@ -102,7 +102,7 @@ All code is TypeScript targeting Bun. Tests use `bun test` + `fast-check`.
     - _Requirements: 1.8, 11.1_
 
 - [ ] 3. Subscription manager — `src/ws/subscriptions.ts` and `test/ws/subscriptions.test.ts`
-  - [ ] 3.1 Implement `SubscriptionManager` in `src/ws/subscriptions.ts`
+  - [x] 3.1 Implement `SubscriptionManager` in `src/ws/subscriptions.ts`
     - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` before writing any code
     - Export `Subscription` interface: `{ id: string; clientId: string; workspaceId?: string; chainId?: string; createdAt: string }`
     - Export `WsClient` interface: `{ id: string; subscriptions: Set<string>; lastActivity: number; ws: ServerWebSocket<unknown> }`
