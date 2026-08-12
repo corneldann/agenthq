@@ -4,6 +4,8 @@
  * Runtime-agnostic — no Bun imports. Safe to use in any environment.
  */
 
+import type { SSEUpdateEvent } from '../types.js';
+
 // ---------------------------------------------------------------------------
 // Client → Server messages
 // ---------------------------------------------------------------------------
@@ -24,7 +26,7 @@ export type ServerMessage =
   | { type: 'connected';     clientId: string; workspaceIds: string[] }
   | { type: 'pong';          commandId: string; timestamp: string }
   | { type: 'ack';           commandId: string; success: boolean; error?: string; subscriptionId?: string }
-  | { type: 'update';        event: unknown }
+  | { type: 'update';        event: SSEUpdateEvent }
   | { type: 'user-action';   userId: string; action: string; target: string; timestamp: string }
   | { type: 'status-change'; jobId: string; oldStatus: string; newStatus: string; timestamp: string; success: boolean; workspaceId: string }
   | { type: 'command-error'; userId: string; commandId: string; error: string }

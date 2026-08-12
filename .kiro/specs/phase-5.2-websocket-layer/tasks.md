@@ -62,7 +62,7 @@ All code is TypeScript targeting Bun. Tests use `bun test` + `fast-check`.
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 11.1_
 
 - [x] 2. Message protocol — `src/ws/protocol.ts` and `test/ws/protocol.test.ts`
-  - [ ] 2.1 Implement `ClientMessage`, `ServerMessage`, `Result<T>`, and `parseClientMessage()` in `src/ws/protocol.ts`
+  - [x] 2.1 Implement `ClientMessage`, `ServerMessage`, `Result<T>`, and `parseClientMessage()` in `src/ws/protocol.ts`
     - **Skills**: call `disclose_context("accelint-ts-best-practices")`, `disclose_context("accelint-ts-testing")`, and `disclose_context("error-handling-patterns")` before writing any code
     - Export `ClientMessage` discriminated union (six variants: `subscribe`, `unsubscribe`, `ping`, `cancel-job`, `pause-agent`, `resume-agent`); every variant carries `commandId: string`
     - Export `ServerMessage` discriminated union (eight variants: `connected`, `pong`, `ack`, `update`, `user-action`, `status-change`, `command-error`, `error`)
@@ -80,7 +80,7 @@ All code is TypeScript targeting Bun. Tests use `bun test` + `fast-check`.
       - Unknown `type` values: return `{ success: false, error: 'Unknown message type' }`
     - Do NOT import `bun` types in this file — keep it runtime-agnostic
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 8.1, 11.1_
-  - [ ] 2.2 Write unit tests for `parseClientMessage()` in `test/ws/protocol.test.ts`
+  - [x] 2.2 Write unit tests for `parseClientMessage()` in `test/ws/protocol.test.ts`
     - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` before writing any code
     - Test each valid `ClientMessage` type parses successfully and returns the original value
     - Test: `null` rejected; non-object (string, number) rejected
@@ -92,7 +92,7 @@ All code is TypeScript targeting Bun. Tests use `bun test` + `fast-check`.
     - Test: unknown `type` value → `success: false`
     - Test: `subscribe` with no optional fields → `success: true`
     - _Requirements: 2.3, 2.4, 11.1_
-  - [ ] 2.3 Write property-based round-trip test for message serialization in `test/ws/protocol.test.ts`
+  - [x] 2.3 Write property-based round-trip test for message serialization in `test/ws/protocol.test.ts`
     - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` before writing any code
     - **Property 1: Message serialization round-trip**
     - Use `fc.record` / `fc.oneof` from `fast-check` to generate arbitrary valid `ClientMessage` instances covering all six variants
@@ -101,8 +101,8 @@ All code is TypeScript targeting Bun. Tests use `bun test` + `fast-check`.
     - **Validates: Requirements 1.8, 11.1**
     - _Requirements: 1.8, 11.1_
 
-- [ ] 3. Subscription manager — `src/ws/subscriptions.ts` and `test/ws/subscriptions.test.ts`
-  - [ ] 3.1 Implement `SubscriptionManager` in `src/ws/subscriptions.ts`
+- [x] 3. Subscription manager — `src/ws/subscriptions.ts` and `test/ws/subscriptions.test.ts`
+  - [x] 3.1 Implement `SubscriptionManager` in `src/ws/subscriptions.ts`
     - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` before writing any code
     - Export `Subscription` interface: `{ id: string; clientId: string; workspaceId?: string; chainId?: string; createdAt: string }`
     - Export `WsClient` interface: `{ id: string; subscriptions: Set<string>; lastActivity: number; ws: ServerWebSocket<unknown> }`
@@ -114,7 +114,7 @@ All code is TypeScript targeting Bun. Tests use `bun test` + `fast-check`.
     - `unsubscribe(clientId, subscriptionId)`: if sub does not exist returns `{ success: true, status: 'not_subscribed' }`; otherwise removes from both maps and returns `{ success: true }`
     - `getInterestedClients(event: { workspaceId: string; chainId?: string }): WsClient[]`: iterates all subscriptions; skip sub if `sub.workspaceId` is set and doesn't match `event.workspaceId`; skip sub if `sub.chainId` is set and doesn't match `event.chainId`; return unique clients (deduplicate by clientId)
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
-  - [ ] 3.2 Write unit tests for `SubscriptionManager` in `test/ws/subscriptions.test.ts`
+  - [x] 3.2 Write unit tests for `SubscriptionManager` in `test/ws/subscriptions.test.ts`
     - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` before writing any code
     - Use a minimal mock for `ServerWebSocket`: `{ send: () => {}, close: () => {} } as unknown as ServerWebSocket<unknown>`
     - Test: `addClient` then `removeClient` leaves no subscriptions or client entries
@@ -129,8 +129,8 @@ All code is TypeScript targeting Bun. Tests use `bun test` + `fast-check`.
     - Test: `getInterestedClients` deduplicates — client with two matching subscriptions appears only once
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 11.2_
 
-- [ ] 4. Command handler — `src/ws/commands.ts` and `test/ws/commands.test.ts`
-  - [ ] 4.1 Implement `CommandHandler` in `src/ws/commands.ts`
+- [x] 4. Command handler — `src/ws/commands.ts` and `test/ws/commands.test.ts`
+  - [x] 4.1 Implement `CommandHandler` in `src/ws/commands.ts`
     - **Skills**: call `disclose_context("accelint-ts-best-practices")`, `disclose_context("accelint-ts-testing")`, `disclose_context("error-handling-patterns")`, and `disclose_context("best-practices")` before writing any code
     - Export `CommandResult` interface: `{ success: boolean; error?: string }`
     - Export `CommandHandler` class; constructor takes `db: DbAdapter` (import from `'../db/adapter.js'`)
@@ -154,7 +154,7 @@ All code is TypeScript targeting Bun. Tests use `bun test` + `fast-check`.
       - Return `{ success: true }`
     - All SQL uses parameterized queries — no string interpolation of external input
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 9.2_
-  - [ ] 4.2 Write unit tests for `CommandHandler` using an in-memory SQLite mock in `test/ws/commands.test.ts`
+  - [x] 4.2 Write unit tests for `CommandHandler` using an in-memory SQLite mock in `test/ws/commands.test.ts`
     - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` before writing any code
     - Construct a lightweight `DbAdapter` stub using `SQLiteAdapter` with an in-memory DB (`:memory:`) and the two DDL migrations applied, or use a plain object stub with jest-style spy functions
     - Test: `cancel-job` on existing job with matching workspace → `success: true`; job row has `status = 'error'`; `job_status_history` has one row with `reason = 'cancelled by user'`
@@ -167,8 +167,8 @@ All code is TypeScript targeting Bun. Tests use `bun test` + `fast-check`.
     - Test: DB `query()` throws → `CommandHandler.handle()` propagates the error (let it bubble; callers handle it)
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 9.2, 11.2_
 
-- [ ] 5. WebSocket broadcaster — `src/ws/broadcaster.ts` and `test/ws/broadcaster.test.ts`
-  - [ ] 5.1 Implement `WsBroadcaster` in `src/ws/broadcaster.ts`
+- [x] 5. WebSocket broadcaster — `src/ws/broadcaster.ts` and `test/ws/broadcaster.test.ts`
+  - [x] 5.1 Implement `WsBroadcaster` in `src/ws/broadcaster.ts`
     - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` before writing any code
     - Export `WsBroadcaster` class; constructor takes `subscriptionMgr: SubscriptionManager`
     - `broadcastStatusChange(event: { jobId, workspaceId, chainId?, oldStatus, newStatus, success })`:
@@ -182,12 +182,12 @@ All code is TypeScript targeting Bun. Tests use `bun test` + `fast-check`.
       - If client found, send `{ type: 'command-error', userId: clientId, commandId, error }` to that client only
       - If client not found, log a warning and return silently
     - _Requirements: 4.8, 5.1, 5.2, 5.3_
-  - [ ] 5.2 Add `getClient(clientId)` to `SubscriptionManager` in `src/ws/subscriptions.ts`
+  - [x] 5.2 Add `getClient(clientId)` to `SubscriptionManager` in `src/ws/subscriptions.ts`
     - **Skills**: call `disclose_context("accelint-ts-best-practices")` before writing any code
     - Add `getClient(clientId: string): WsClient | undefined` — returns `this.clients.get(clientId)`
     - Update the corresponding test file to cover the new method (one test: returns the client when present, undefined when absent)
     - _Requirements: 5.3_
-  - [ ] 5.3 Write unit tests for `WsBroadcaster` in `test/ws/broadcaster.test.ts`
+  - [x] 5.3 Write unit tests for `WsBroadcaster` in `test/ws/broadcaster.test.ts`
     - **Skills**: call `disclose_context("accelint-ts-best-practices")` and `disclose_context("accelint-ts-testing")` before writing any code
     - Set up a real `SubscriptionManager` instance with mock `ws` objects (track `send` calls via an array)
     - Test: `broadcastStatusChange` sends only to clients subscribed to the matching workspace

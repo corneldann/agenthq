@@ -29,6 +29,154 @@
         "chatSessionId": "sess_bf98a32b-f241-4906-a19a-41927272d54c",
         "timestamp": 1784231823672
       }
+    ],
+    "2.1 Implement `ClientMessage`, `ServerMessage`, `Result<T>`, and `parseClientMessage()` in `src/ws/protocol.ts`": [
+      {
+        "executionId": "0abedab5-5b6c-4525-a148-b3179e211dda",
+        "chatSessionId": "sess_74dba118-15fc-4470-8ea4-fdcd682c6d34",
+        "timestamp": 1786557291655
+      },
+      {
+        "executionId": "0abedab5-5b6c-4525-a148-b3179e211dda",
+        "chatSessionId": "sess_74dba118-15fc-4470-8ea4-fdcd682c6d34",
+        "timestamp": 1786557453804
+      }
+    ],
+    "2.2 Write unit tests for `parseClientMessage()` in `test/ws/protocol.test.ts`": [
+      {
+        "executionId": "3e2c9120-d881-4015-884d-6552d6a3b112",
+        "chatSessionId": "sess_172e6749-a3a0-4895-9c41-2664bd77777c",
+        "timestamp": 1786557780222
+      },
+      {
+        "executionId": "3e2c9120-d881-4015-884d-6552d6a3b112",
+        "chatSessionId": "sess_172e6749-a3a0-4895-9c41-2664bd77777c",
+        "timestamp": 1786557874540
+      }
+    ],
+    "2.3 Write property-based round-trip test for message serialization in `test/ws/protocol.test.ts`": [
+      {
+        "executionId": "3a9846db-ccd4-483c-9fdb-1ace4a112a0a",
+        "chatSessionId": "sess_c5499fe7-5f0b-4800-b811-51ca7970d72d",
+        "timestamp": 1786557896856
+      },
+      {
+        "executionId": "3a9846db-ccd4-483c-9fdb-1ace4a112a0a",
+        "chatSessionId": "sess_c5499fe7-5f0b-4800-b811-51ca7970d72d",
+        "timestamp": 1786557993312
+      }
+    ],
+    "3.1 Implement `SubscriptionManager` in `src/ws/subscriptions.ts`": [
+      {
+        "executionId": "8ecbe134-0902-4a58-a3e7-d6188673216c",
+        "chatSessionId": "sess_7ddf480a-b26c-4006-8543-fe5bdfe69b4b",
+        "timestamp": 1786558017582
+      },
+      {
+        "executionId": "8ecbe134-0902-4a58-a3e7-d6188673216c",
+        "chatSessionId": "sess_7ddf480a-b26c-4006-8543-fe5bdfe69b4b",
+        "timestamp": 1786558163923
+      }
+    ],
+    "3.2 Write unit tests for `SubscriptionManager` in `test/ws/subscriptions.test.ts`": [
+      {
+        "executionId": "87aac774-b2dc-490c-a047-74d428263f0f",
+        "chatSessionId": "sess_f6a5bd9f-fbac-413d-a5ae-e7131d60b799",
+        "timestamp": 1786558266022
+      },
+      {
+        "executionId": "87aac774-b2dc-490c-a047-74d428263f0f",
+        "chatSessionId": "sess_f6a5bd9f-fbac-413d-a5ae-e7131d60b799",
+        "timestamp": 1786558445549
+      }
+    ],
+    "3. Subscription manager — `src/ws/subscriptions.ts` and `test/ws/subscriptions.test.ts`": [
+      {
+        "executionId": "87aac774-b2dc-490c-a047-74d428263f0f",
+        "chatSessionId": "sess_f6a5bd9f-fbac-413d-a5ae-e7131d60b799",
+        "timestamp": 1786558445628
+      }
+    ],
+    "4.1 Implement `CommandHandler` in `src/ws/commands.ts`": [
+      {
+        "executionId": "fe060ba1-726f-4f3d-bc63-9e78a84bc47a",
+        "chatSessionId": "sess_84cead7c-e99b-4be8-8288-f463efa108f6",
+        "timestamp": 1786558462908
+      },
+      {
+        "executionId": "fe060ba1-726f-4f3d-bc63-9e78a84bc47a",
+        "chatSessionId": "sess_84cead7c-e99b-4be8-8288-f463efa108f6",
+        "timestamp": 1786558607772
+      }
+    ],
+    "4.2 Write unit tests for `CommandHandler` using an in-memory SQLite mock in `test/ws/commands.test.ts`": [
+      {
+        "executionId": "68a02dd2-15d5-47d5-ac4c-4e648ed20320",
+        "chatSessionId": "sess_32669aef-457b-441b-b9d7-3cf3c2c46fe5",
+        "timestamp": 1786558971975
+      },
+      {
+        "executionId": "68a02dd2-15d5-47d5-ac4c-4e648ed20320",
+        "chatSessionId": "sess_32669aef-457b-441b-b9d7-3cf3c2c46fe5",
+        "timestamp": 1786559271275
+      }
+    ],
+    "4. Command handler — `src/ws/commands.ts` and `test/ws/commands.test.ts`": [
+      {
+        "executionId": "68a02dd2-15d5-47d5-ac4c-4e648ed20320",
+        "chatSessionId": "sess_32669aef-457b-441b-b9d7-3cf3c2c46fe5",
+        "timestamp": 1786559271386
+      }
+    ],
+    "5.1 Implement `WsBroadcaster` in `src/ws/broadcaster.ts`": [
+      {
+        "executionId": "a0e25e3d-122f-42cc-ae44-25d06742a3ba",
+        "chatSessionId": "sess_4750989f-47f3-48f7-9765-44fac305e5df",
+        "timestamp": 1786559300062
+      },
+      {
+        "executionId": "a0e25e3d-122f-42cc-ae44-25d06742a3ba",
+        "chatSessionId": "sess_4750989f-47f3-48f7-9765-44fac305e5df",
+        "timestamp": 1786559538457
+      }
+    ],
+    "5.2 Add `getClient(clientId)` to `SubscriptionManager` in `src/ws/subscriptions.ts`": [
+      {
+        "executionId": "01d4c969-0232-4dd0-98d4-24601202282c",
+        "chatSessionId": "sess_a8e58d03-dbac-484f-85af-b300a17e223f",
+        "timestamp": 1786559557544
+      },
+      {
+        "executionId": "01d4c969-0232-4dd0-98d4-24601202282c",
+        "chatSessionId": "sess_a8e58d03-dbac-484f-85af-b300a17e223f",
+        "timestamp": 1786559612897
+      }
+    ],
+    "5.3 Write unit tests for `WsBroadcaster` in `test/ws/broadcaster.test.ts`": [
+      {
+        "executionId": "4a17dab3-6656-4df9-83a6-e1ab273d3a14",
+        "chatSessionId": "sess_4ae8bf94-ff28-440b-b309-d0a7ef4a7f7c",
+        "timestamp": 1786559783904
+      },
+      {
+        "executionId": "4a17dab3-6656-4df9-83a6-e1ab273d3a14",
+        "chatSessionId": "sess_4ae8bf94-ff28-440b-b309-d0a7ef4a7f7c",
+        "timestamp": 1786559915562
+      }
+    ],
+    "5. WebSocket broadcaster — `src/ws/broadcaster.ts` and `test/ws/broadcaster.test.ts`": [
+      {
+        "executionId": "4a17dab3-6656-4df9-83a6-e1ab273d3a14",
+        "chatSessionId": "sess_4ae8bf94-ff28-440b-b309-d0a7ef4a7f7c",
+        "timestamp": 1786559915648
+      }
+    ],
+    "6. Checkpoint — run unit tests and fix failures": [
+      {
+        "executionId": "470eb773-9630-47b8-abb1-c8c85954dddc",
+        "chatSessionId": "sess_eb3d86e0-2add-45e8-bb83-bc6238f7d2c4",
+        "timestamp": 1786560011029
+      }
     ]
   }
 }
