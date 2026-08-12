@@ -1,4 +1,4 @@
-/**
+﻿/**
  * WebSocket subscription manager.
  *
  * Tracks connected clients and their workspace/chain filter subscriptions.

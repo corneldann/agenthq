@@ -1,4 +1,4 @@
-{
+﻿{
   "pbtResults": {
     "2.3 Write property-based round-trip test for message serialization in `test/ws/protocol.test.ts`": {
       "status": "passed",
