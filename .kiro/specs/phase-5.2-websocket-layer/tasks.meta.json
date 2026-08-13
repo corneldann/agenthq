@@ -177,6 +177,68 @@
         "chatSessionId": "sess_eb3d86e0-2add-45e8-bb83-bc6238f7d2c4",
         "timestamp": 1786560011029
       }
+    ],
+    "7.1 Implement `WsServer` in `src/ws/server.ts`": [
+      {
+        "executionId": "b3fa1b8e-4184-478d-bb13-435bb587c7c3",
+        "chatSessionId": "sess_650bb5a2-3e6f-4799-b390-323cafb2bd72",
+        "timestamp": 1786562589013
+      },
+      {
+        "executionId": "b3fa1b8e-4184-478d-bb13-435bb587c7c3",
+        "chatSessionId": "sess_650bb5a2-3e6f-4799-b390-323cafb2bd72",
+        "timestamp": 1786563634064
+      }
+    ],
+    "7.2 Write unit tests for `WsServer` in `test/ws/server.test.ts`": [
+      {
+        "executionId": "f0f78a7d-9128-4669-98af-ce9287c132ae",
+        "chatSessionId": "sess_1880e17f-e08f-460f-a654-42e245ac3cde",
+        "timestamp": 1786613937594
+      },
+      {
+        "executionId": "f0f78a7d-9128-4669-98af-ce9287c132ae",
+        "chatSessionId": "sess_1880e17f-e08f-460f-a654-42e245ac3cde",
+        "timestamp": 1786614112232
+      }
+    ],
+    "7. WebSocket server â€” `src/ws/server.ts` and `test/ws/server.test.ts`": [
+      {
+        "executionId": "f0f78a7d-9128-4669-98af-ce9287c132ae",
+        "chatSessionId": "sess_1880e17f-e08f-460f-a654-42e245ac3cde",
+        "timestamp": 1786614112337
+      }
+    ],
+    "8.1 Implement the `/ws` upgrade route in `src/routes/ws.ts`": [
+      {
+        "executionId": "60840b54-4d9e-4cb8-8bbb-bf20c1c57514",
+        "chatSessionId": "sess_7e3f106d-5e50-423c-ad79-fea00ba52061",
+        "timestamp": 1786614280431
+      },
+      {
+        "executionId": "60840b54-4d9e-4cb8-8bbb-bf20c1c57514",
+        "chatSessionId": "sess_7e3f106d-5e50-423c-ad79-fea00ba52061",
+        "timestamp": 1786614410387
+      }
+    ],
+    "9.1 Write integration tests for the full WebSocket flow in `test/integration/ws-server.test.ts`": [
+      {
+        "executionId": "b13a8f7a-b5c9-4c23-9bfa-ae5663eddf1d",
+        "chatSessionId": "sess_3bab4a68-f34b-4d19-adba-d81ad7619407",
+        "timestamp": 1786616154119
+      },
+      {
+        "executionId": "b13a8f7a-b5c9-4c23-9bfa-ae5663eddf1d",
+        "chatSessionId": "sess_3bab4a68-f34b-4d19-adba-d81ad7619407",
+        "timestamp": 1786616708829
+      }
+    ],
+    "9. Integration tests â€” `test/integration/ws-server.test.ts`": [
+      {
+        "executionId": "b13a8f7a-b5c9-4c23-9bfa-ae5663eddf1d",
+        "chatSessionId": "sess_3bab4a68-f34b-4d19-adba-d81ad7619407",
+        "timestamp": 1786616708900
+      }
     ]
   }
 }

@@ -77,6 +77,14 @@ import { runMigrations } from './db/migrations.ts';
 import { startFileWatcher } from './workers/fileWatcher.ts';
 import { register as registerStatusHistory } from './routes/status-history.ts';
 
+// ========== Phase 5.2: WebSocket Layer Imports ==========
+import { loadWsConfig } from './config/ws-config.ts';
+import { WsServer } from './ws/server.ts';
+import { SubscriptionManager } from './ws/subscriptions.ts';
+import { CommandHandler } from './ws/commands.ts';
+import { register as registerWs } from './routes/ws.ts';
+import type { DbAdapter } from './db/adapter.ts';
+
 const DIST_DIR = path.resolve(import.meta.dir, '../dist');
 const FLAT_ASSET_RE = /^\/(index-[a-z0-9]+\.(js|css))$/;
 const MIGRATIONS_DIR = path.resolve(import.meta.dir, '../migrations');
@@ -146,9 +154,58 @@ if (dbConfig.enabled) {
   }
 }
 
-const server = Bun.serve({
+// ========== Phase 5.2: WebSocket Layer Setup ==========
+const wsConfig = loadWsConfig(process.env as Record<string, string | undefined>);
+
+let wsServer: WsServer | null = null;
+
+if (wsConfig.enabled) {
+  const subscriptionMgr = new SubscriptionManager();
+
+  // Build a no-op DbAdapter stub for when the database is disabled.
+  // CommandHandler requires a DbAdapter, but command execution will always
+  // return 'not found' / 'workspace mismatch' with an empty DB — that is
+  // acceptable behaviour when DB_ENABLED=false.
+  const noopDb: DbAdapter = {
+    query: async () => ({ rows: [], rowCount: 0 }),
+    execute: async () => ({ rowsAffected: 0 }),
+    transaction: async (fn) => { await fn(noopDb); },
+    close: async () => {},
+  };
+
+  const commandHandler = new CommandHandler(
+    dbConfig.enabled && dbAdapter !== null ? dbAdapter : noopDb,
+  );
+
+  wsServer = new WsServer(
+    { idleTimeout: wsConfig.idleTimeout, maxMessageSize: wsConfig.maxMessageSize },
+    subscriptionMgr,
+    commandHandler,
+  );
+
+  registerWs(router, wsServer);
+} else {
+  console.log('WebSocket disabled');
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const serveOptions: any = {
   port: PORT,
   idleTimeout: 0,
+  ...(wsServer !== null
+    ? {
+        websocket: {
+          open: (ws: unknown) => wsServer!.open(ws as Parameters<WsServer['open']>[0]),
+          message: (ws: unknown, msg: string | Buffer) => wsServer!.message(ws as Parameters<WsServer['message']>[0], msg),
+          close: (ws: unknown) => wsServer!.close(ws as Parameters<WsServer['close']>[0]),
+          idleTimeout: wsConfig.idleTimeout,
+        },
+      }
+    : {}),
+};
+
+const server = Bun.serve({
+  ...serveOptions,
   async fetch(req) {
     if (_shuttingDown) return new Response('Service Unavailable', { status: 503 });
     _inFlight++;
@@ -203,6 +260,11 @@ const server = Bun.serve({
     }
   },
 });
+
+// Bind the live server handle so WsServer.upgrade() can call server.upgrade().
+if (wsServer !== null) {
+  wsServer.setServer(server as unknown as Parameters<WsServer['setServer']>[0]);
+}
 
 export let _inFlight = 0;
 export let _shuttingDown = false;

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Database migration runner.
  *
  * Discovers `.sql` files matching `/^\d+_.*\.sql$/` in the given directory,
@@ -17,6 +17,36 @@ import type { DbAdapter } from './adapter.js';
 
 /** Total wall-clock budget for all pending migrations (ms). */
 const MIGRATION_TIMEOUT_MS = 10_000;
+
+/**
+ * Split a SQL migration file into individual executable statements.
+ *
+ * `bun:sqlite`'s `prepare()` only compiles the *first* statement in a
+ * multi-statement string.  Migration files commonly start with `PRAGMA`
+ * directives followed by `CREATE TABLE` blocks — without splitting, only the
+ * PRAGMA runs and all DDL is silently skipped.
+ *
+ * Strategy:
+ * 1. Strip line comments (`-- …`) so semicolons inside comments don't split.
+ * 2. Split on `;` to get raw token groups.
+ * 3. Trim whitespace and skip empty strings.
+ *
+ * PRAGMA statements are kept in the output — the SQLite engine accepts them
+ * inside transactions (they re-apply per-connection settings that the adapter
+ * constructor already sets, so re-executing them is harmless).
+ *
+ * @param sql Raw content of a `.sql` migration file
+ * @returns Array of non-empty SQL statements, each ready for `execute()`
+ */
+export function splitStatements(sql: string): string[] {
+  return sql
+    .split('\n')
+    .map(line => line.replace(/--.*$/, ''))   // strip line comments
+    .join('\n')
+    .split(';')                                // split on statement terminator
+    .map(s => s.trim())
+    .filter(s => s.length > 0);               // drop empty segments
+}
 
 /**
  * Ensure `schema_version` exists, discover pending `.sql` migration files, and
@@ -76,7 +106,10 @@ export async function runMigrations(
       );
     }
 
-    const sql = readFileSync(join(migrationsDir, file), 'utf-8');
+    const rawSql = readFileSync(join(migrationsDir, file), 'utf-8');
+    // Split the file into individual statements so bun:sqlite's prepare()
+    // executes every statement — not just the first one (see splitStatements).
+    const statements = splitStatements(rawSql);
     const migrationStart = Date.now();
 
     // ── 5.4 / 5.5: Run migration + schema_version insert in one transaction.
@@ -93,7 +126,9 @@ export async function runMigrations(
     try {
       await db.transaction(async (tx: DbAdapter) => {
         try {
-          await tx.execute(sql);
+          for (const stmt of statements) {
+            await tx.execute(stmt);
+          }
           await tx.execute(
             `INSERT INTO schema_version (version, applied_at, migration_name)
              VALUES (?, datetime('now'), ?)`,
