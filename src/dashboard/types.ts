@@ -1,5 +1,9 @@
 // types.ts — all shared TypeScript interfaces and type aliases
-// Feature: monitor-dashboard-redesign, multi-workspace-monitoring
+// Feature: monitor-dashboard-redesign, multi-workspace-monitoring, phase-5.3-analytics-layer
+
+import type { PerformanceMetrics } from '../analytics/metrics.js';
+import type { CostMetrics } from '../analytics/cost.js';
+import type { BottleneckAnalysis } from '../analytics/bottleneck.js';
 
 // Job — mirrors server-side Job interface in monitor.ts exactly
 export interface Job {
@@ -113,7 +117,7 @@ export interface GitStatus {
 
 export type CommitState = null | 'running' | 'done' | 'error';
 
-export type Page = 'dashboard' | 'work' | 'activity';
+export type Page = 'dashboard' | 'work' | 'activity' | 'analytics';
 
 // BuildQueueRecord — mirrors server-side BuildQueueRecord interface
 // Requirement 3.8 (workspaceId field), Requirement 8.8 (display in dashboard)
@@ -160,6 +164,23 @@ export interface WorkspaceMetrics {
   hasAttentionItems: boolean; // unsummarised sessions or queue errors
 }
 
+// AnalyticsRange — valid time range values for analytics endpoints
+export type AnalyticsRange = '24h' | '7d' | '30d';
+
+// AnalyticsState — analytics page data loaded asynchronously
+// Requirements: 6.1, 6.4 (loading state), 7.1–7.4
+export interface AnalyticsState {
+  /** Currently selected time range */
+  range: AnalyticsRange;
+  /** True while any analytics endpoint is in-flight */
+  loading: boolean;
+  /** Workspace ID used for the last fetch ('' means none selected yet) */
+  workspaceId: string;
+  performance: PerformanceMetrics | null;
+  cost: CostMetrics | null;
+  bottlenecks: BottleneckAnalysis | null;
+}
+
 // AppState — the single observable application state
 export interface AppState {
   chains: Chain[];
@@ -179,4 +200,6 @@ export interface AppState {
   commitState: CommitState;
   toasts: Toast[];
   workspaceFilter: WorkspaceFilterState;
+  /** Analytics page data — loaded on demand when Analytics page is active */
+  analytics: AnalyticsState;
 }

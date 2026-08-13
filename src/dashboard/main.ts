@@ -11,6 +11,7 @@ import { initDrawer } from './components/drawer';
 import { renderDashboard } from './pages/dashboard';
 import { renderWork } from './pages/work';
 import { renderActivity } from './pages/activity';
+import { renderAnalyticsPage, loadAnalytics, initAnalyticsPage } from './pages/analytics';
 import type { Page, SSEUpdateEvent } from './types';
 import { shouldApplySSEUpdate } from './sse-filter';
 
@@ -154,6 +155,10 @@ function renderPage(): void {
     case 'activity':
       renderActivity(root);
       break;
+    case 'analytics':
+      root.innerHTML = renderAnalyticsPage();
+      initAnalyticsPage();
+      break;
     default: {
       // Exhaustiveness guard — TypeScript should prevent this at compile time
       const _exhaustive: never = currentPage;
@@ -170,6 +175,7 @@ const NAV_ITEMS: Array<{ page: Page; icon: string; label: string }> = [
   { page: 'dashboard', icon: '⊞', label: 'Dashboard' },
   { page: 'work',      icon: '⚙', label: 'Work' },
   { page: 'activity',  icon: '◷', label: 'Activity' },
+  { page: 'analytics', icon: '◈', label: 'Analytics' },
 ];
 
 /** Rendered once; state updates are applied via class mutations only. */

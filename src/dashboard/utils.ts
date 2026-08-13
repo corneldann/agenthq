@@ -2,6 +2,26 @@
 // Feature: monitor-dashboard-redesign
 
 /**
+ * esc — HTML-escapes a string to prevent XSS when injecting into innerHTML.
+ * Escapes `&`, `<`, `>`, `"`, and `'`.
+ *
+ * @param s - the raw string to escape
+ * @returns the escaped string safe for use as HTML text content or attribute value
+ *
+ * @example
+ * esc('<script>alert("xss")</script>')
+ * // => '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
+ */
+export function esc(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
  * formatAge — formats a millisecond duration as "Xs ago".
  * @param ms - elapsed milliseconds (e.g. from Date.now() - timestamp)
  * @returns e.g. "5s ago", "120s ago"

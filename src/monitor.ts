@@ -76,6 +76,7 @@ import { createDbAdapter } from './db/adapter.ts';
 import { runMigrations } from './db/migrations.ts';
 import { startFileWatcher } from './workers/fileWatcher.ts';
 import { register as registerStatusHistory } from './routes/status-history.ts';
+import { register as registerAnalytics } from './routes/analytics.ts';
 
 // ========== Phase 5.2: WebSocket Layer Imports ==========
 import { loadWsConfig } from './config/ws-config.ts';
@@ -147,6 +148,7 @@ if (dbConfig.enabled) {
     dbReady = true;
     // Register DB-backed routes only when the DB is available (Req 8.4)
     registerStatusHistory(router, dbAdapter);
+    registerAnalytics(router, dbAdapter);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`Database initialisation failed: ${msg}`);

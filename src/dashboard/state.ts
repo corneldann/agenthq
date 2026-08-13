@@ -16,6 +16,7 @@ import type {
   Toast,
   WorkspaceFilterState,
   BuildQueueRecord,
+  AnalyticsState,
 } from './types';
 
 // ---------------------------------------------------------------------------
@@ -40,6 +41,14 @@ const defaultState: AppState = {
   workspaceFilter: {
     selectedWorkspaceId: null,
     availableWorkspaces: [],
+  },
+  analytics: {
+    range: '7d',
+    loading: false,
+    workspaceId: '',
+    performance: null,
+    cost: null,
+    bottlenecks: null,
   },
 };
 

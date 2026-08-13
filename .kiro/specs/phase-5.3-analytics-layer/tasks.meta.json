@@ -1,0 +1,385 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create `migrations/003_job_metrics.sql` with the `job_metrics` table": [
+      {
+        "executionId": "c9504f5b-4846-4976-84d3-0cf0e4a826fe",
+        "chatSessionId": "sess_534aa0e9-ee79-49fc-9478-51bf464eb388",
+        "timestamp": 1786617971406
+      },
+      {
+        "executionId": "c9504f5b-4846-4976-84d3-0cf0e4a826fe",
+        "chatSessionId": "sess_534aa0e9-ee79-49fc-9478-51bf464eb388",
+        "timestamp": 1786618020407
+      }
+    ],
+    "1.2 Create `src/config/analytics-config.ts` with `loadAnalyticsConfig()`": [
+      {
+        "executionId": "6c145c03-d736-484a-b7c5-62d1f458ac36",
+        "chatSessionId": "sess_8eb60ca3-71a8-4fe7-90b9-8a9f9324460a",
+        "timestamp": 1786618047655
+      },
+      {
+        "executionId": "6c145c03-d736-484a-b7c5-62d1f458ac36",
+        "chatSessionId": "sess_8eb60ca3-71a8-4fe7-90b9-8a9f9324460a",
+        "timestamp": 1786618133602
+      }
+    ],
+    "1.3 Write unit tests for `loadAnalyticsConfig`": [
+      {
+        "executionId": "c6704cd3-84f7-4bb1-a0cc-85b7f71dc2ff",
+        "chatSessionId": "sess_b5d0b495-854b-4f69-90c4-42b0e22f3ed8",
+        "timestamp": 1786618144986
+      },
+      {
+        "executionId": "c6704cd3-84f7-4bb1-a0cc-85b7f71dc2ff",
+        "chatSessionId": "sess_b5d0b495-854b-4f69-90c4-42b0e22f3ed8",
+        "timestamp": 1786619211519
+      }
+    ],
+    "1. Database migration and analytics configuration": [
+      {
+        "executionId": "c6704cd3-84f7-4bb1-a0cc-85b7f71dc2ff",
+        "chatSessionId": "sess_b5d0b495-854b-4f69-90c4-42b0e22f3ed8",
+        "timestamp": 1786619211595
+      }
+    ],
+    "2.1 Create `src/analytics/cache.ts` with `AnalyticsCache` class": [
+      {
+        "executionId": "31edaeda-504c-4b78-ad6c-9855b8ef4f0a",
+        "chatSessionId": "sess_e5f7cc23-8cf3-44bf-a0fd-9511eaea543a",
+        "timestamp": 1786619523435
+      },
+      {
+        "executionId": "31edaeda-504c-4b78-ad6c-9855b8ef4f0a",
+        "chatSessionId": "sess_e5f7cc23-8cf3-44bf-a0fd-9511eaea543a",
+        "timestamp": 1786619607811
+      }
+    ],
+    "2.2 Write property tests for `AnalyticsCache`": [
+      {
+        "executionId": "08c4ae31-04fb-4981-ac48-c1e3359601d7",
+        "chatSessionId": "sess_718b3e22-171d-4167-b1e8-e142f17fc004",
+        "timestamp": 1786619635634
+      },
+      {
+        "executionId": "08c4ae31-04fb-4981-ac48-c1e3359601d7",
+        "chatSessionId": "sess_718b3e22-171d-4167-b1e8-e142f17fc004",
+        "timestamp": 1786619777999
+      }
+    ],
+    "2. Analytics cache": [
+      {
+        "executionId": "08c4ae31-04fb-4981-ac48-c1e3359601d7",
+        "chatSessionId": "sess_718b3e22-171d-4167-b1e8-e142f17fc004",
+        "timestamp": 1786619778073
+      }
+    ],
+    "3.1 Create `src/workers/metricsCollector.ts` with `startMetricsCollector(db, outputDir)`": [
+      {
+        "executionId": "bd31db75-853d-4ebf-9dae-5a9bdb7c0960",
+        "chatSessionId": "sess_88b8d5d2-0898-4569-ae09-6b62bf0f8e61",
+        "timestamp": 1786619818068
+      },
+      {
+        "executionId": "bd31db75-853d-4ebf-9dae-5a9bdb7c0960",
+        "chatSessionId": "sess_88b8d5d2-0898-4569-ae09-6b62bf0f8e61",
+        "timestamp": 1786620411775
+      }
+    ],
+    "3.2 Write unit tests for metrics extraction": [
+      {
+        "executionId": "838a82f1-128c-45db-a514-5337102ad31d",
+        "chatSessionId": "sess_e397a717-87c4-4120-8ab6-c56ee64ff825",
+        "timestamp": 1786621008766
+      },
+      {
+        "executionId": "4068899d-d754-4e84-bedd-b32cfab178a2",
+        "chatSessionId": "sess_bb830d4f-61f2-4a7e-8a99-74589c5df527",
+        "timestamp": 1786622481477
+      },
+      {
+        "executionId": "4068899d-d754-4e84-bedd-b32cfab178a2",
+        "chatSessionId": "sess_bb830d4f-61f2-4a7e-8a99-74589c5df527",
+        "timestamp": 1786622629787
+      }
+    ],
+    "3. Metrics collector worker": [
+      {
+        "executionId": "4068899d-d754-4e84-bedd-b32cfab178a2",
+        "chatSessionId": "sess_bb830d4f-61f2-4a7e-8a99-74589c5df527",
+        "timestamp": 1786622629870
+      }
+    ],
+    "4.1 Create `src/analytics/metrics.ts` with `computePerformanceMetrics(db, workspaceId, range)`": [
+      {
+        "executionId": "7bbbf593-9131-485e-ae88-a7e1477710d0",
+        "chatSessionId": "sess_eb1358b8-770e-4811-ba1c-bdaab4cd125c",
+        "timestamp": 1786622641646
+      },
+      {
+        "executionId": "7bbbf593-9131-485e-ae88-a7e1477710d0",
+        "chatSessionId": "sess_eb1358b8-770e-4811-ba1c-bdaab4cd125c",
+        "timestamp": 1786622826897
+      }
+    ],
+    "4.2 Write property tests for performance computation": [
+      {
+        "executionId": "20ca3a58-8621-4ea8-84b0-8cfade4c6504",
+        "chatSessionId": "sess_1e43b0a5-03dc-4ebf-bb05-bcf912a3f593",
+        "timestamp": 1786622839855
+      },
+      {
+        "executionId": "20ca3a58-8621-4ea8-84b0-8cfade4c6504",
+        "chatSessionId": "sess_1e43b0a5-03dc-4ebf-bb05-bcf912a3f593",
+        "timestamp": 1786623332991
+      }
+    ],
+    "4. Performance metrics computation": [
+      {
+        "executionId": "20ca3a58-8621-4ea8-84b0-8cfade4c6504",
+        "chatSessionId": "sess_1e43b0a5-03dc-4ebf-bb05-bcf912a3f593",
+        "timestamp": 1786623333083
+      }
+    ],
+    "5.1 Create `src/analytics/cost.ts` with `computeCostMetrics(db, workspaceId, range)`": [
+      {
+        "executionId": "bac3db67-baa3-40e4-9e39-504f7842e083",
+        "chatSessionId": "sess_84cde0c4-2779-4586-8206-6e05a8149ae2",
+        "timestamp": 1786626937086
+      },
+      {
+        "executionId": "bac3db67-baa3-40e4-9e39-504f7842e083",
+        "chatSessionId": "sess_84cde0c4-2779-4586-8206-6e05a8149ae2",
+        "timestamp": 1786627148080
+      }
+    ],
+    "5.2 Write unit tests for cost computation": [
+      {
+        "executionId": "373b40eb-bbd2-457c-b1a1-ec6ca6f42f66",
+        "chatSessionId": "sess_d8667707-dfa3-4895-95dc-f2b78de13c39",
+        "timestamp": 1786627253048
+      },
+      {
+        "executionId": "373b40eb-bbd2-457c-b1a1-ec6ca6f42f66",
+        "chatSessionId": "sess_d8667707-dfa3-4895-95dc-f2b78de13c39",
+        "timestamp": 1786627601936
+      }
+    ],
+    "5. Cost analytics computation": [
+      {
+        "executionId": "373b40eb-bbd2-457c-b1a1-ec6ca6f42f66",
+        "chatSessionId": "sess_d8667707-dfa3-4895-95dc-f2b78de13c39",
+        "timestamp": 1786627602044
+      }
+    ],
+    "6.1 Create `src/analytics/bottleneck.ts` with `detectBottlenecks(db, workspaceId)`": [
+      {
+        "executionId": "ce9b60d4-e7b1-4a6a-b90f-baf1aebca48e",
+        "chatSessionId": "sess_f17290b3-cdf9-4dae-80f4-9704bcfc575b",
+        "timestamp": 1786627618653
+      },
+      {
+        "executionId": "ce9b60d4-e7b1-4a6a-b90f-baf1aebca48e",
+        "chatSessionId": "sess_f17290b3-cdf9-4dae-80f4-9704bcfc575b",
+        "timestamp": 1786627958425
+      }
+    ],
+    "6.2 Write property tests for bottleneck detection": [
+      {
+        "executionId": "1a57f019-7fb9-4225-9e4c-63303cc4b621",
+        "chatSessionId": "sess_24c1121a-0087-443d-88c3-8791f820fb22",
+        "timestamp": 1786628552099
+      },
+      {
+        "executionId": "1a57f019-7fb9-4225-9e4c-63303cc4b621",
+        "chatSessionId": "sess_24c1121a-0087-443d-88c3-8791f820fb22",
+        "timestamp": 1786628974993
+      }
+    ],
+    "6. Bottleneck detection": [
+      {
+        "executionId": "1a57f019-7fb9-4225-9e4c-63303cc4b621",
+        "chatSessionId": "sess_24c1121a-0087-443d-88c3-8791f820fb22",
+        "timestamp": 1786628975093
+      }
+    ],
+    "7.1 Create `src/analytics/predictions.ts` with `estimateETA(db, jobId)`": [
+      {
+        "executionId": "73f429ef-b584-4af5-9913-361a1ad52db9",
+        "chatSessionId": "sess_7c0075f6-2332-455c-a784-35178f187dd3",
+        "timestamp": 1786629101416
+      },
+      {
+        "executionId": "73f429ef-b584-4af5-9913-361a1ad52db9",
+        "chatSessionId": "sess_7c0075f6-2332-455c-a784-35178f187dd3",
+        "timestamp": 1786629372330
+      }
+    ],
+    "7.2 Write property tests for predictive analytics": [
+      {
+        "executionId": "610a862d-86c7-4942-afc2-1e7aefdfdab7",
+        "chatSessionId": "sess_e4390dbf-54ec-4610-8a7f-47434bc205fe",
+        "timestamp": 1786629481923
+      },
+      {
+        "executionId": "610a862d-86c7-4942-afc2-1e7aefdfdab7",
+        "chatSessionId": "sess_e4390dbf-54ec-4610-8a7f-47434bc205fe",
+        "timestamp": 1786629830195
+      }
+    ],
+    "7. Predictive analytics computation": [
+      {
+        "executionId": "610a862d-86c7-4942-afc2-1e7aefdfdab7",
+        "chatSessionId": "sess_e4390dbf-54ec-4610-8a7f-47434bc205fe",
+        "timestamp": 1786629830327
+      }
+    ],
+    "8.1 Create `src/routes/analytics.ts` with `register(router, db)`": [
+      {
+        "executionId": "a46f99a3-6816-4fd5-9a1b-56e158626406",
+        "chatSessionId": "sess_886a0fb4-4463-4807-8d52-25f42d5bdaa7",
+        "timestamp": 1786630092756
+      },
+      {
+        "executionId": "a46f99a3-6816-4fd5-9a1b-56e158626406",
+        "chatSessionId": "sess_886a0fb4-4463-4807-8d52-25f42d5bdaa7",
+        "timestamp": 1786630558957
+      }
+    ],
+    "8.2 Write integration tests for analytics routes": [
+      {
+        "executionId": "c3b7ada7-ecd6-4cd3-b3d8-4e8ab97ca283",
+        "chatSessionId": "sess_a651e495-9069-43d5-a283-7026c9edf798",
+        "timestamp": 1786630727761
+      },
+      {
+        "executionId": "c3b7ada7-ecd6-4cd3-b3d8-4e8ab97ca283",
+        "chatSessionId": "sess_a651e495-9069-43d5-a283-7026c9edf798",
+        "timestamp": 1786631077595
+      }
+    ],
+    "8. Analytics REST routes": [
+      {
+        "executionId": "c3b7ada7-ecd6-4cd3-b3d8-4e8ab97ca283",
+        "chatSessionId": "sess_a651e495-9069-43d5-a283-7026c9edf798",
+        "timestamp": 1786631077699
+      }
+    ],
+    "9.1 Implement `GET /api/analytics/export` in `src/routes/analytics.ts`": [
+      {
+        "executionId": "814c28e0-8400-47b8-8b4a-e0f580495b72",
+        "chatSessionId": "sess_75f7d38c-d47a-4c6a-ad88-b1f6ac65713f",
+        "timestamp": 1786646616485
+      },
+      {
+        "executionId": "814c28e0-8400-47b8-8b4a-e0f580495b72",
+        "chatSessionId": "sess_75f7d38c-d47a-4c6a-ad88-b1f6ac65713f",
+        "timestamp": 1786646720973
+      }
+    ],
+    "9.2 Write unit tests for export formatter": [
+      {
+        "executionId": "c3c8257d-e791-4796-a3c0-0608452abd0f",
+        "chatSessionId": "sess_b4ead5a5-e4cf-4044-ab27-3fd92846bb9e",
+        "timestamp": 1786646768949
+      },
+      {
+        "executionId": "2602f108-726a-49b8-8418-c207c16e2075",
+        "chatSessionId": "sess_5fc3bdc0-3332-4462-a0e6-a44a88e4a7cd",
+        "timestamp": 1786647434761
+      },
+      {
+        "executionId": "2602f108-726a-49b8-8418-c207c16e2075",
+        "chatSessionId": "sess_5fc3bdc0-3332-4462-a0e6-a44a88e4a7cd",
+        "timestamp": 1786647718725
+      }
+    ],
+    "9. Analytics export endpoint": [
+      {
+        "executionId": "2602f108-726a-49b8-8418-c207c16e2075",
+        "chatSessionId": "sess_5fc3bdc0-3332-4462-a0e6-a44a88e4a7cd",
+        "timestamp": 1786647719006
+      }
+    ],
+    "10. Checkpoint — backend complete": [
+      {
+        "executionId": "c52c79fc-7d70-4af2-ac31-57f65e99a680",
+        "chatSessionId": "sess_eb3d484a-0f3e-4654-85b0-8bcfb9564fa2",
+        "timestamp": 1786647836172
+      },
+      {
+        "executionId": "c52c79fc-7d70-4af2-ac31-57f65e99a680",
+        "chatSessionId": "sess_eb3d484a-0f3e-4654-85b0-8bcfb9564fa2",
+        "timestamp": 1786647840387
+      }
+    ],
+    "11.1 Create `src/dashboard/components/barChart.ts`": [
+      {
+        "executionId": "675da360-1ff8-4fbc-8b69-ce65b1792a36",
+        "chatSessionId": "sess_0261f236-0755-4c3e-b220-3489618d68cc",
+        "timestamp": 1786647983041
+      },
+      {
+        "executionId": "675da360-1ff8-4fbc-8b69-ce65b1792a36",
+        "chatSessionId": "sess_0261f236-0755-4c3e-b220-3489618d68cc",
+        "timestamp": 1786648189370
+      }
+    ],
+    "11.2 Create `src/dashboard/components/lineChart.ts`": [
+      {
+        "executionId": "cbb281af-b74b-41e7-9311-24fbd3bf590d",
+        "chatSessionId": "sess_4db93efc-7cdf-447e-8230-8fef42e89eb9",
+        "timestamp": 1786648204181
+      },
+      {
+        "executionId": "cbb281af-b74b-41e7-9311-24fbd3bf590d",
+        "chatSessionId": "sess_4db93efc-7cdf-447e-8230-8fef42e89eb9",
+        "timestamp": 1786648355004
+      }
+    ],
+    "11.3 Write unit tests for chart components": [
+      {
+        "executionId": "88790384-42aa-456b-a054-0b4c72d95044",
+        "chatSessionId": "sess_21ebabb4-e50d-447b-a5ee-8fc777dda923",
+        "timestamp": 1786648734334
+      },
+      {
+        "executionId": "88790384-42aa-456b-a054-0b4c72d95044",
+        "chatSessionId": "sess_21ebabb4-e50d-447b-a5ee-8fc777dda923",
+        "timestamp": 1786648886038
+      }
+    ],
+    "11. Dashboard SVG chart components": [
+      {
+        "executionId": "88790384-42aa-456b-a054-0b4c72d95044",
+        "chatSessionId": "sess_21ebabb4-e50d-447b-a5ee-8fc777dda923",
+        "timestamp": 1786648886134
+      }
+    ],
+    "12.1 Create `src/dashboard/api.ts` additions — add typed fetch wrappers": [
+      {
+        "executionId": "035d42b9-3a12-4849-85fc-9f601fc197b1",
+        "chatSessionId": "sess_d5c23579-062a-4b20-9683-3b0f67ac50bd",
+        "timestamp": 1786649021041
+      },
+      {
+        "executionId": "035d42b9-3a12-4849-85fc-9f601fc197b1",
+        "chatSessionId": "sess_d5c23579-062a-4b20-9683-3b0f67ac50bd",
+        "timestamp": 1786649157261
+      }
+    ],
+    "12.2 Create `src/dashboard/pages/analytics.ts`": [
+      {
+        "executionId": "3140cfbe-9bfb-4601-8b58-db11327fa1f6",
+        "chatSessionId": "sess_f740773c-32fc-40f0-88b7-41cf40d4cd4b",
+        "timestamp": 1786649169311
+      },
+      {
+        "executionId": "3140cfbe-9bfb-4601-8b58-db11327fa1f6",
+        "chatSessionId": "sess_f740773c-32fc-40f0-88b7-41cf40d4cd4b",
+        "timestamp": 1786649832252
+      }
+    ]
+  }
+}

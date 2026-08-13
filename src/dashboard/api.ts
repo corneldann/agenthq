@@ -13,6 +13,10 @@ import type {
   Toast,
   BuildQueueRecord,
 } from './types.js';
+import type { PerformanceMetrics } from '../analytics/metrics.js';
+import type { CostMetrics } from '../analytics/cost.js';
+import type { BottleneckAnalysis } from '../analytics/bottleneck.js';
+import type { PredictiveMetrics } from '../analytics/predictions.js';
 
 // ---------------------------------------------------------------------------
 // Concurrency guards
@@ -262,6 +266,87 @@ export function detectTransitions(prev: Job[], next: Job[]): Toast[] {
   }
 
   return toasts;
+}
+
+// ---------------------------------------------------------------------------
+// Analytics fetch wrappers (Requirements 7.1, 7.2, 7.3, 7.4)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch performance metrics for a workspace and time range.
+ *
+ * Returns `null` on network error or non-2xx response; an error toast is
+ * enqueued automatically by {@link safeFetch}.
+ *
+ * @param workspaceId - Workspace identifier
+ * @param range       - Time range: `'24h'`, `'7d'`, or `'30d'`
+ * @returns Promise resolving to {@link PerformanceMetrics} or `null` on failure
+ */
+export async function getPerformanceMetrics(
+  workspaceId: string,
+  range: '24h' | '7d' | '30d',
+): Promise<PerformanceMetrics | null> {
+  return safeFetch<PerformanceMetrics | null>(
+    `/api/analytics/performance?workspace=${encodeURIComponent(workspaceId)}&range=${encodeURIComponent(range)}`,
+    null,
+  );
+}
+
+/**
+ * Fetch cost metrics for a workspace and time range.
+ *
+ * Returns `null` on network error or non-2xx response; an error toast is
+ * enqueued automatically by {@link safeFetch}.
+ *
+ * @param workspaceId - Workspace identifier
+ * @param range       - Time range: `'24h'`, `'7d'`, or `'30d'`
+ * @returns Promise resolving to {@link CostMetrics} or `null` on failure
+ */
+export async function getCostMetrics(
+  workspaceId: string,
+  range: '24h' | '7d' | '30d',
+): Promise<CostMetrics | null> {
+  return safeFetch<CostMetrics | null>(
+    `/api/analytics/cost?workspace=${encodeURIComponent(workspaceId)}&range=${encodeURIComponent(range)}`,
+    null,
+  );
+}
+
+/**
+ * Fetch bottleneck analysis for a workspace.
+ *
+ * Returns `null` on network error or non-2xx response; an error toast is
+ * enqueued automatically by {@link safeFetch}.
+ *
+ * @param workspaceId - Workspace identifier
+ * @returns Promise resolving to {@link BottleneckAnalysis} or `null` on failure
+ */
+export async function getBottlenecks(
+  workspaceId: string,
+): Promise<BottleneckAnalysis | null> {
+  return safeFetch<BottleneckAnalysis | null>(
+    `/api/analytics/bottlenecks?workspace=${encodeURIComponent(workspaceId)}`,
+    null,
+  );
+}
+
+/**
+ * Fetch predictive ETA metrics for a running job.
+ *
+ * Returns `null` on network error or non-2xx response (including 404 when the
+ * job is not found or not running); an error toast is enqueued automatically
+ * by {@link safeFetch}.
+ *
+ * @param jobId - Identifier of the running job
+ * @returns Promise resolving to {@link PredictiveMetrics} or `null` on failure
+ */
+export async function getPredictions(
+  jobId: string,
+): Promise<PredictiveMetrics | null> {
+  return safeFetch<PredictiveMetrics | null>(
+    `/api/analytics/predictions?jobId=${encodeURIComponent(jobId)}`,
+    null,
+  );
 }
 
 // ---------------------------------------------------------------------------
