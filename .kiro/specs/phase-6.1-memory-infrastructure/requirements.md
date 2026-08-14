@@ -85,13 +85,16 @@ with the Hindsight MCP server so that memory operations are persisted durably.
    call payload and parses the response.
 3. All HTTP calls use a 5-second timeout; a timeout throws a `MemoryTimeoutError`.
 4. HTTP 4xx responses throw a `MemoryClientError` with the status code and body included.
-5. HTTP 5xx responses throw a `MemoryServiceError` to allow the circuit breaker to distinguish
+5. WHERE the adapter receives an HTTP response with a 1xx informational status code, THE
+   HindsightAdapter SHALL throw a `MemoryServiceError` with the status code included, treating
+   it as a server-side protocol violation.
+6. HTTP 5xx responses throw a `MemoryServiceError` to allow the circuit breaker to distinguish
    service failures from client errors.
-6. All thrown errors are typed (not `Error` base class) so the circuit breaker can inspect
+7. All thrown errors are typed (not `Error` base class) so the circuit breaker can inspect
    the type when counting failures.
-7. The adapter accepts `baseUrl` as a constructor argument (not read from `process.env`
+8. The adapter accepts `baseUrl` as a constructor argument (not read from `process.env`
    directly) so it can be instantiated with a test URL in tests.
-8. No logic beyond HTTP serialisation/deserialisation lives in this file — scope mapping,
+9. No logic beyond HTTP serialisation/deserialisation lives in this file — scope mapping,
    quality gating, and retry logic belong in other modules.
 
 ### Requirement 4: MemoryCircuitBreaker

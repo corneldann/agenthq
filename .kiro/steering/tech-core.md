@@ -141,6 +141,100 @@ MANDATORY for every spec task:
 | Typography scale, 8-point grid, colour contrast | `visual-design-foundations` | WCAG contrast ratios, spacing system, semantic colour tokens |
 | WCAG compliance, screen readers, keyboard nav | `accessibility` | POUR principles, focus management, ARIA roles, skip links |
 
+### CONVERSATIONAL PROMPTS — Activate on user messages
+
+Skills CAN auto-activate when the user sends a chat message, because the activation
+mechanism matches skill `description` fields against conversational text. However,
+many prompts are too terse or indirect to trigger the matcher reliably. **When a user
+message touches any of the topics below, call `disclose_context` explicitly before
+answering — do not rely on auto-activation.**
+
+| User message touches | Activate | Trigger phrases / examples |
+|---|---|---|
+| Error types, HTTP errors, circuit breakers, retry logic, Result types | `error-handling-patterns` | "is this best practice?", "how should I handle X error", "what error type should I throw" |
+| TypeScript types, generics, interfaces, discriminated unions | `accelint-ts-best-practices` | "is this good TypeScript?", "how should I type this", "avoid any" |
+| Security, input validation, XSS, SQL injection, auth | `best-practices` | "is this secure?", "best practice for validation", "how to prevent XSS" |
+| Performance, O(n²), allocations, caching, query timing | `accelint-ts-performance` | "this feels slow", "how to optimise", "reduce allocations" |
+| Test strategy, property-based tests, mocking, assertions | `accelint-ts-testing` | "how should I test this", "write a test for", "is this test correct" |
+| Bug investigation, something broken/crashing/failing | `diagnose` | "why is this failing", "diagnose this", "something is broken" |
+| Architecture, module coupling, refactoring seams | `improve-codebase-architecture` | "how should I structure this", "is this too coupled", "refactor this" |
+| JSDoc, comments, @param/@returns | `accelint-ts-documentation` | "add JSDoc", "document this", "audit comments" |
+| Dashboard, UI components, SSE, HTML/CSS | `agenthq-dashboard` | "update the dashboard", "add a component", "fix the UI" |
+| ES6+, async/await, functional patterns | `modern-javascript-patterns` | "modernise this", "convert to async/await", "use optional chaining" |
+| Memory consolidation | `memory-consolidation` | "dream", "consolidate", "clean memory" |
+
+**Activation is BLOCKING** — call `disclose_context` BEFORE generating any response
+that touches the matched domain. A brief topic match is sufficient; do not wait for
+certainty. The skill's progressive disclosure keeps context lean.
+
+**Example** — user asks "is this best practice?" about an HTTP error type:
+```
+// Correct — activate BEFORE answering
+disclose_context("error-handling-patterns")
+disclose_context("best-practices")
+// Then answer based on skill guidance
+```
+
+### SPEC STEPS — Activate from requirements content
+
+This rule applies to the **orchestrator** handling any spec step, including system-generated
+prompts from the IDE (e.g. clicking "Analyze Requirements" generates the prompt
+`"Analyze the requirements for <feature-name>"`). These prompts are not user chat — they
+are internal orchestrator actions. Skills will NOT auto-activate. You must activate manually.
+
+**Trigger pattern**: any prompt matching:
+- `"Analyze the requirements for X"`
+- `"Generate design for X"` / `"Generate tasks for X"`
+- `"Update the requirements/design/tasks for X"`
+- Any spec step invocation (requirements, design, tasks, detailing)
+
+**MANDATORY sequence for ALL spec steps:**
+
+1. **Always activate first** (before reading the spec file):
+   ```
+   disclose_context("accelint-ts-best-practices")
+   disclose_context("accelint-ts-testing")
+   ```
+
+2. **Read the requirements/design file** — use the path from the prompt or `<ACTIVE-EDITOR-FILE>`
+   context if present (e.g. `.kiro/specs/<feature>/requirements.md`)
+
+3. **Activate domain skills based on what the content mentions:**
+
+| Content mentions | Activate |
+|---|---|
+| HTTP, error types, circuit breaker, retry, Result types, error hierarchy | `error-handling-patterns` |
+| Routes, endpoints, API handlers, middleware | `error-handling-patterns` |
+| Security, auth, input validation, sanitisation, XSS, SQL | `best-practices` |
+| Performance, caching, O(n²), allocations, query timing | `accelint-ts-performance` |
+| TypeScript generics, interfaces, discriminated unions, mapped types | `typescript-advanced-types` |
+| Testing, property-based tests, mocking, assertions, test doubles | `accelint-ts-testing` |
+| Dashboard, UI, components, SSE, HTML, CSS | `agenthq-dashboard` |
+| Refactoring, module coupling, seams, architecture | `improve-codebase-architecture` |
+| JSDoc, comments, documentation | `accelint-ts-documentation` |
+
+4. **Then** perform the spec step (call `analyze_requirements`, delegate to subagent, etc.)
+
+**Concrete example** — IDE generates `"Analyze the requirements for phase-6.1-memory-infrastructure"`:
+```
+// 1. Always activate
+disclose_context("accelint-ts-best-practices")
+disclose_context("accelint-ts-testing")
+
+// 2. Read spec — either from ACTIVE-EDITOR-FILE context or construct path:
+//    .kiro/specs/phase-6.1-memory-infrastructure/requirements.md
+//    Content mentions: HTTP errors, circuit breaker, retry queue, error types
+
+// 3. Activate domain skills found in content
+disclose_context("error-handling-patterns")
+
+// 4. Now run the analysis
+analyze_requirements(".kiro/specs/phase-6.1-memory-infrastructure/requirements.md")
+```
+
+**If `<ACTIVE-EDITOR-FILE>` is a requirements.md** when the prompt arrives, treat its
+content as already available — skip the read step and go straight to skill activation.
+
 ### Why skills don't auto-activate during spec tasks
 
 Kiro's skill activation matches skill `description` fields against **user chat messages**.
