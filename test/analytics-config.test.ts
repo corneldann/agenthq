@@ -401,3 +401,154 @@ describe('property: TTL clamping invariants', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// ANALYTICS_CACHE_LOG_ENABLED — Requirement 11.1
+// ---------------------------------------------------------------------------
+
+describe('ANALYTICS_CACHE_LOG_ENABLED', () => {
+  beforeEach(captureConsoleLogs);
+  afterEach(restoreConsoleLogs);
+
+  it('should default to false when the variable is absent', () => {
+    const config = loadAnalyticsConfig({});
+
+    expect(config.cacheLoggingEnabled).toBe(false);
+    expect(errorLogs).toHaveLength(0);
+    expect(warnLogs).toHaveLength(0);
+  });
+
+  it('should default to false when the variable is an empty string', () => {
+    const config = loadAnalyticsConfig({ ANALYTICS_CACHE_LOG_ENABLED: '' });
+
+    expect(config.cacheLoggingEnabled).toBe(false);
+  });
+
+  it('should set cacheLoggingEnabled to true when value is "true"', () => {
+    const config = loadAnalyticsConfig({ ANALYTICS_CACHE_LOG_ENABLED: 'true' });
+
+    expect(config.cacheLoggingEnabled).toBe(true);
+    expect(errorLogs).toHaveLength(0);
+  });
+
+  it('should set cacheLoggingEnabled to false when value is "false"', () => {
+    const config = loadAnalyticsConfig({ ANALYTICS_CACHE_LOG_ENABLED: 'false' });
+
+    expect(config.cacheLoggingEnabled).toBe(false);
+    expect(errorLogs).toHaveLength(0);
+  });
+
+  it('should be case-insensitive for "TRUE"', () => {
+    const config = loadAnalyticsConfig({ ANALYTICS_CACHE_LOG_ENABLED: 'TRUE' });
+
+    expect(config.cacheLoggingEnabled).toBe(true);
+    expect(errorLogs).toHaveLength(0);
+  });
+
+  it('should log a config error for an invalid value and default to false', () => {
+    const config = loadAnalyticsConfig({ ANALYTICS_CACHE_LOG_ENABLED: 'yes' });
+
+    expect(config.cacheLoggingEnabled).toBe(false);
+    expect(errorLogs).toHaveLength(1);
+    expect(errorLogs[0]).toBe("Configuration error: ANALYTICS_CACHE_LOG_ENABLED: must be 'true' or 'false', got 'yes'");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ANALYTICS_LOG_LEVEL — Requirement 11.1
+// ---------------------------------------------------------------------------
+
+describe('ANALYTICS_LOG_LEVEL', () => {
+  beforeEach(captureConsoleLogs);
+  afterEach(restoreConsoleLogs);
+
+  it('should default to INFO when the variable is absent', () => {
+    const config = loadAnalyticsConfig({});
+
+    expect(config.logLevel).toBe('INFO');
+    expect(errorLogs).toHaveLength(0);
+  });
+
+  it('should default to INFO when the variable is an empty string', () => {
+    const config = loadAnalyticsConfig({ ANALYTICS_LOG_LEVEL: '' });
+
+    expect(config.logLevel).toBe('INFO');
+  });
+
+  it('should accept DEBUG', () => {
+    const config = loadAnalyticsConfig({ ANALYTICS_LOG_LEVEL: 'DEBUG' });
+
+    expect(config.logLevel).toBe('DEBUG');
+    expect(errorLogs).toHaveLength(0);
+  });
+
+  it('should accept INFO', () => {
+    const config = loadAnalyticsConfig({ ANALYTICS_LOG_LEVEL: 'INFO' });
+
+    expect(config.logLevel).toBe('INFO');
+    expect(errorLogs).toHaveLength(0);
+  });
+
+  it('should accept WARN', () => {
+    const config = loadAnalyticsConfig({ ANALYTICS_LOG_LEVEL: 'WARN' });
+
+    expect(config.logLevel).toBe('WARN');
+    expect(errorLogs).toHaveLength(0);
+  });
+
+  it('should accept ERROR', () => {
+    const config = loadAnalyticsConfig({ ANALYTICS_LOG_LEVEL: 'ERROR' });
+
+    expect(config.logLevel).toBe('ERROR');
+    expect(errorLogs).toHaveLength(0);
+  });
+
+  it('should accept FATAL', () => {
+    const config = loadAnalyticsConfig({ ANALYTICS_LOG_LEVEL: 'FATAL' });
+
+    expect(config.logLevel).toBe('FATAL');
+    expect(errorLogs).toHaveLength(0);
+  });
+
+  it('should be case-insensitive — accept "warn" as WARN', () => {
+    const config = loadAnalyticsConfig({ ANALYTICS_LOG_LEVEL: 'warn' });
+
+    expect(config.logLevel).toBe('WARN');
+    expect(errorLogs).toHaveLength(0);
+  });
+
+  it('should log a config error for an unrecognized level and default to INFO', () => {
+    const config = loadAnalyticsConfig({ ANALYTICS_LOG_LEVEL: 'VERBOSE' });
+
+    expect(config.logLevel).toBe('INFO');
+    expect(errorLogs).toHaveLength(1);
+    expect(errorLogs[0]).toMatch(/^Configuration error: ANALYTICS_LOG_LEVEL: must be one of/);
+    expect(errorLogs[0]).toContain("got 'VERBOSE'");
+  });
+
+  it('property: logLevel is always one of the five valid levels', () => {
+    const validLevels = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'];
+
+    fc.assert(
+      fc.property(
+        fc.oneof(
+          fc.constant(undefined),
+          fc.constant(''),
+          fc.constantFrom('DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL',
+            'debug', 'info', 'warn', 'error', 'fatal'),
+          fc.string(),
+        ),
+        (value) => {
+          warnLogs = [];
+          errorLogs = [];
+          const env: Record<string, string | undefined> = {};
+          if (value !== undefined) env['ANALYTICS_LOG_LEVEL'] = value;
+          const config = loadAnalyticsConfig(env);
+
+          expect(validLevels).toContain(config.logLevel);
+        }
+      ),
+      { numRuns: 300 }
+    );
+  });
+});

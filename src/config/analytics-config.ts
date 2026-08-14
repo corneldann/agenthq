@@ -1,16 +1,33 @@
 /**
  * Analytics configuration loader.
  *
- * Reads ANALYTICS_ENABLED and ANALYTICS_CACHE_TTL from the environment,
- * validates them, clamps numeric values to valid ranges, and logs warnings
- * or errors for invalid/out-of-range values without throwing.
+ * Reads ANALYTICS_ENABLED, ANALYTICS_CACHE_TTL, ANALYTICS_CACHE_LOG_ENABLED,
+ * and ANALYTICS_LOG_LEVEL from the environment, validates them, clamps numeric
+ * values to valid ranges, and logs warnings or errors for invalid/out-of-range
+ * values without throwing.
  */
+
+/** Recognised log level values, ordered from least to most severe. */
+export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'FATAL';
+
+const LOG_LEVELS: readonly LogLevel[] = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'];
 
 export type AnalyticsConfig = {
   /** Whether the analytics layer is active. Default: true */
   enabled: boolean;
   /** Result cache TTL in seconds. Range: [1, 86400]. Default: 300 */
   cacheTtl: number;
+  /**
+   * Whether the cache should emit hit/miss rate logs periodically.
+   * Env: ANALYTICS_CACHE_LOG_ENABLED. Default: false.
+   */
+  cacheLoggingEnabled: boolean;
+  /**
+   * Minimum log level for cache observability output.
+   * Env: ANALYTICS_LOG_LEVEL. Default: 'INFO'.
+   * Logging fires only when this level is INFO or above (≥ INFO).
+   */
+  logLevel: LogLevel;
 };
 
 const CACHE_TTL_MIN = 1;
@@ -61,5 +78,33 @@ export function loadAnalyticsConfig(env: Record<string, string | undefined>): An
     cacheTtl = clamped;
   }
 
-  return { enabled, cacheTtl };
+  // --- ANALYTICS_CACHE_LOG_ENABLED ---
+  const rawCacheLog = env['ANALYTICS_CACHE_LOG_ENABLED'];
+  const cacheLogNorm = rawCacheLog?.toLowerCase();
+
+  if (cacheLogNorm !== undefined && cacheLogNorm !== '' && cacheLogNorm !== 'true' && cacheLogNorm !== 'false') {
+    console.error(`Configuration error: ANALYTICS_CACHE_LOG_ENABLED: must be 'true' or 'false', got '${rawCacheLog}'`);
+  }
+
+  const cacheLoggingEnabled = cacheLogNorm === 'true';
+
+  // --- ANALYTICS_LOG_LEVEL ---
+  const rawLogLevel = env['ANALYTICS_LOG_LEVEL'];
+  let logLevel: LogLevel;
+
+  if (rawLogLevel === undefined || rawLogLevel === '') {
+    logLevel = 'INFO';
+  } else {
+    const upper = rawLogLevel.toUpperCase() as LogLevel;
+    if (LOG_LEVELS.includes(upper)) {
+      logLevel = upper;
+    } else {
+      console.error(
+        `Configuration error: ANALYTICS_LOG_LEVEL: must be one of [${LOG_LEVELS.join(', ')}], got '${rawLogLevel}'`
+      );
+      logLevel = 'INFO';
+    }
+  }
+
+  return { enabled, cacheTtl, cacheLoggingEnabled, logLevel };
 }

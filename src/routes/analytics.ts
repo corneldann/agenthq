@@ -202,8 +202,11 @@ export function register(router: Router, db: DbAdapter): void {
       return jsonResponse(metrics);
     } catch (err) {
       if (err instanceof Error && err.message === 'TIMEOUT') {
+        console.warn(`[WARN] /api/analytics/performance timed out (workspace=${workspaceId} range=${range})`);
         return errorResponse(503, 'computation timed out after 30 seconds');
       }
+      const stack = err instanceof Error ? (err.stack ?? err.message) : String(err);
+      console.error(`[ERROR] /api/analytics/performance failed (workspace=${workspaceId} range=${range}):\n${stack}`);
       const msg = err instanceof Error ? err.message : String(err);
       return errorResponse(500, `analytics computation failed: ${msg}`);
     }
@@ -236,8 +239,11 @@ export function register(router: Router, db: DbAdapter): void {
       return jsonResponse(metrics);
     } catch (err) {
       if (err instanceof Error && err.message === 'TIMEOUT') {
+        console.warn(`[WARN] /api/analytics/cost timed out (workspace=${workspaceId} range=${range})`);
         return errorResponse(503, 'computation timed out after 30 seconds');
       }
+      const stack = err instanceof Error ? (err.stack ?? err.message) : String(err);
+      console.error(`[ERROR] /api/analytics/cost failed (workspace=${workspaceId} range=${range}):\n${stack}`);
       const msg = err instanceof Error ? err.message : String(err);
       return errorResponse(500, `analytics computation failed: ${msg}`);
     }
@@ -264,8 +270,11 @@ export function register(router: Router, db: DbAdapter): void {
       return jsonResponse(analysis);
     } catch (err) {
       if (err instanceof Error && err.message === 'TIMEOUT') {
+        console.warn(`[WARN] /api/analytics/bottlenecks timed out (workspace=${workspaceId})`);
         return errorResponse(503, 'computation timed out after 30 seconds');
       }
+      const stack = err instanceof Error ? (err.stack ?? err.message) : String(err);
+      console.error(`[ERROR] /api/analytics/bottlenecks failed (workspace=${workspaceId}):\n${stack}`);
       const msg = err instanceof Error ? err.message : String(err);
       return errorResponse(500, `analytics computation failed: ${msg}`);
     }
@@ -287,6 +296,7 @@ export function register(router: Router, db: DbAdapter): void {
       return jsonResponse(metrics);
     } catch (err) {
       if (err instanceof Error && err.message === 'TIMEOUT') {
+        console.warn(`[WARN] /api/analytics/predictions timed out (jobId=${jobId})`);
         return errorResponse(503, 'computation timed out after 30 seconds');
       }
       if (
@@ -295,6 +305,8 @@ export function register(router: Router, db: DbAdapter): void {
       ) {
         return errorResponse(404, 'job not found');
       }
+      const stack = err instanceof Error ? (err.stack ?? err.message) : String(err);
+      console.error(`[ERROR] /api/analytics/predictions failed (jobId=${jobId}):\n${stack}`);
       const msg = err instanceof Error ? err.message : String(err);
       return errorResponse(500, `analytics computation failed: ${msg}`);
     }
@@ -393,8 +405,11 @@ export function register(router: Router, db: DbAdapter): void {
       );
     } catch (err) {
       if (err instanceof Error && err.message === 'TIMEOUT') {
+        console.warn(`[WARN] /api/analytics/export timed out (workspace=${wsResult.ok ? wsResult.workspaceId : 'unknown'})`);
         return errorResponse(503, 'computation timed out after 30 seconds');
       }
+      const stack = err instanceof Error ? (err.stack ?? err.message) : String(err);
+      console.error(`[ERROR] /api/analytics/export failed:\n${stack}`);
       const msg = err instanceof Error ? err.message : String(err);
       return errorResponse(500, `analytics computation failed: ${msg}`);
     }

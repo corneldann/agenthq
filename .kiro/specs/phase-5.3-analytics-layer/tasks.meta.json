@@ -380,6 +380,56 @@
         "chatSessionId": "sess_f740773c-32fc-40f0-88b7-41cf40d4cd4b",
         "timestamp": 1786649832252
       }
+    ],
+    "12.3 Register analytics page in `src/dashboard/main.ts`": [
+      {
+        "executionId": "1370777a-3eab-4007-b1ad-d7e5b6f9d28e",
+        "chatSessionId": "sess_dc1ff03f-398c-4855-9ff4-f60e7e45fb2c",
+        "timestamp": 1786651584718
+      },
+      {
+        "executionId": "1370777a-3eab-4007-b1ad-d7e5b6f9d28e",
+        "chatSessionId": "sess_dc1ff03f-398c-4855-9ff4-f60e7e45fb2c",
+        "timestamp": 1786651717072
+      }
+    ],
+    "12. Analytics dashboard page": [
+      {
+        "executionId": "1370777a-3eab-4007-b1ad-d7e5b6f9d28e",
+        "chatSessionId": "sess_dc1ff03f-398c-4855-9ff4-f60e7e45fb2c",
+        "timestamp": 1786651717704
+      }
+    ],
+    "13.1 Add cache hit/miss counters to `AnalyticsCache`": [
+      {
+        "executionId": "9b36e8f8-62b9-49cd-8187-267de3eaf4b4",
+        "chatSessionId": "sess_e972ce46-f234-4445-a305-e4d9ee3604e2",
+        "timestamp": 1786651733805
+      },
+      {
+        "executionId": "9b36e8f8-62b9-49cd-8187-267de3eaf4b4",
+        "chatSessionId": "sess_e972ce46-f234-4445-a305-e4d9ee3604e2",
+        "timestamp": 1786652172888
+      }
+    ],
+    "13.2 Ensure all unexpected errors include stack traces in logs": [
+      {
+        "executionId": "0458a09a-50d8-4a20-b792-85a4cef1955f",
+        "chatSessionId": "sess_a938e458-0d01-4a22-bb49-c52fdf564166",
+        "timestamp": 1786652191789
+      },
+      {
+        "executionId": "0458a09a-50d8-4a20-b792-85a4cef1955f",
+        "chatSessionId": "sess_a938e458-0d01-4a22-bb49-c52fdf564166",
+        "timestamp": 1786653302071
+      }
+    ],
+    "13. Observability — cache logging": [
+      {
+        "executionId": "0458a09a-50d8-4a20-b792-85a4cef1955f",
+        "chatSessionId": "sess_a938e458-0d01-4a22-bb49-c52fdf564166",
+        "timestamp": 1786653303413
+      }
     ]
   }
 }

@@ -297,8 +297,8 @@ async function extractAndStore(db: DbAdapter, logPath: string): Promise<void> {
   try {
     content = readFileSync(logPath, 'utf-8');
   } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    console.error(`[metrics-collector] failed to read log for ${jobId}: ${reason}`);
+    const stack = err instanceof Error ? (err.stack ?? err.message) : String(err);
+    console.error(`[ERROR] [metrics-collector] failed to read log for ${jobId}:\n${stack}`);
     return; // abort this job, caller continues with others
   }
 
@@ -328,7 +328,7 @@ async function processLogFile(db: DbAdapter, logPath: string): Promise<void> {
     // AC 10.2: log error, continue processing other jobs
     const jobId = extractJobId(logPath);
     const stack = err instanceof Error ? (err.stack ?? err.message) : String(err);
-    console.error(`[metrics-collector] error processing ${jobId}: ${stack}`);
+    console.error(`[ERROR] [metrics-collector] error processing ${jobId}:\n${stack}`);
   } finally {
     inFlight.delete(logPath);
   }
@@ -352,7 +352,8 @@ export function startMetricsCollector(db: DbAdapter, outputDir: string): FSWatch
     processLogFile(db, logPath).catch(err => {
       // Belt-and-suspenders: processLogFile already catches, but protect the
       // watch callback from any unexpected rejection propagation.
-      console.error(`[metrics-collector] unexpected error for ${filename}:`, err);
+      const stack = err instanceof Error ? (err.stack ?? err.message) : String(err);
+      console.error(`[ERROR] [metrics-collector] unexpected error for ${filename}:\n${stack}`);
     });
   });
 

@@ -222,7 +222,7 @@ Dependencies: Phase 5.1 (DbAdapter, migrations) and Phase 5.2 (WebSocket broadca
     - Test rendered output does not contain un-escaped `<`, `>`, `"` from label inputs
     - _Requirements: 6.7_
 
-- [ ] 12. Analytics dashboard page
+- [x] 12. Analytics dashboard page
   - [x] 12.1 Create `src/dashboard/api.ts` additions — add typed fetch wrappers
     - `getPerformanceMetrics(workspace, range)` → `PerformanceMetrics`
     - `getCostMetrics(workspace, range)` → `CostMetrics`
@@ -240,18 +240,18 @@ Dependencies: Phase 5.1 (DbAdapter, migrations) and Phase 5.2 (WebSocket broadca
     - Use `esc()` for all dynamic text to prevent XSS
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6_
 
-  - [~] 12.3 Register analytics page in `src/dashboard/main.ts`
+  - [x] 12.3 Register analytics page in `src/dashboard/main.ts`
     - Add `analytics` route to the client-side router
     - Add "Analytics" nav link to the sidebar/header
     - _Requirements: 6.1_
 
-- [ ] 13. Observability — cache logging
-  - [ ] 13.1 Add cache hit/miss counters to `AnalyticsCache`
+- [x] 13. Observability — cache logging
+  - [x] 13.1 Add cache hit/miss counters to `AnalyticsCache`
     - Track hits and misses per key prefix
     - When `cache_logging_enabled` is true AND log level ≥ INFO, emit hit/miss rate every 5 minutes via `setInterval` (AC 11.1)
     - _Requirements: 11.1_
 
-  - [ ] 13.2 Ensure all unexpected errors include stack traces in logs
+  - [x] 13.2 Ensure all unexpected errors include stack traces in logs
     - Update `Metrics_Collector` and route error handlers to log `err.stack` with severity levels (AC 11.2)
     - Severity levels: DEBUG < INFO < WARN < ERROR < FATAL
     - _Requirements: 11.2_
