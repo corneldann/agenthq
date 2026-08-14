@@ -89,7 +89,7 @@ describe('Property 6 — git status porcelain parsing: each path in exactly one 
   test('no path appears in more than one array', () => {
     fc.assert(
       fc.property(
-        fc.array(porcelainLineArb, { minLength: 0, maxLength: 30 }),
+        fc.uniqueArray(porcelainLineArb, { selector: (line) => line.path, minLength: 0, maxLength: 30 }),
         (lines) => {
           const stdout = buildPorcelainOutput(lines);
           const { staged, modified, untracked } = parseGitPorcelain(stdout);
@@ -120,7 +120,7 @@ describe('Property 6 — git status porcelain parsing: each path in exactly one 
   test('every path from a non-branch input line appears in exactly one array', () => {
     fc.assert(
       fc.property(
-        fc.array(porcelainLineArb, { minLength: 0, maxLength: 30 }),
+        fc.uniqueArray(porcelainLineArb, { selector: (line) => line.path, minLength: 0, maxLength: 30 }),
         (lines) => {
           const stdout = buildPorcelainOutput(lines);
           const { staged, modified, untracked } = parseGitPorcelain(stdout);

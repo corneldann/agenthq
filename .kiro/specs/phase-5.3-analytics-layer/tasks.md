@@ -256,7 +256,7 @@ Dependencies: Phase 5.1 (DbAdapter, migrations) and Phase 5.2 (WebSocket broadca
     - Severity levels: DEBUG < INFO < WARN < ERROR < FATAL
     - _Requirements: 11.2_
 
-- [ ] 14. Checkpoint — wire everything together
+- [x] 14. Checkpoint — wire everything together
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 15. Property-based and performance tests

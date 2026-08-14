@@ -430,6 +430,18 @@
         "chatSessionId": "sess_a938e458-0d01-4a22-bb49-c52fdf564166",
         "timestamp": 1786653303413
       }
+    ],
+    "14. Checkpoint — wire everything together": [
+      {
+        "executionId": "359ead3a-c10c-4d32-b695-d24c442f4cc2",
+        "chatSessionId": "sess_42d94b52-01d1-41d5-99b6-35a58c3de074",
+        "timestamp": 1786704529315
+      },
+      {
+        "executionId": "359ead3a-c10c-4d32-b695-d24c442f4cc2",
+        "chatSessionId": "sess_42d94b52-01d1-41d5-99b6-35a58c3de074",
+        "timestamp": 1786704870350
+      }
     ]
   }
 }
