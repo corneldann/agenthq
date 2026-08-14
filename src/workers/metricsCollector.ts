@@ -323,6 +323,9 @@ async function processLogFile(db: DbAdapter, logPath: string): Promise<void> {
   inFlight.add(logPath);
 
   try {
+    // Brief delay to let the writer flush content before we read.
+    // fs.watch may fire on file creation (before content is written).
+    await new Promise<void>((r) => setTimeout(r, 50));
     await extractAndStore(db, logPath);
   } catch (err) {
     // AC 10.2: log error, continue processing other jobs

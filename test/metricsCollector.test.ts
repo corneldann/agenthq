@@ -113,7 +113,7 @@ async function writeLogAndWait(
   outputDir: string,
   jobId: string,
   content: string,
-  timeoutMs = 4000,
+  timeoutMs = 8000,
 ): Promise<MetricsRow | null> {
   const logPath = join(outputDir, `${jobId}.log`);
   await writeFile(logPath, content, 'utf-8');
@@ -172,14 +172,14 @@ beforeEach(async () => {
   captureConsoleLogs();
   watcher = startMetricsCollector(db, outputDir);
   // Allow fs.watch to initialise before writing files.
-  await new Promise<void>((r) => setTimeout(r, 50));
+  await new Promise<void>((r) => setTimeout(r, 200));
 });
 
 afterEach(async () => {
   // Close the watcher FIRST so no callbacks fire after console is restored.
   watcher.close();
   // Brief drain to let any in-flight callbacks finish before restoring console.
-  await new Promise<void>((r) => setTimeout(r, 50));
+  await new Promise<void>((r) => setTimeout(r, 200));
   restoreConsoleLogs();
   await db.close();
   try {

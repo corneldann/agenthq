@@ -271,7 +271,7 @@ Dependencies: Phase 5.1 (DbAdapter, migrations) and Phase 5.2 (WebSocket broadca
     - Verify `GET /api/analytics/bottlenecks` responds in ≤ 500ms
     - **Validates: Requirements 7.1, 12.2**
 
-- [ ] 16. Final checkpoint — full test suite
+- [x] 16. Final checkpoint — full test suite
   - Ensure all tests pass, ask the user if questions arise.
 
 ---
