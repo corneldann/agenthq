@@ -259,13 +259,13 @@ Dependencies: Phase 5.1 (DbAdapter, migrations) and Phase 5.2 (WebSocket broadca
 - [x] 14. Checkpoint — wire everything together
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 15. Property-based and performance tests
+- [x] 15. Property-based and performance tests
   - [x] 15.1 Write cross-module property tests for numeric invariants
     - **Property 12: All Duration/Cost Metrics ≥ 0** — generate random job_metrics rows; assert no output metric is negative
     - **Property 13: Retry/Error Count ≥ 0** — `retry_count` and `error_count` are always ≥ 0 when non-null
     - **Validates: Requirements 12.1**
 
-  - [ ] 15.2 Write performance tests for API response times
+  - [x] 15.2 Write performance tests for API response times
     - Verify `GET /api/analytics/performance` responds in ≤ 200ms under typical dataset
     - Verify `GET /api/analytics/cost` responds in ≤ 200ms
     - Verify `GET /api/analytics/bottlenecks` responds in ≤ 500ms
