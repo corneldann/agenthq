@@ -6,6 +6,66 @@
         "executionId": "7d5c0eed-dcf6-41fb-b44e-0adea4f15fd4",
         "chatSessionId": "sess_ae2c954d-a0bf-4e77-875a-9bcce80c2e71",
         "timestamp": 1786798331929
+      },
+      {
+        "executionId": "ee805774-6518-4d59-a317-480cc379089b",
+        "chatSessionId": "sess_0900f06a-89cc-495e-aa90-401640bca423",
+        "timestamp": 1786799129189
+      },
+      {
+        "executionId": "ee805774-6518-4d59-a317-480cc379089b",
+        "chatSessionId": "sess_0900f06a-89cc-495e-aa90-401640bca423",
+        "timestamp": 1786799317518
+      }
+    ],
+    "1.2 Create `src/memory/errors.ts` with the four-class typed error hierarchy": [
+      {
+        "executionId": "1b7cd33b-23a4-4a37-8ccf-117c874cad9d",
+        "chatSessionId": "sess_b4b6402a-4940-4320-baa7-59b269938f74",
+        "timestamp": 1786799355437
+      },
+      {
+        "executionId": "1b7cd33b-23a4-4a37-8ccf-117c874cad9d",
+        "chatSessionId": "sess_b4b6402a-4940-4320-baa7-59b269938f74",
+        "timestamp": 1786799450359
+      }
+    ],
+    "1.4 Update `.env.example` with all eight new variables and inline comments": [
+      {
+        "executionId": "9f823299-0c3f-4bfc-a6f5-b0d8858a9e38",
+        "chatSessionId": "sess_d43e8017-be9a-45e3-9461-4f37c80abd92",
+        "timestamp": 1786799676496
+      }
+    ],
+    "1.5 Add startup memory status log line to `src/monitor.ts`": [
+      {
+        "executionId": "7b20a572-260e-4e97-a61c-279da7a667b6",
+        "chatSessionId": "sess_2fe88913-06cc-4fb9-a94b-8011594b93e6",
+        "timestamp": 1786799699985
+      },
+      {
+        "executionId": "7b20a572-260e-4e97-a61c-279da7a667b6",
+        "chatSessionId": "sess_2fe88913-06cc-4fb9-a94b-8011594b93e6",
+        "timestamp": 1786799793375
+      }
+    ],
+    "1.6 Write property test for Property 2 (resolveConstants defaults) in `test/constants.test.ts`": [
+      {
+        "executionId": "3da337f3-660d-4ffb-945e-2de25b4a51d6",
+        "chatSessionId": "sess_0a47c413-3fc1-48d0-9744-ffe2cc7a48ec",
+        "timestamp": 1786799820459
+      },
+      {
+        "executionId": "3da337f3-660d-4ffb-945e-2de25b4a51d6",
+        "chatSessionId": "sess_0a47c413-3fc1-48d0-9744-ffe2cc7a48ec",
+        "timestamp": 1786800692079
+      }
+    ],
+    "1. Memory types, errors, and configuration": [
+      {
+        "executionId": "3da337f3-660d-4ffb-945e-2de25b4a51d6",
+        "chatSessionId": "sess_0a47c413-3fc1-48d0-9744-ffe2cc7a48ec",
+        "timestamp": 1786800692809
       }
     ]
   }

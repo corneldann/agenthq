@@ -28,8 +28,8 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
 
 ## Tasks
 
-- [ ] 1. Memory types, errors, and configuration
-  - [~] 1.1 Create `src/memory/types.ts` with all type and interface declarations
+- [x] 1. Memory types, errors, and configuration
+  - [x] 1.1 Create `src/memory/types.ts` with all type and interface declarations
     - Export `IMemoryClient` interface with exactly four methods: `retain`, `recall`, `reflect`, `delete`
     - Export `MemoryScope` (only `workspaceId` required; `userId`, `agentId`, `runId`, `chainId` optional)
     - Export `Memory` type with all nine fields: `id`, `text`, `scope`, `qualityScore`, `createdAt`, `lastRetrievedAt`, `retrievalCount`, `tier`, `embeddingStatus`
@@ -39,7 +39,7 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
     - File must contain ONLY type/interface/const declarations — no runtime logic, no imports with side effects (mirror the convention in `src/types.ts`)
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9_
 
-  - [ ] 1.2 Create `src/memory/errors.ts` with the four-class typed error hierarchy
+  - [x] 1.2 Create `src/memory/errors.ts` with the four-class typed error hierarchy
     - `MemoryBaseError extends Error`
     - `MemoryTimeoutError extends MemoryBaseError` (no extra fields)
     - `MemoryClientError extends MemoryBaseError` with `readonly statusCode: number` and `readonly body: string`
@@ -47,7 +47,7 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
     - All classes call `super(message)` and set `this.name` to the class name for clean stack traces
     - _Requirements: 3.3, 3.4, 3.5, 3.6, 3.7_
 
-  - [ ] 1.3 Extend `src/constants.ts` with seven memory constants inside `resolveConstants()`, plus `MEMORY_RETRY_PATH`
+  - [x] 1.3 Extend `src/constants.ts` with seven memory constants inside `resolveConstants()`, plus `MEMORY_RETRY_PATH`
     - `MEMORY_ENABLED`: parsed as `env.MEMORY_ENABLED === 'true'` (strict equality, not truthy)
     - `HINDSIGHT_URL`: `env.HINDSIGHT_URL ?? 'http://localhost:3100'`
     - `MEMORY_EXTRACTION_ENABLED`: parsed as `env.MEMORY_EXTRACTION_ENABLED === 'true'`
@@ -59,18 +59,18 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
     - Add all eight to the `resolveConstants` return object and add flat named exports following the existing pattern
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8_
 
-  - [ ] 1.4 Update `.env.example` with all eight new variables and inline comments
+  - [x] 1.4 Update `.env.example` with all eight new variables and inline comments
     - Each line: `# <purpose and default value explanation>` followed by `VARNAME=defaultValue`
     - Variables: `MEMORY_ENABLED`, `HINDSIGHT_URL`, `MEMORY_EXTRACTION_ENABLED`, `MEMORY_AUTO_INJECT`, `MEMORY_MAX_CONTEXT_MEMORIES`, `MEMORY_CONTEXT_TOKEN_BUDGET`, `MEMORY_DECAY_DAYS`, `MEMORY_RETRY_PATH`
     - _Requirements: 1.9_
 
-  - [ ] 1.5 Add startup memory status log line to `src/monitor.ts`
+  - [x] 1.5 Add startup memory status log line to `src/monitor.ts`
     - Import `MEMORY_ENABLED` and `HINDSIGHT_URL` from `./constants.ts`
     - After the validation block (after `process.exit(1)` guard) and before the worker imports, add:
       `console.log(MEMORY_ENABLED ? \`Memory: enabled (hindsight @ ${HINDSIGHT_URL})\` : 'Memory: disabled');`
     - _Requirements: 1.10_
 
-  - [ ]* 1.6 Write property test for Property 2 (resolveConstants defaults) in `test/constants.test.ts`
+  - [x] 1.6 Write property test for Property 2 (resolveConstants defaults) in `test/constants.test.ts`
     - Create `test/constants.test.ts` — new file, no existing file to extend
     - Use `fc.record({})` arbitrary to generate env objects that omit all eight memory keys
     - Assert all eight defaults match the specification: `MEMORY_ENABLED=false`, `HINDSIGHT_URL='http://localhost:3100'`, etc.

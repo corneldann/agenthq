@@ -57,6 +57,16 @@ export function resolveConstants(env: NodeJS.ProcessEnv) {
   // Additional constants (not in requirements but present in original)
   const KIRO_TOOLS_DIR = env.KIRO_TOOLS_DIR ?? "";
 
+  // Phase 6.1: Memory infrastructure constants
+  const MEMORY_ENABLED = env.MEMORY_ENABLED === 'true';
+  const HINDSIGHT_URL = env.HINDSIGHT_URL ?? 'http://localhost:3100';
+  const MEMORY_EXTRACTION_ENABLED = env.MEMORY_EXTRACTION_ENABLED === 'true';
+  const MEMORY_AUTO_INJECT = env.MEMORY_AUTO_INJECT === 'true';
+  const MEMORY_MAX_CONTEXT_MEMORIES = Number(env.MEMORY_MAX_CONTEXT_MEMORIES) || 10;
+  const MEMORY_CONTEXT_TOKEN_BUDGET = Number(env.MEMORY_CONTEXT_TOKEN_BUDGET) || 2000;
+  const MEMORY_DECAY_DAYS = Number(env.MEMORY_DECAY_DAYS) || 90;
+  const MEMORY_RETRY_PATH = env.MEMORY_RETRY_PATH ?? 'data/memory-retry-queue.jsonl';
+
   return {
     PORT,
     POLL_LOG_MAX,
@@ -73,6 +83,14 @@ export function resolveConstants(env: NodeJS.ProcessEnv) {
     CLONE_JOBS_FILE,
     BUILD_QUEUE_FILE,
     KIRO_TOOLS_DIR,
+    MEMORY_ENABLED,
+    HINDSIGHT_URL,
+    MEMORY_EXTRACTION_ENABLED,
+    MEMORY_AUTO_INJECT,
+    MEMORY_MAX_CONTEXT_MEMORIES,
+    MEMORY_CONTEXT_TOKEN_BUDGET,
+    MEMORY_DECAY_DAYS,
+    MEMORY_RETRY_PATH,
   };
 }
 
@@ -94,3 +112,11 @@ export const CRAWL_JOBS_FILE = constants.CRAWL_JOBS_FILE;
 export const CLONE_JOBS_FILE = constants.CLONE_JOBS_FILE;
 export const BUILD_QUEUE_FILE = constants.BUILD_QUEUE_FILE;
 export const KIRO_TOOLS_DIR = constants.KIRO_TOOLS_DIR;
+export const MEMORY_ENABLED = constants.MEMORY_ENABLED;
+export const HINDSIGHT_URL = constants.HINDSIGHT_URL;
+export const MEMORY_EXTRACTION_ENABLED = constants.MEMORY_EXTRACTION_ENABLED;
+export const MEMORY_AUTO_INJECT = constants.MEMORY_AUTO_INJECT;
+export const MEMORY_MAX_CONTEXT_MEMORIES = constants.MEMORY_MAX_CONTEXT_MEMORIES;
+export const MEMORY_CONTEXT_TOKEN_BUDGET = constants.MEMORY_CONTEXT_TOKEN_BUDGET;
+export const MEMORY_DECAY_DAYS = constants.MEMORY_DECAY_DAYS;
+export const MEMORY_RETRY_PATH = constants.MEMORY_RETRY_PATH;

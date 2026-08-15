@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { existsSync } from 'node:fs';
-import { KIRO_TOOLS_DIR, PORT, WORKSPACE_ROOT, SHUTDOWN_TIMEOUT_MS, OUTPUT_DIR, SESSIONS_DIR, WORKFLOW_DIR } from './constants.ts';
+import { KIRO_TOOLS_DIR, PORT, WORKSPACE_ROOT, SHUTDOWN_TIMEOUT_MS, OUTPUT_DIR, SESSIONS_DIR, WORKFLOW_DIR, MEMORY_ENABLED, HINDSIGHT_URL } from './constants.ts';
 import { findUnconfiguredVars, validateEnvPaths } from './validation.ts';
 import { createRouter } from './router.ts';
 
@@ -53,6 +53,9 @@ if (hasErrors) {
   console.error('Monitor startup validation failed. Please fix the above issues in your .env file.');
   process.exit(1);
 }
+
+// Memory layer status (Req 1.10)
+console.log(MEMORY_ENABLED ? `Memory: enabled (hindsight @ ${HINDSIGHT_URL})` : 'Memory: disabled');
 
 // ========== Worker Imports (after validation guard) ==========
 import { startSSEBroadcaster } from './workers/ssebroadcaster.ts';
