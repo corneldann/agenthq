@@ -79,14 +79,14 @@ These skills do NOT activate automatically during spec task execution.
 
 ## Tasks
 
-- [ ] 1. Database Migration 004 — Add the `memory_extraction` table and indexes to the database schema
-  - [ ] 1.1 Create `migrations/004_memory_extraction.sql` with the full `CREATE TABLE IF NOT EXISTS memory_extraction` statement as specified in `design.md` — columns: `id`, `job_id`, `workspace_id`, `extracted_at`, `raw_text`, `memory_count`, `quality_score`, `embedding_status` (CHECK), `embed_attempts`, `tier` (CHECK), `last_modified`, `deleted_at`
-  - [ ] 1.2 Add `idx_memext_workspace` partial index on `(workspace_id) WHERE deleted_at IS NULL`
-  - [ ] 1.3 Add `idx_memext_pending` partial index on `(embedding_status, extracted_at) WHERE embedding_status = 'pending' AND deleted_at IS NULL`
-  - [ ] 1.4 Add `REFERENCES jobs(id)` FK on `job_id`
-  - [ ] 1.5 Add `DbMemoryExtraction` row type to `src/db/adapter.ts` (all columns, matching SQLite storage types for booleans/integers)
-  - [ ] 1.6 Start the monitor and verify migration 004 applies cleanly; confirm the table and indexes appear in the SQLite schema
-  - [ ] 1.7 Write a migration test: apply 004 to an in-memory SQLite DB and assert all columns and indexes exist via `PRAGMA table_info` and `PRAGMA index_list`
+- [x] 1. Database Migration 004 — Add the `memory_extraction` table and indexes to the database schema
+  - [x] 1.1 Create `migrations/004_memory_extraction.sql` with the full `CREATE TABLE IF NOT EXISTS memory_extraction` statement as specified in `design.md` — columns: `id`, `job_id`, `workspace_id`, `extracted_at`, `raw_text`, `memory_count`, `quality_score`, `embedding_status` (CHECK), `embed_attempts`, `tier` (CHECK), `last_modified`, `deleted_at`
+  - [x] 1.2 Add `idx_memext_workspace` partial index on `(workspace_id) WHERE deleted_at IS NULL`
+  - [x] 1.3 Add `idx_memext_pending` partial index on `(embedding_status, extracted_at) WHERE embedding_status = 'pending' AND deleted_at IS NULL`
+  - [x] 1.4 Add `REFERENCES jobs(id)` FK on `job_id`
+  - [x] 1.5 Add `DbMemoryExtraction` row type to `src/db/adapter.ts` (all columns, matching SQLite storage types for booleans/integers)
+  - [x] 1.6 Start the monitor and verify migration 004 applies cleanly; confirm the table and indexes appear in the SQLite schema
+  - [x] 1.7 Write a migration test: apply 004 to an in-memory SQLite DB and assert all columns and indexes exist via `PRAGMA table_info` and `PRAGMA index_list`
 
 - [ ] 2. Constants and Configuration — Add the two new env vars required by Phase 6.2
   - [ ] 2.1 Add `VOYAGE_API_KEY` to `src/constants.ts` — read from `process.env.VOYAGE_API_KEY`, default empty string

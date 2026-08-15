@@ -163,6 +163,46 @@ export type SchemaVersion = {
   migration_name: string;
 };
 
+/**
+ * A row from the `memory_extraction` table (migration 004).
+ *
+ * Tracks per-job memory extraction status, quality metrics, and embedding
+ * tier assignment. `embedding_status` is constrained by a SQLite CHECK to
+ * one of `'pending' | 'embedded' | 'failed'`; `tier` to `'hot' | 'cold'`.
+ *
+ * `last_modified` is a Unix epoch millisecond timestamp (INTEGER in SQLite).
+ * `deleted_at` is an ISO 8601 string or `null` — soft-delete sentinel.
+ */
+export type DbMemoryExtraction = {
+  /** Auto-increment primary key. */
+  id: number;
+  /** Foreign key → `jobs.id`. */
+  job_id: string;
+  workspace_id: string;
+  /** ISO 8601 UTC timestamp string — when extraction ran. */
+  extracted_at: string;
+  /** Full raw text of the job output file passed to the extractor. */
+  raw_text: string;
+  /** Number of facts successfully retained in Hindsight. */
+  memory_count: number;
+  /** Weighted mean quality score across accepted facts ∈ [0, 1]. */
+  quality_score: number;
+  /** Current embedding status — constrained by DB CHECK. */
+  embedding_status: 'pending' | 'embedded' | 'failed';
+  /**
+   * Number of actual Voyage batch submissions for this row.
+   * Incremented only after a successful `submit()` call — never incremented
+   * for pre-submission API errors.
+   */
+  embed_attempts: number;
+  /** Embedding tier assigned at extraction time — constrained by DB CHECK. */
+  tier: 'hot' | 'cold';
+  /** Unix epoch milliseconds — used for incremental sync. */
+  last_modified: number;
+  /** ISO 8601 string when soft-deleted, or `null` if active. */
+  deleted_at: string | null;
+};
+
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------

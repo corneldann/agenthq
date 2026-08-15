@@ -1,0 +1,101 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create `migrations/004_memory_extraction.sql` with the full `CREATE TABLE IF NOT EXISTS memory_extraction` statement as specified in `design.md` — columns: `id`, `job_id`, `workspace_id`, `extracted_at`, `raw_text`, `memory_count`, `quality_score`, `embedding_status` (CHECK), `embed_attempts`, `tier` (CHECK), `last_modified`, `deleted_at`": [
+      {
+        "executionId": "e253070a-46d6-41c2-a0bd-ae18bc3c5ec0",
+        "chatSessionId": "sess_8fd4d5d2-83fb-4480-adb9-039fa7c9a0b5",
+        "timestamp": 1786818058575
+      },
+      {
+        "executionId": "e253070a-46d6-41c2-a0bd-ae18bc3c5ec0",
+        "chatSessionId": "sess_8fd4d5d2-83fb-4480-adb9-039fa7c9a0b5",
+        "timestamp": 1786818119368
+      }
+    ],
+    "1.2 Add `idx_memext_workspace` partial index on `(workspace_id) WHERE deleted_at IS NULL`": [
+      {
+        "executionId": "4a193fec-9d1d-481b-a7ff-04e61935f357",
+        "chatSessionId": "sess_17729229-83d8-4514-868e-0bc51f9a1934",
+        "timestamp": 1786818135089
+      },
+      {
+        "executionId": "4a193fec-9d1d-481b-a7ff-04e61935f357",
+        "chatSessionId": "sess_17729229-83d8-4514-868e-0bc51f9a1934",
+        "timestamp": 1786818182731
+      }
+    ],
+    "1.3 Add `idx_memext_pending` partial index on `(embedding_status, extracted_at) WHERE embedding_status = 'pending' AND deleted_at IS NULL`": [
+      {
+        "executionId": "09555f2e-127d-4680-9e50-e7ea88eabb58",
+        "chatSessionId": "sess_0c1152d5-918a-48d6-bd79-c00dcc27f16b",
+        "timestamp": 1786818193502
+      },
+      {
+        "executionId": "09555f2e-127d-4680-9e50-e7ea88eabb58",
+        "chatSessionId": "sess_0c1152d5-918a-48d6-bd79-c00dcc27f16b",
+        "timestamp": 1786818237046
+      }
+    ],
+    "1.4 Add `REFERENCES jobs(id)` FK on `job_id`": [
+      {
+        "executionId": "87adeaf8-5ad5-4dda-aefc-af5022526200",
+        "chatSessionId": "sess_a2a9788f-5370-4110-8589-5351e6654420",
+        "timestamp": 1786818247709
+      },
+      {
+        "executionId": "87adeaf8-5ad5-4dda-aefc-af5022526200",
+        "chatSessionId": "sess_a2a9788f-5370-4110-8589-5351e6654420",
+        "timestamp": 1786818279388
+      }
+    ],
+    "1.5 Add `DbMemoryExtraction` row type to `src/db/adapter.ts` (all columns, matching SQLite storage types for booleans/integers)": [
+      {
+        "executionId": "24007ebc-72f2-478d-891e-aded6aac27fd",
+        "chatSessionId": "sess_a927902e-c663-4535-951e-5dc15bd724f8",
+        "timestamp": 1786818290575
+      },
+      {
+        "executionId": "24007ebc-72f2-478d-891e-aded6aac27fd",
+        "chatSessionId": "sess_a927902e-c663-4535-951e-5dc15bd724f8",
+        "timestamp": 1786818705450
+      }
+    ],
+    "1.6 Start the monitor and verify migration 004 applies cleanly; confirm the table and indexes appear in the SQLite schema": [
+      {
+        "executionId": "8bc25fad-7698-40ac-82e4-7f5d6a5f5cb8",
+        "chatSessionId": "sess_89a0fd80-bbfe-49d8-9d37-7266d1ff43d9",
+        "timestamp": 1786818719474
+      },
+      {
+        "executionId": "432e7e6d-53a0-473a-bb80-35d89c25370f",
+        "chatSessionId": "sess_2f4561f0-1908-47ec-bd4e-19bc1f5f421a",
+        "timestamp": 1786819634538
+      },
+      {
+        "executionId": "432e7e6d-53a0-473a-bb80-35d89c25370f",
+        "chatSessionId": "sess_2f4561f0-1908-47ec-bd4e-19bc1f5f421a",
+        "timestamp": 1786819704722
+      }
+    ],
+    "1.7 Write a migration test: apply 004 to an in-memory SQLite DB and assert all columns and indexes exist via `PRAGMA table_info` and `PRAGMA index_list`": [
+      {
+        "executionId": "1d843580-3259-4176-8525-493bf5afa9b5",
+        "chatSessionId": "sess_9acbdf61-29ce-40ec-8ba4-119f8a974d3c",
+        "timestamp": 1786819719597
+      },
+      {
+        "executionId": "1d843580-3259-4176-8525-493bf5afa9b5",
+        "chatSessionId": "sess_9acbdf61-29ce-40ec-8ba4-119f8a974d3c",
+        "timestamp": 1786819873189
+      }
+    ],
+    "1. Database Migration 004 — Add the `memory_extraction` table and indexes to the database schema": [
+      {
+        "executionId": "1d843580-3259-4176-8525-493bf5afa9b5",
+        "chatSessionId": "sess_9acbdf61-29ce-40ec-8ba4-119f8a974d3c",
+        "timestamp": 1786819873314
+      }
+    ]
+  }
+}
