@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, beforeEach } from 'bun:test';
+import { describe, it, expect, mock, beforeEach, afterEach, afterAll } from 'bun:test';
 import * as fc from 'fast-check';
 import { HindsightAdapter } from '../../src/memory/hindsight.ts';
 import {
@@ -12,10 +12,18 @@ import type { MemoryScope } from '../../src/memory/types.ts';
 // Mock fetch at module level — HindsightAdapter uses global fetch internally
 // ---------------------------------------------------------------------------
 
+const originalFetch = global.fetch;
+
 const mockFetch = mock(() =>
   Promise.resolve(new Response(JSON.stringify({ result: [] }), { status: 200 })),
 );
 global.fetch = mockFetch as unknown as typeof fetch;
+
+// Restore global fetch after all tests in this file complete so the mock
+// does not leak into other test files (e.g. api.integration.test.ts).
+afterAll(() => {
+  global.fetch = originalFetch;
+});
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -177,6 +185,13 @@ describe('HindsightAdapter — timeout handling', () => {
     mockFetch.mockClear();
   });
 
+  afterEach(() => {
+    // Reset to default safe implementation so the mock does not persist.
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ result: [] }), { status: 200 })),
+    );
+  });
+
   it('should throw MemoryTimeoutError when fetch is aborted with AbortError', async () => {
     mockFetch.mockImplementation(() => {
       const err = new DOMException('The operation was aborted', 'AbortError');
@@ -201,6 +216,14 @@ describe('HindsightAdapter — timeout handling', () => {
 describe('HindsightAdapter — network errors', () => {
   beforeEach(() => {
     mockFetch.mockClear();
+  });
+
+  afterEach(() => {
+    // Reset to default safe implementation so the mock does not persist
+    // across describe blocks or into other test files.
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ result: [] }), { status: 200 })),
+    );
   });
 
   it('should throw MemoryServiceError with statusCode 0 on network failure', async () => {

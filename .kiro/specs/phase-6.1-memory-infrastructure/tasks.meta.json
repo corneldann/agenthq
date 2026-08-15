@@ -263,6 +263,73 @@
         "chatSessionId": "sess_fd511f15-34ef-478e-99f4-03d5b0307a30",
         "timestamp": 1786816810607
       }
+    ],
+    "6.1 Run full test suite: `bun test test/`": [
+      {
+        "executionId": "b62b4133-7f88-4d54-aff5-c84a1b52084e",
+        "chatSessionId": "sess_b27ee33c-c147-458d-942b-4e01689f64a2",
+        "timestamp": 1786816893032
+      },
+      {
+        "executionId": "b62b4133-7f88-4d54-aff5-c84a1b52084e",
+        "chatSessionId": "sess_b27ee33c-c147-458d-942b-4e01689f64a2",
+        "timestamp": 1786817623446
+      }
+    ],
+    "6.2 Run type checker: `node_modules/.bin/tsc.exe --noEmit`": [
+      {
+        "executionId": "3b44278a-1e53-49c9-8c92-048679e145a5",
+        "chatSessionId": "sess_0d2affc9-c302-4cdb-8380-45a48e44462f",
+        "timestamp": 1786817635533
+      },
+      {
+        "executionId": "3b44278a-1e53-49c9-8c92-048679e145a5",
+        "chatSessionId": "sess_0d2affc9-c302-4cdb-8380-45a48e44462f",
+        "timestamp": 1786817687068
+      }
+    ],
+    "6.3 Confirm all 12 correctness properties have corresponding property-based tests": [
+      {
+        "executionId": "64054884-cf76-4bee-be83-6a35490adbae",
+        "chatSessionId": "sess_d600c12b-e5e8-4513-a539-2a0769c89353",
+        "timestamp": 1786817717574
+      },
+      {
+        "executionId": "64054884-cf76-4bee-be83-6a35490adbae",
+        "chatSessionId": "sess_d600c12b-e5e8-4513-a539-2a0769c89353",
+        "timestamp": 1786817745729
+      }
+    ],
+    "6.4 Confirm `MEMORY_ENABLED=false` path: `createMemoryClient({ enabled: false, ... })` returns `NoOpMemoryClient`; all four methods return safe zero-values without errors": [
+      {
+        "executionId": "ab88e8c3-a866-40fe-8aa5-6373e9fd04ed",
+        "chatSessionId": "sess_c9972a89-7c39-4c35-aa41-34fca6391f9f",
+        "timestamp": 1786817778712
+      },
+      {
+        "executionId": "ab88e8c3-a866-40fe-8aa5-6373e9fd04ed",
+        "chatSessionId": "sess_c9972a89-7c39-4c35-aa41-34fca6391f9f",
+        "timestamp": 1786817841782
+      }
+    ],
+    "6.5 Confirm startup log line is present in `src/monitor.ts` and outputs the correct format": [
+      {
+        "executionId": "6470669a-da00-4409-8e80-2c7684f2b1ab",
+        "chatSessionId": "sess_c62e72ea-055b-4634-90cd-2d3df013980d",
+        "timestamp": 1786817873260
+      },
+      {
+        "executionId": "6470669a-da00-4409-8e80-2c7684f2b1ab",
+        "chatSessionId": "sess_c62e72ea-055b-4634-90cd-2d3df013980d",
+        "timestamp": 1786817891651
+      }
+    ],
+    "6. Integration verification and checkpoint": [
+      {
+        "executionId": "6470669a-da00-4409-8e80-2c7684f2b1ab",
+        "chatSessionId": "sess_c62e72ea-055b-4634-90cd-2d3df013980d",
+        "timestamp": 1786817891911
+      }
     ]
   }
 }
