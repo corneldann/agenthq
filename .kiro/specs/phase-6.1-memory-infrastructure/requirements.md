@@ -58,8 +58,8 @@ call sites.
 
 1. `src/memory/types.ts` exports `IMemoryClient`, `Memory`, `MemoryScope`,
    `CircuitState`, `CircuitBreakerMetrics`, and `RetryQueueEntry`.
-2. `IMemoryClient` has exactly four methods: `retain`, `recall`, `reflect`, `delete` —
-   matching the Hindsight MCP operations.
+2. `IMemoryClient` has exactly these four specific named methods: `retain`, `recall`, `reflect`, `delete` —
+   matching the Hindsight MCP operations. No additional methods are permitted on the interface.
 3. `retain(text: string, scope: MemoryScope): Promise<string>` returns the stored memory ID.
 4. `recall(query: string, scope: MemoryScope, limit: number): Promise<Memory[]>` returns
    memories ordered by descending relevance.
@@ -115,9 +115,7 @@ that a Hindsight outage never crashes or stalls an agent job.
    `retain` queues to the `RetryQueue` and returns a placeholder ID; `recall` returns `[]`;
    `reflect` returns `null`; `delete` is a no-op.
 5. After `openTimeoutMs` (default 30 000 ms), state transitions to `half_open`.
-6. In `half_open`, exactly one probe call is allowed through per window. A success resets the
-   failure counter and increments a success counter. After 2 consecutive successes, state
-   transitions back to `closed`. Any failure transitions back to `open`.
+6. WHEN the circuit breaker is in `half_open` state, exactly one probe call is allowed through per window. IF that probe call succeeds, THE circuit breaker SHALL immediately transition back to `closed` state and reset the failure counter. Any failure transitions back to `open`.
 7. `getMetrics(): CircuitBreakerMetrics` returns the current state, counts, and timestamps
    without mutating state.
 8. The breaker is constructed with `{ failureThreshold, successThreshold, openTimeoutMs,
@@ -140,8 +138,7 @@ automatically so that no learnings are permanently lost during brief service out
 3. `RetryQueue.drain(): Promise<number>` reads all entries, attempts `retain` on each via the
    inner `IMemoryClient`, removes successfully retried entries from the file, and returns the
    count of successful retries.
-4. Entries with `attempts >= 5` or `queuedAt` older than 24 hours are discarded (not retried)
-   during a drain pass.
+4. WHEN `drain()` is called, entries with `attempts >= 5` or `queuedAt` older than 24 hours SHALL be discarded (not retried) during that drain pass. Entries are not evaluated or discarded at enqueue time — only during a drain pass.
 5. `src/memory/client.ts` exports `createMemoryClient(config)` which composes:
    `HindsightAdapter` → wrapped in `MemoryCircuitBreaker` → returned as `IMemoryClient`.
    When `MEMORY_ENABLED=false` it returns a no-op implementation.
