@@ -82,8 +82,8 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
   - Verify: `node_modules/.bin/tsc.exe --noEmit` passes with zero errors
   - _Requirements: 1.1–1.10, 2.1–2.9_
 
-- [ ] 2. HindsightAdapter
-  - [ ] 2.1 Create `src/memory/hindsight.ts` implementing `HindsightAdapter`
+- [x] 2. HindsightAdapter
+  - [x] 2.1 Create `src/memory/hindsight.ts` implementing `HindsightAdapter`
     - Constructor accepts `baseUrl: string` — never reads from `process.env` directly
     - All four methods POST to `{baseUrl}/mcp` with MCP payload: `{ method: 'tools/call', params: { name: '<tool>', arguments: { ... } } }`
     - Use `AbortController` + `AbortSignal.timeout(5000)` for the 5-second timeout; catch `AbortError` and throw `MemoryTimeoutError`
@@ -94,7 +94,7 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
     - No scope mapping, quality gating, or retry logic belongs here
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9_
 
-  - [ ]* 2.2 Write unit tests and property tests in `test/memory/hindsight.test.ts`
+  - [x] 2.2 Write unit tests and property tests in `test/memory/hindsight.test.ts`
     - Unit tests: correct URL construction; correct MCP payload shape for all four methods; `MemoryTimeoutError` on hang; one example each for 4xx/5xx/1xx
     - Mock `fetch` using Bun's built-in `mock()` — never hit the network
     - **Property 3:** For any HTTP status in `[400..499]`, throws `MemoryClientError` with matching `statusCode`
@@ -112,8 +112,8 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
   - Verify: `bun test test/memory/hindsight.test.ts` passes; `node_modules/.bin/tsc.exe --noEmit` passes
   - _Requirements: 3.1–3.9_
 
-- [ ] 3. RetryQueue
-  - [ ] 3.1 Create `src/memory/retry-queue.ts` implementing `RetryQueue`
+- [x] 3. RetryQueue
+  - [x] 3.1 Create `src/memory/retry-queue.ts` implementing `RetryQueue`
     - Constructor accepts `path: string` and `inner: IMemoryClient`
     - `enqueue(entry: RetryQueueEntry): void` — synchronous append using Bun file API in append mode; after appending, if entry count ≥ 1000, read all lines, drop the first line (oldest), and rewrite the file (FIFO eviction)
     - `drain(): Promise<number>` — read entire file, process sequentially; for each entry: skip and discard if `attempts >= 5` or `queuedAt` older than 24 hours; otherwise call `inner.retain()`; on success remove from in-memory list; on failure increment `attempts`; rewrite entire file with surviving entries at end; return count of successful retries
@@ -121,7 +121,7 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
     - I/O failures in `enqueue()`: log at WARN and swallow (must not crash); in `drain()`: log at WARN and skip the drain pass
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-  - [ ]* 3.2 Write unit tests and property tests in `test/memory/retry-queue.test.ts`
+  - [x] 3.2 Write unit tests and property tests in `test/memory/retry-queue.test.ts`
     - Unit tests: `enqueue` appends a line; `drain` calls retain and empties queue on success; `drain` increments attempts on failure; `drain` discards `attempts >= 5`; `drain` discards entries older than 24h
     - Use a temp file path per test (avoid cross-test state); clean up in `afterEach`
     - **Property 10:** For any enqueue sequence of any length, queue size never exceeds 1000; oldest entry is evicted when full
@@ -139,7 +139,7 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
   - _Requirements: 5.1–5.4_
 
 - [ ] 4. MemoryCircuitBreaker
-  - [ ] 4.1 Create `src/memory/circuit-breaker.ts` implementing `MemoryCircuitBreaker`
+  - [-] 4.1 Create `src/memory/circuit-breaker.ts` implementing `MemoryCircuitBreaker`
     - Constructor: `{ inner: IMemoryClient, retryQueue: RetryQueue, failureThreshold: number, openTimeoutMs: number }` — all injected, nothing from env
     - Initial state: `closed`; private field tracks `consecutiveFailures`
     - Count toward failure threshold: only `MemoryServiceError` and raw network errors (fetch-level throws)
@@ -154,7 +154,7 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
     - `CircuitState` imported from `src/memory/types.ts` — do not redefine
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9_
 
-  - [ ]* 4.2 Write unit tests and property tests in `test/memory/circuit-breaker.test.ts`
+  - [~] 4.2 Write unit tests and property tests in `test/memory/circuit-breaker.test.ts`
     - Use a `FakeMemoryClient` test double (never hits network); use an in-memory fake `RetryQueue`
     - Mock timers for `openTimeoutMs` using Bun timer mocks / fake clock
     - Unit tests: initial state `closed`; `open → half_open` timer transition; `half_open → closed` on probe success; `half_open → open` on probe failure; `getMetrics()` shape; INFO log on each transition
@@ -211,7 +211,7 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
     - Import and call `startMemoryRetryWorker` after the other worker starts
     - _Requirements: 5.7, 5.8_
 
-  - [ ]* 5.6 Write unit tests in `test/memory/client.test.ts`
+  - [ ] 5.6 Write unit tests in `test/memory/client.test.ts`
     - Test: `createMemoryClient({ enabled: false, ... })` returns a `NoOpMemoryClient` (all methods return safe zero-values)
     - Test: `createMemoryClient({ enabled: true, ... })` returns a `MemoryCircuitBreaker` instance
     - **Property 1:** For any inputs, `NoOpMemoryClient` methods return safe zero-values and never throw
@@ -220,12 +220,12 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
     - `numRuns: 100`
     - **Validates: Requirements 1.1, 5.5**
 
-  - [ ]* 5.7 Write unit tests in `test/memory/scopes.test.ts`
+  - [ ] 5.7 Write unit tests in `test/memory/scopes.test.ts`
     - Test `scopeFromJob`: `workspaceId`, `agentId`, `runId` map from correct `Job` fields
     - Test `scopeFromChain`: `workspaceId`, `chainId` map from correct `Chain` fields
     - Use minimal typed stubs for `Job` and `Chain` — no `as any`
 
-  - [ ]* 5.8 Write unit tests in `test/routes/memory.test.ts`
+  - [ ] 5.8 Write unit tests in `test/routes/memory.test.ts`
     - Test: `GET /api/memory/circuit-breaker` returns `200` with `{ state: 'disabled' }` when `MEMORY_ENABLED=false`
     - Test: `GET /api/memory/circuit-breaker` returns `200` with `CircuitBreakerMetrics` when `MEMORY_ENABLED=true`
     - Mock the circuit breaker instance; do not start a real Bun server

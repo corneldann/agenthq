@@ -67,6 +67,75 @@
         "chatSessionId": "sess_0a47c413-3fc1-48d0-9744-ffe2cc7a48ec",
         "timestamp": 1786800692809
       }
+    ],
+    "2.1 Create `src/memory/hindsight.ts` implementing `HindsightAdapter`": [
+      {
+        "executionId": "47e2f1b7-8274-4aec-bf86-91caa954bdcc",
+        "chatSessionId": "sess_5e8e7136-52e8-4c21-bab7-50b72be3ac38",
+        "timestamp": 1786802995158
+      },
+      {
+        "executionId": "47e2f1b7-8274-4aec-bf86-91caa954bdcc",
+        "chatSessionId": "sess_5e8e7136-52e8-4c21-bab7-50b72be3ac38",
+        "timestamp": 1786803158018
+      }
+    ],
+    "2.2 Write unit tests and property tests in `test/memory/hindsight.test.ts`": [
+      {
+        "executionId": "2cabc002-f0a0-4791-9580-29e6de1b9451",
+        "chatSessionId": "sess_22cd4ad9-6bef-464a-9340-46b5db709b16",
+        "timestamp": 1786803171709
+      },
+      {
+        "executionId": "2cabc002-f0a0-4791-9580-29e6de1b9451",
+        "chatSessionId": "sess_22cd4ad9-6bef-464a-9340-46b5db709b16",
+        "timestamp": 1786803422627
+      }
+    ],
+    "2. HindsightAdapter": [
+      {
+        "executionId": "2cabc002-f0a0-4791-9580-29e6de1b9451",
+        "chatSessionId": "sess_22cd4ad9-6bef-464a-9340-46b5db709b16",
+        "timestamp": 1786803422988
+      }
+    ],
+    "3.1 Create `src/memory/retry-queue.ts` implementing `RetryQueue`": [
+      {
+        "executionId": "a1459546-b8b6-4996-a4e4-6ddff7bc657e",
+        "chatSessionId": "sess_359250aa-7e4a-4302-aa6e-734db8d5290e",
+        "timestamp": 1786803476395
+      },
+      {
+        "executionId": "a1459546-b8b6-4996-a4e4-6ddff7bc657e",
+        "chatSessionId": "sess_359250aa-7e4a-4302-aa6e-734db8d5290e",
+        "timestamp": 1786803673463
+      }
+    ],
+    "3.2 Write unit tests and property tests in `test/memory/retry-queue.test.ts`": [
+      {
+        "executionId": "408e232b-d65c-4ac6-ae6d-ab08453bf37d",
+        "chatSessionId": "sess_0f9a8528-8505-4d58-b87d-6ae0fc8a0bad",
+        "timestamp": 1786803686855
+      },
+      {
+        "executionId": "408e232b-d65c-4ac6-ae6d-ab08453bf37d",
+        "chatSessionId": "sess_0f9a8528-8505-4d58-b87d-6ae0fc8a0bad",
+        "timestamp": 1786804286198
+      }
+    ],
+    "3. RetryQueue": [
+      {
+        "executionId": "408e232b-d65c-4ac6-ae6d-ab08453bf37d",
+        "chatSessionId": "sess_0f9a8528-8505-4d58-b87d-6ae0fc8a0bad",
+        "timestamp": 1786804286390
+      }
+    ],
+    "4.1 Create `src/memory/circuit-breaker.ts` implementing `MemoryCircuitBreaker`": [
+      {
+        "executionId": "22c0bb77-3a57-4061-a8d3-c139ee2a000a",
+        "chatSessionId": "sess_6fe1d75f-34b1-4b9d-a83a-c63f80e8ffb9",
+        "timestamp": 1786804367726
+      }
     ]
   }
 }
