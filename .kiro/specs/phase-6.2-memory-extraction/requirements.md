@@ -83,8 +83,13 @@ without any manual steps so that the memory store fills up passively as I work.
    the fact is discarded as a duplicate. If `Memory.similarityScore` is absent (Hindsight does
    not return scores), the deduplication check is skipped with a debug log.
 9. Each accepted fact is stored via `client.retain(text, scopeFromJob(job))`.
-10. A `memory_extraction` row is upserted for the job with `extracted_at`, `raw_text`,
-    `memory_count`, `quality_score`, `embedding_status`, and `tier` fields populated.
+10. When all accepted facts have been stored, a `memory_extraction` row shall be upserted
+    for the job with `extracted_at`, `raw_text`, `memory_count`, `quality_score`,
+    `embedding_status`, and `tier` fields populated. If this DB upsert fails, the system
+    shall treat the failure as an extraction failure: any facts already stored via
+    `client.retain` shall be rolled back (deleted by their returned IDs), the row shall be
+    written with `quality_score = 0`, `memory_count = 0`, `embedding_status = 'failed'`,
+    and the error logged without re-throwing.
 11. When an extraction failure occurs — whether from a thrown LLM exception, a missing output
     file, or any other non-LLM error — the system shall write a `memory_extraction` row with
     `quality_score = 0`, `memory_count = 0`, `embedding_status = 'failed'`, and log the
@@ -122,10 +127,15 @@ embedding costs for everything.
 7. Each batch run: queries up to 1 000 `pending` rows ordered by `extracted_at ASC`, sends
    them to the Voyage Batch API, polls for completion (up to 4 hours), then updates
    `embedding_status` to `embedded` for successes or `failed` for errors.
-8. Rows with `embed_attempts >= 3` are marked `failed` and skipped in future batch runs.
-9. `embed_attempts` is incremented on each batch attempt regardless of outcome.
-10. If the Voyage Batch API call itself throws, the worker logs the error and exits the current
-    run cleanly — it will retry on the next 6-hour tick.
+8. `embed_attempts` is incremented only for rows that were included in a batch submitted to
+   the Voyage Batch API. Rows in a batch that fails before submission (i.e. the API call
+   throws before any job is processed) shall not have their `embed_attempts` incremented.
+9. Rows with `embed_attempts >= 3` are marked `embedding_status = 'failed'` and skipped in
+   all future batch runs. A row only reaches this threshold after three actual Voyage batch
+   submission attempts, not from API-level failures that occur before submission.
+10. If the Voyage Batch API call itself throws before submitting any rows, the worker logs
+    the error and exits the current run cleanly without modifying any row's `embed_attempts`.
+    It will retry on the next 6-hour tick.
 
 ### Requirement 4: Manual Re-trigger and Backfill
 
@@ -142,10 +152,12 @@ memory store from existing work.
 3. The route returns 503 if `MEMORY_EXTRACTION_ENABLED=false` — this applies only when the
    endpoint is explicitly called via HTTP. The automatic background trigger (AC 6 below)
    silently skips when the flag is off and does not produce any HTTP response.
-4. `POST /api/memory/backfill` accepts `{ workspaceId, limit?: number }` (default limit 100)
-   and enqueues extraction for the most-recent `limit` completed jobs that have no
-   `memory_extraction` row. When the client supplies a `limit` greater than 100, the system
-   shall silently cap it at 100 without returning an error. Returns `{ queued: number }`.
+4. `POST /api/memory/backfill` accepts `{ workspaceId, limit?: number }` (default limit 100,
+   maximum limit 100) and enqueues extraction for the most-recent `limit` completed jobs that
+   have no `memory_extraction` row. When the client supplies a `limit` greater than 100, the
+   system shall silently cap it at 100 without returning an error. Negative or zero values
+   for `limit` shall return 400 with `{ error: 'limit must be a positive integer' }`.
+   Returns `{ queued: number, appliedLimit: number }` so the caller can observe any capping.
 5. Backfill runs extractions sequentially (not concurrently) to avoid LLM rate-limit bursts,
    with a 500 ms delay between each job.
 6. Extraction is triggered automatically from `src/routes/jobs.ts` whenever a job status
