@@ -65,8 +65,10 @@ without any manual steps so that the memory store fills up passively as I work.
 2. An in-flight guard (`Set<string>` keyed by `job.id`) prevents concurrent duplicate
    extractions for the same job. If an extraction for that job ID is already running, the
    new call returns immediately without doing any work or logging an error.
-3. The function reads the job's `.md` output file. If the file is absent or empty, the
-   function logs a warning and returns without writing anything to the DB.
+3. The function reads the job's `.md` output file. If the file is absent or empty, all
+   fact extraction shall be rejected — the function logs a warning, writes a
+   `memory_extraction` row with `quality_score = 0`, `memory_count = 0`,
+   `embedding_status = 'failed'`, and returns without proceeding to LLM calls.
 4. A first LLM call (the **extractor**) reads the file text and returns a JSON array of
    `{ text: string, category: string }` objects where `category` is one of `architecture`,
    `error`, `resolution`, `procedure`, `constraint`.
@@ -88,7 +90,12 @@ without any manual steps so that the memory store fills up passively as I work.
 8. Before calling `client.retain`, a deduplication check calls `client.recall(text, scope, 1)`.
    If the returned `Memory` array is non-empty and the first result's `similarityScore > 0.92`,
    the fact is discarded as a duplicate. If `Memory.similarityScore` is absent (Hindsight does
-   not return scores), the deduplication check is skipped with a debug log.
+   not return scores), the deduplication check is skipped with a debug log and the fact
+   proceeds to storage. If `client.recall` itself throws or returns an error, the fact shall
+   be rejected — the deduplication check failure is logged at WARN level and the fact is not
+   stored; extraction continues with the remaining facts. When an extraction failure has
+   already been detected (e.g. all facts dropped by generic pattern rejection), the
+   deduplication check shall be skipped entirely and no `client.recall` call made.
 9. Each accepted fact is stored via `client.retain(text, scopeFromJob(job))`.
 10. When all accepted facts have been stored, a `memory_extraction` row shall be upserted
     for the job with `extracted_at`, `raw_text`, `memory_count`, `quality_score`,
@@ -133,9 +140,12 @@ embedding costs for everything.
    time — embedding is exclusively handled by the batch worker on its next scheduled run.
 6. `src/workers/memoryBatchEmbed.ts` exports `startBatchEmbedWorker(db, client)` which
    runs every 6 hours via `setInterval`.
-7. Each batch run: queries up to 1 000 `pending` rows ordered by `extracted_at ASC`, sends
-   them to the Voyage Batch API, polls for completion (up to 4 hours), then updates
-   `embedding_status` to `embedded` for successes or `failed` for errors.
+7. Each batch run: queries exactly up to 1 000 `pending` rows ordered by `extracted_at ASC`
+   using a `LIMIT 1000` clause — this is a strict hard limit and shall never be exceeded
+   regardless of how many rows are available. The selected rows are sent to the Voyage Batch
+   API, polled for completion (up to 4 hours), then `embedding_status` is updated to
+   `embedded` for successes or `failed` for errors. Any remaining `pending` rows beyond the
+   1 000 limit are left for the next scheduled run.
 8. `embed_attempts` is incremented only for rows that were included in a batch submitted to
    the Voyage Batch API. Rows in a batch that fails before submission (i.e. the API call
    throws before any job is processed) shall not have their `embed_attempts` incremented.
@@ -158,17 +168,20 @@ memory store from existing work.
 
 1. `POST /api/memory/extract/:jobId` re-runs `extractAndStore` for the given job, overwriting
    any existing `memory_extraction` row. Returns `{ jobId, memoryCount, qualityScore }`.
-2. The route returns 404 if the job ID does not exist in the DB, regardless of whether the
-   ID format is syntactically valid. No format pre-validation is performed.
-3. The route returns 503 if `MEMORY_EXTRACTION_ENABLED=false` — this applies only when the
-   endpoint is explicitly called via HTTP. The automatic background trigger (AC 6 below)
-   silently skips when the flag is off and does not produce any HTTP response.
-4. `POST /api/memory/backfill` accepts `{ workspaceId, limit?: number }` (default limit 100,
-   maximum limit 100) and enqueues extraction for the most-recent `limit` completed jobs that
-   have no `memory_extraction` row. When the client supplies a `limit` greater than 100, the
-   system shall silently cap it at 100 without returning an error. Negative or zero values
-   for `limit` shall return 400 with `{ error: 'limit must be a positive integer' }`.
-   Returns `{ queued: number, appliedLimit: number }` so the caller can observe any capping.
+2. The route shall validate requests in the following order: (a) if `MEMORY_EXTRACTION_ENABLED=false`,
+   return 503 with `{ error: 'memory extraction disabled' }` immediately, before any DB lookup;
+   (b) if the job ID does not exist in the DB, return 404. No format pre-validation of the job
+   ID is performed — any string that does not match a DB record returns 404.
+3. The 503 check in AC 2(a) applies only when the endpoint is explicitly called via HTTP. The
+   automatic background trigger (AC 6 below) silently skips when the flag is off and does not
+   produce any HTTP response.
+4. `POST /api/memory/backfill` accepts `{ workspaceId, limit?: number }` (default 100,
+   minimum 1, maximum 100) and enqueues extraction for the most-recent `limit` completed jobs
+   that have no `memory_extraction` row. When the client supplies a `limit` greater than 100,
+   the system shall silently cap it at 100 without returning an error. Values less than 1
+   (zero, negative, or non-integer) for `limit` shall return 400 with
+   `{ error: 'limit must be a positive integer' }`. Returns
+   `{ queued: number, appliedLimit: number }` so the caller can observe any capping.
 5. Backfill runs extractions sequentially (not concurrently) to avoid LLM rate-limit bursts,
    with a 500 ms delay between each job.
 6. Extraction is triggered automatically from `src/routes/jobs.ts` whenever a job status
