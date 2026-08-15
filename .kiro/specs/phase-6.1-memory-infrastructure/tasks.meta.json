@@ -135,6 +135,133 @@
         "executionId": "22c0bb77-3a57-4061-a8d3-c139ee2a000a",
         "chatSessionId": "sess_6fe1d75f-34b1-4b9d-a83a-c63f80e8ffb9",
         "timestamp": 1786804367726
+      },
+      {
+        "executionId": "22c0bb77-3a57-4061-a8d3-c139ee2a000a",
+        "chatSessionId": "sess_6fe1d75f-34b1-4b9d-a83a-c63f80e8ffb9",
+        "timestamp": 1786804572259
+      }
+    ],
+    "4.2 Write unit tests and property tests in `test/memory/circuit-breaker.test.ts`": [
+      {
+        "executionId": "d5d124ed-76ae-44ae-9e28-c5682884c7f6",
+        "chatSessionId": "sess_6edaa0ce-1e47-4796-902f-e7479cd752e8",
+        "timestamp": 1786804591958
+      },
+      {
+        "executionId": "d7e288a9-cb47-43b5-aa75-a97de22d0335",
+        "chatSessionId": "sess_6edaa0ce-1e47-4796-902f-e7479cd752e8",
+        "timestamp": 1786806829991
+      }
+    ],
+    "4. MemoryCircuitBreaker": [
+      {
+        "executionId": "d7e288a9-cb47-43b5-aa75-a97de22d0335",
+        "chatSessionId": "sess_6edaa0ce-1e47-4796-902f-e7479cd752e8",
+        "timestamp": 1786806830488
+      }
+    ],
+    "5.1 Create `src/memory/client.ts` with `createMemoryClient` and `NoOpMemoryClient`": [
+      {
+        "executionId": "c0a98a42-7276-4d31-a6c1-7bce741e59e2",
+        "chatSessionId": "sess_d94d8e4f-eefb-4a26-8cad-a96b9855c15f",
+        "timestamp": 1786806921986
+      },
+      {
+        "executionId": "c0a98a42-7276-4d31-a6c1-7bce741e59e2",
+        "chatSessionId": "sess_d94d8e4f-eefb-4a26-8cad-a96b9855c15f",
+        "timestamp": 1786807039632
+      }
+    ],
+    "5.2 Create `src/memory/scopes.ts` with scope helper functions": [
+      {
+        "executionId": "bfc5e8ac-e79e-4d17-a6c3-3da56ddc236c",
+        "chatSessionId": "sess_28f7eb18-0409-41e1-8fdb-997078c042e6",
+        "timestamp": 1786807052558
+      },
+      {
+        "executionId": "bfc5e8ac-e79e-4d17-a6c3-3da56ddc236c",
+        "chatSessionId": "sess_28f7eb18-0409-41e1-8fdb-997078c042e6",
+        "timestamp": 1786807165517
+      }
+    ],
+    "5.3 Create `src/routes/memory.ts` exporting `register(router: Router): void`": [
+      {
+        "executionId": "ea47efde-98d0-442a-960d-9c5ebb87198e",
+        "chatSessionId": "sess_9b96f454-d0ff-4b75-81f2-f725c45bec64",
+        "timestamp": 1786807179623
+      },
+      {
+        "executionId": "ea47efde-98d0-442a-960d-9c5ebb87198e",
+        "chatSessionId": "sess_9b96f454-d0ff-4b75-81f2-f725c45bec64",
+        "timestamp": 1786807328911
+      }
+    ],
+    "5.4 Create `src/workers/memoryRetry.ts` following the start/stop interval pattern from `ssebroadcaster.ts`": [
+      {
+        "executionId": "e6a3543e-c225-4ca2-a083-adcb98de409c",
+        "chatSessionId": "sess_3a34a7e8-84a3-4af0-961a-24d7c408620c",
+        "timestamp": 1786807346378
+      },
+      {
+        "executionId": "e6a3543e-c225-4ca2-a083-adcb98de409c",
+        "chatSessionId": "sess_3a34a7e8-84a3-4af0-961a-24d7c408620c",
+        "timestamp": 1786807418163
+      }
+    ],
+    "5.5 Register the memory route and start the retry worker in `src/monitor.ts`": [
+      {
+        "executionId": "abad5687-9fec-44fc-a3cc-94bd4e39730e",
+        "chatSessionId": "sess_f4164586-efeb-45d2-9af3-70951e4705b3",
+        "timestamp": 1786807431547
+      },
+      {
+        "executionId": "abad5687-9fec-44fc-a3cc-94bd4e39730e",
+        "chatSessionId": "sess_f4164586-efeb-45d2-9af3-70951e4705b3",
+        "timestamp": 1786807998155
+      }
+    ],
+    "5.6 Write unit tests in `test/memory/client.test.ts`": [
+      {
+        "executionId": "2bb22ba7-22d7-495e-a634-a59f5883b50c",
+        "chatSessionId": "sess_9e7532e4-a4fb-405b-8231-1bf2ebfebf92",
+        "timestamp": 1786808013305
+      },
+      {
+        "executionId": "2bb22ba7-22d7-495e-a634-a59f5883b50c",
+        "chatSessionId": "sess_9e7532e4-a4fb-405b-8231-1bf2ebfebf92",
+        "timestamp": 1786808146259
+      }
+    ],
+    "5.7 Write unit tests in `test/memory/scopes.test.ts`": [
+      {
+        "executionId": "6feb4b15-0d85-4ceb-8cce-2c8f30af2356",
+        "chatSessionId": "sess_be6d3f09-2316-43c8-b3f3-5faa8159e921",
+        "timestamp": 1786808162923
+      },
+      {
+        "executionId": "6feb4b15-0d85-4ceb-8cce-2c8f30af2356",
+        "chatSessionId": "sess_be6d3f09-2316-43c8-b3f3-5faa8159e921",
+        "timestamp": 1786808275587
+      }
+    ],
+    "5.8 Write unit tests in `test/routes/memory.test.ts`": [
+      {
+        "executionId": "e589efcb-8068-406f-8fe6-07ede1a61693",
+        "chatSessionId": "sess_fd511f15-34ef-478e-99f4-03d5b0307a30",
+        "timestamp": 1786808288137
+      },
+      {
+        "executionId": "e589efcb-8068-406f-8fe6-07ede1a61693",
+        "chatSessionId": "sess_fd511f15-34ef-478e-99f4-03d5b0307a30",
+        "timestamp": 1786816810466
+      }
+    ],
+    "5. Factory, scopes, route, and worker": [
+      {
+        "executionId": "e589efcb-8068-406f-8fe6-07ede1a61693",
+        "chatSessionId": "sess_fd511f15-34ef-478e-99f4-03d5b0307a30",
+        "timestamp": 1786816810607
       }
     ]
   }

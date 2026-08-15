@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { existsSync } from 'node:fs';
-import { KIRO_TOOLS_DIR, PORT, WORKSPACE_ROOT, SHUTDOWN_TIMEOUT_MS, OUTPUT_DIR, SESSIONS_DIR, WORKFLOW_DIR, MEMORY_ENABLED, HINDSIGHT_URL } from './constants.ts';
+import { KIRO_TOOLS_DIR, PORT, WORKSPACE_ROOT, SHUTDOWN_TIMEOUT_MS, OUTPUT_DIR, SESSIONS_DIR, WORKFLOW_DIR, MEMORY_ENABLED, HINDSIGHT_URL, MEMORY_RETRY_PATH } from './constants.ts';
 import { findUnconfiguredVars, validateEnvPaths } from './validation.ts';
 import { createRouter } from './router.ts';
 
@@ -72,6 +72,7 @@ import { register as registerChainManagement } from './routes/chain-management.t
 import { register as registerSystem }         from './routes/system.ts';
 import { register as registerSSE }            from './routes/sse.ts';
 import { register as registerStatic }         from './routes/static.ts';
+import { register as registerMemory }         from './routes/memory.ts';
 
 // ========== Phase 5.1: DB Layer Imports ==========
 import { loadDbConfig } from './config/db-config.ts';
@@ -88,6 +89,12 @@ import { SubscriptionManager } from './ws/subscriptions.ts';
 import { CommandHandler } from './ws/commands.ts';
 import { register as registerWs } from './routes/ws.ts';
 import type { DbAdapter } from './db/adapter.ts';
+
+// ========== Phase 6.1: Memory Infrastructure Imports ==========
+import { HindsightAdapter } from './memory/hindsight.ts';
+import { MemoryCircuitBreaker } from './memory/circuit-breaker.ts';
+import { RetryQueue } from './memory/retry-queue.ts';
+import { startMemoryRetryWorker } from './workers/memoryRetry.ts';
 
 const DIST_DIR = path.resolve(import.meta.dir, '../dist');
 const FLAT_ASSET_RE = /^\/(index-[a-z0-9]+\.(js|css))$/;
@@ -139,6 +146,27 @@ registerChainManagement(router);
 registerSystem(router);
 registerSSE(router);
 registerStatic(router);
+
+// ========== Phase 6.1: Memory Infrastructure Setup ==========
+// Construct the circuit breaker and retry queue directly so both the
+// route handler and the retry worker receive typed references.
+// When MEMORY_ENABLED=false, circuitBreaker is null and NoOp behaviour
+// is handled inside registerMemory / startMemoryRetryWorker.
+let memoryCircuitBreaker: MemoryCircuitBreaker | null = null;
+let memoryRetryQueue: RetryQueue | null = null;
+
+if (MEMORY_ENABLED) {
+  const hindsightAdapter = new HindsightAdapter(HINDSIGHT_URL);
+  memoryRetryQueue = new RetryQueue(MEMORY_RETRY_PATH, hindsightAdapter);
+  memoryCircuitBreaker = new MemoryCircuitBreaker({
+    inner: hindsightAdapter,
+    retryQueue: memoryRetryQueue,
+    failureThreshold: 3,
+    openTimeoutMs: 30_000,
+  });
+}
+
+registerMemory(router, memoryCircuitBreaker);
 
 // ========== Phase 5.1: DB Startup Gating (Req 5.6, 8.3, 8.4, 9.1) ==========
 // Run migrations synchronously before opening the HTTP server so that
@@ -288,6 +316,12 @@ startSSEBroadcaster();
 await loadSummariseState();
 await runBackfill();
 startQueuePoller();
+
+// ========== Phase 6.1: Memory Retry Worker ==========
+// Only start the worker when MEMORY_ENABLED=true and a RetryQueue was constructed.
+if (memoryRetryQueue !== null) {
+  startMemoryRetryWorker(memoryRetryQueue);
+}
 
 // ========== Phase 5.1: File Watcher (Req 2.1, 6.6) ==========
 // Start after Bun.serve() so the watcher does not block HTTP startup.

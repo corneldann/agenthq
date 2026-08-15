@@ -138,8 +138,8 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
   - Verify: `bun test test/memory/retry-queue.test.ts` passes; `node_modules/.bin/tsc.exe --noEmit` passes
   - _Requirements: 5.1–5.4_
 
-- [ ] 4. MemoryCircuitBreaker
-  - [-] 4.1 Create `src/memory/circuit-breaker.ts` implementing `MemoryCircuitBreaker`
+- [x] 4. MemoryCircuitBreaker
+  - [x] 4.1 Create `src/memory/circuit-breaker.ts` implementing `MemoryCircuitBreaker`
     - Constructor: `{ inner: IMemoryClient, retryQueue: RetryQueue, failureThreshold: number, openTimeoutMs: number }` — all injected, nothing from env
     - Initial state: `closed`; private field tracks `consecutiveFailures`
     - Count toward failure threshold: only `MemoryServiceError` and raw network errors (fetch-level throws)
@@ -154,7 +154,7 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
     - `CircuitState` imported from `src/memory/types.ts` — do not redefine
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9_
 
-  - [~] 4.2 Write unit tests and property tests in `test/memory/circuit-breaker.test.ts`
+  - [x] 4.2 Write unit tests and property tests in `test/memory/circuit-breaker.test.ts`
     - Use a `FakeMemoryClient` test double (never hits network); use an in-memory fake `RetryQueue`
     - Mock timers for `openTimeoutMs` using Bun timer mocks / fake clock
     - Unit tests: initial state `closed`; `open → half_open` timer transition; `half_open → closed` on probe success; `half_open → open` on probe failure; `getMetrics()` shape; INFO log on each transition
@@ -176,20 +176,20 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
   - Verify: `bun test test/memory/circuit-breaker.test.ts` passes; `node_modules/.bin/tsc.exe --noEmit` passes
   - _Requirements: 4.1–4.9_
 
-- [ ] 5. Factory, scopes, route, and worker
-  - [ ] 5.1 Create `src/memory/client.ts` with `createMemoryClient` and `NoOpMemoryClient`
+- [x] 5. Factory, scopes, route, and worker
+  - [x] 5.1 Create `src/memory/client.ts` with `createMemoryClient` and `NoOpMemoryClient`
     - `NoOpMemoryClient implements IMemoryClient`: `retain()` returns `''`; `recall()` returns `[]`; `reflect()` returns `null`; `delete()` returns `undefined`
     - `MemoryClientConfig` type: `{ enabled: boolean; baseUrl: string; retryPath: string; failureThreshold?: number; openTimeoutMs?: number }`
     - `createMemoryClient(config: MemoryClientConfig): IMemoryClient`: when `!config.enabled` return `new NoOpMemoryClient()`; otherwise compose `HindsightAdapter → MemoryCircuitBreaker` and return the breaker
     - _Requirements: 5.5_
 
-  - [ ] 5.2 Create `src/memory/scopes.ts` with scope helper functions
+  - [x] 5.2 Create `src/memory/scopes.ts` with scope helper functions
     - `scopeFromJob(job: Job): MemoryScope` — sets `workspaceId: job.workspaceId`, `agentId: job.agent`, `runId: job.id`
     - `scopeFromChain(chain: Chain): MemoryScope` — sets `workspaceId: chain.workspaceId`, `chainId: chain.chainId`
     - Import `Job` and `Chain` from `../types.ts`; import `MemoryScope` from `./types.ts`
     - _Requirements: 5.6_
 
-  - [ ] 5.3 Create `src/routes/memory.ts` exporting `register(router: Router): void`
+  - [x] 5.3 Create `src/routes/memory.ts` exporting `register(router: Router): void`
     - `GET /api/memory/circuit-breaker` handler
     - Import `MEMORY_ENABLED` from `../constants.ts` (never re-read from `process.env`)
     - When `MEMORY_ENABLED=false`: return `200` with `{ state: 'disabled' }`
@@ -198,20 +198,20 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
     - Follow the `register(router)` pattern from existing routes
     - _Requirements: 5.7_
 
-  - [ ] 5.4 Create `src/workers/memoryRetry.ts` following the start/stop interval pattern from `ssebroadcaster.ts`
+  - [x] 5.4 Create `src/workers/memoryRetry.ts` following the start/stop interval pattern from `ssebroadcaster.ts`
     - Export `startMemoryRetryWorker(retryQueue: RetryQueue): void` and `stopMemoryRetryWorker(): void`
     - Interval: every 5 minutes (`5 * 60 * 1000` ms)
     - On each tick: call `retryQueue.drain()`, log result at DEBUG level: `[memory-retry] drained N entries`
     - Errors from `drain()` are caught and logged at WARN; must not crash the worker
     - _Requirements: 5.8_
 
-  - [ ] 5.5 Register the memory route and start the retry worker in `src/monitor.ts`
+  - [x] 5.5 Register the memory route and start the retry worker in `src/monitor.ts`
     - Import `register as registerMemory` from `./routes/memory.ts`
     - Call `registerMemory(router)` alongside the other route registrations
     - Import and call `startMemoryRetryWorker` after the other worker starts
     - _Requirements: 5.7, 5.8_
 
-  - [ ] 5.6 Write unit tests in `test/memory/client.test.ts`
+  - [x] 5.6 Write unit tests in `test/memory/client.test.ts`
     - Test: `createMemoryClient({ enabled: false, ... })` returns a `NoOpMemoryClient` (all methods return safe zero-values)
     - Test: `createMemoryClient({ enabled: true, ... })` returns a `MemoryCircuitBreaker` instance
     - **Property 1:** For any inputs, `NoOpMemoryClient` methods return safe zero-values and never throw
@@ -220,12 +220,12 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
     - `numRuns: 100`
     - **Validates: Requirements 1.1, 5.5**
 
-  - [ ] 5.7 Write unit tests in `test/memory/scopes.test.ts`
+  - [x] 5.7 Write unit tests in `test/memory/scopes.test.ts`
     - Test `scopeFromJob`: `workspaceId`, `agentId`, `runId` map from correct `Job` fields
     - Test `scopeFromChain`: `workspaceId`, `chainId` map from correct `Chain` fields
     - Use minimal typed stubs for `Job` and `Chain` — no `as any`
 
-  - [ ] 5.8 Write unit tests in `test/routes/memory.test.ts`
+  - [x] 5.8 Write unit tests in `test/routes/memory.test.ts`
     - Test: `GET /api/memory/circuit-breaker` returns `200` with `{ state: 'disabled' }` when `MEMORY_ENABLED=false`
     - Test: `GET /api/memory/circuit-breaker` returns `200` with `CircuitBreakerMetrics` when `MEMORY_ENABLED=true`
     - Mock the circuit breaker instance; do not start a real Bun server
