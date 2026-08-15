@@ -85,8 +85,12 @@ without any manual steps so that the memory store fills up passively as I work.
 9. Each accepted fact is stored via `client.retain(text, scopeFromJob(job))`.
 10. A `memory_extraction` row is upserted for the job with `extracted_at`, `raw_text`,
     `memory_count`, `quality_score`, `embedding_status`, and `tier` fields populated.
-11. If either LLM call throws, the row is written with `quality_score = 0`, `memory_count = 0`,
-    `embedding_status = 'failed'`, and the exception is logged but not re-thrown.
+11. When an extraction failure occurs — whether from a thrown LLM exception, a missing output
+    file, or any other non-LLM error — the system shall write a `memory_extraction` row with
+    `quality_score = 0`, `memory_count = 0`, `embedding_status = 'failed'`, and log the
+    failure without re-throwing. When an LLM call succeeds but produces no valid facts after
+    quality-gating, the system shall record the actual metrics (e.g. `memory_count = 0`,
+    actual `quality_score`) rather than an error row.
 
 ### Requirement 3: Hybrid Embedding Tiers
 
@@ -111,6 +115,8 @@ embedding costs for everything.
    pre-computed vectors, the Voyage call is skipped and Hindsight embeds the text itself on
    first recall; `embedding_status` is still set to `embedded` in the local DB.
 5. Cold jobs: `embedding_status` is set to `pending` and no Voyage API call is made immediately.
+   The system shall strictly prevent any Voyage API call for cold-tier jobs at classification
+   time — embedding is exclusively handled by the batch worker on its next scheduled run.
 6. `src/workers/memoryBatchEmbed.ts` exports `startBatchEmbedWorker(db, client)` which
    runs every 6 hours via `setInterval`.
 7. Each batch run: queries up to 1 000 `pending` rows ordered by `extracted_at ASC`, sends
@@ -131,13 +137,15 @@ memory store from existing work.
 
 1. `POST /api/memory/extract/:jobId` re-runs `extractAndStore` for the given job, overwriting
    any existing `memory_extraction` row. Returns `{ jobId, memoryCount, qualityScore }`.
-2. The route returns 404 if the job ID does not exist in the DB.
+2. The route returns 404 if the job ID does not exist in the DB, regardless of whether the
+   ID format is syntactically valid. No format pre-validation is performed.
 3. The route returns 503 if `MEMORY_EXTRACTION_ENABLED=false` — this applies only when the
    endpoint is explicitly called via HTTP. The automatic background trigger (AC 6 below)
    silently skips when the flag is off and does not produce any HTTP response.
 4. `POST /api/memory/backfill` accepts `{ workspaceId, limit?: number }` (default limit 100)
    and enqueues extraction for the most-recent `limit` completed jobs that have no
-   `memory_extraction` row. Returns `{ queued: number }`.
+   `memory_extraction` row. When the client supplies a `limit` greater than 100, the system
+   shall silently cap it at 100 without returning an error. Returns `{ queued: number }`.
 5. Backfill runs extractions sequentially (not concurrently) to avoid LLM rate-limit bursts,
    with a 500 ms delay between each job.
 6. Extraction is triggered automatically from `src/routes/jobs.ts` whenever a job status
