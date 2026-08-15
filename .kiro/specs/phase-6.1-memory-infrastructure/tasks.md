@@ -233,18 +233,18 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
   - Verify: all new tests pass; `node_modules/.bin/tsc.exe --noEmit` passes
   - _Requirements: 5.5–5.8_
 
-- [ ] 6. Integration verification and checkpoint
-  - [ ] 6.1 Run full test suite: `bun test test/`
+- [x] 6. Integration verification and checkpoint
+  - [x] 6.1 Run full test suite: `bun test test/`
     - All tests must pass with zero failures
-  - [ ] 6.2 Run type checker: `node_modules/.bin/tsc.exe --noEmit`
+  - [x] 6.2 Run type checker: `node_modules/.bin/tsc.exe --noEmit`
     - Zero type errors required
-  - [ ] 6.3 Confirm all 12 correctness properties have corresponding property-based tests
+  - [x] 6.3 Confirm all 12 correctness properties have corresponding property-based tests
     - Properties 1–5: `test/memory/client.test.ts`, `test/constants.test.ts`, `test/memory/hindsight.test.ts`
     - Properties 6–9: `test/memory/circuit-breaker.test.ts`
     - Properties 10–12: `test/memory/retry-queue.test.ts`
     - Each test file contains the correct `// Feature: phase-6.1-memory-infrastructure, Property N: ...` tag comment
-  - [ ] 6.4 Confirm `MEMORY_ENABLED=false` path: `createMemoryClient({ enabled: false, ... })` returns `NoOpMemoryClient`; all four methods return safe zero-values without errors
-  - [ ] 6.5 Confirm startup log line is present in `src/monitor.ts` and outputs the correct format
+  - [x] 6.4 Confirm `MEMORY_ENABLED=false` path: `createMemoryClient({ enabled: false, ... })` returns `NoOpMemoryClient`; all four methods return safe zero-values without errors
+  - [x] 6.5 Confirm startup log line is present in `src/monitor.ts` and outputs the correct format
   - Ensure all tests pass; ask the user if questions arise.
 
 ## Notes
