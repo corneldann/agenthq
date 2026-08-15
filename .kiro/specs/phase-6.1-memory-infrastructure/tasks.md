@@ -29,7 +29,7 @@ All behaviour is gated behind `MEMORY_ENABLED`. No extraction or injection is in
 ## Tasks
 
 - [ ] 1. Memory types, errors, and configuration
-  - [ ] 1.1 Create `src/memory/types.ts` with all type and interface declarations
+  - [~] 1.1 Create `src/memory/types.ts` with all type and interface declarations
     - Export `IMemoryClient` interface with exactly four methods: `retain`, `recall`, `reflect`, `delete`
     - Export `MemoryScope` (only `workspaceId` required; `userId`, `agentId`, `runId`, `chainId` optional)
     - Export `Memory` type with all nine fields: `id`, `text`, `scope`, `qualityScore`, `createdAt`, `lastRetrievedAt`, `retrievalCount`, `tier`, `embeddingStatus`
