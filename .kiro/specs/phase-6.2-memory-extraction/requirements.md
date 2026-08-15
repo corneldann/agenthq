@@ -46,7 +46,11 @@ system can track which jobs have been processed, their quality scores, and embed
 2. Two partial indexes are created: `idx_memext_workspace` on `(workspace_id)` and
    `idx_memext_pending` on `(embedding_status, extracted_at)`, both `WHERE deleted_at IS NULL`.
 3. The migration runs automatically via the existing `runMigrations()` mechanism on next
-   monitor startup.
+   monitor startup. The migration shall only be considered complete when table creation
+   succeeds in full; if the `CREATE TABLE` or `CREATE INDEX` statements execute but the
+   resulting objects are not present in the schema, `runMigrations()` shall throw and the
+   monitor shall exit with a non-zero code, consistent with existing migration-failure
+   behaviour.
 4. Migration is idempotent — uses `CREATE TABLE IF NOT EXISTS` and `CREATE INDEX IF NOT EXISTS`.
 
 ### Requirement 2: Extraction Pipeline
@@ -72,7 +76,10 @@ without any manual steps so that the memory store fills up passively as I work.
    dropped before any storage occurs.
 6. If the mean score of all scored facts is below 0.75, a single refinement pass is triggered:
    the scorer's critique for each low-scoring fact is appended to the extractor prompt and the
-   extractor LLM is called again. Only one refinement pass is attempted per job.
+   extractor LLM is called again. Only one refinement pass is attempted per job. When the
+   refinement pass still produces facts with scores below 0.75, those facts shall be stored
+   regardless — the refinement outcome does not block storage. The mean score after
+   refinement is used when populating the `quality_score` field on the extraction row.
 7. Generic fact patterns are explicitly rejected regardless of score:
    - Text matching `/the system has \w+/i`
    - Text matching `/build (is )?currently failing/i`
@@ -93,9 +100,11 @@ without any manual steps so that the memory store fills up passively as I work.
 11. When an extraction failure occurs — whether from a thrown LLM exception, a missing output
     file, or any other non-LLM error — the system shall write a `memory_extraction` row with
     `quality_score = 0`, `memory_count = 0`, `embedding_status = 'failed'`, and log the
-    failure without re-throwing. When an LLM call succeeds but produces no valid facts after
-    quality-gating, the system shall record the actual metrics (e.g. `memory_count = 0`,
-    actual `quality_score`) rather than an error row.
+    failure without re-throwing. An LLM exception shall always be logged as a failure
+    regardless of whether any facts were successfully stored before the exception occurred.
+    When an LLM call succeeds but produces no valid facts after quality-gating, the system
+    shall record the actual metrics (e.g. `memory_count = 0`, actual `quality_score`) rather
+    than an error row.
 
 ### Requirement 3: Hybrid Embedding Tiers
 
@@ -133,9 +142,11 @@ embedding costs for everything.
 9. Rows with `embed_attempts >= 3` are marked `embedding_status = 'failed'` and skipped in
    all future batch runs. A row only reaches this threshold after three actual Voyage batch
    submission attempts, not from API-level failures that occur before submission.
-10. If the Voyage Batch API call itself throws before submitting any rows, the worker logs
-    the error and exits the current run cleanly without modifying any row's `embed_attempts`.
-    It will retry on the next 6-hour tick.
+10. If the Voyage Batch API call itself throws — regardless of whether the batch contained
+    zero or more rows — the worker shall log the error and exit the current run cleanly
+    without modifying any row's `embed_attempts`. It will retry on the next 6-hour tick.
+    The error shall be logged in all cases, including when the batch contains zero pending
+    jobs.
 
 ### Requirement 4: Manual Re-trigger and Backfill
 
