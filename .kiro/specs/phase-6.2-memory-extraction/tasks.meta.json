@@ -96,6 +96,73 @@
         "chatSessionId": "sess_9acbdf61-29ce-40ec-8ba4-119f8a974d3c",
         "timestamp": 1786819873314
       }
+    ],
+    "2.1 Add `VOYAGE_API_KEY` to `src/constants.ts` — read from `process.env.VOYAGE_API_KEY`, default empty string": [
+      {
+        "executionId": "b572b099-7cf7-48d6-b05d-58610561258d",
+        "chatSessionId": "sess_f4084e74-6c31-4427-aebd-a64985c7749b",
+        "timestamp": 1786820607667
+      },
+      {
+        "executionId": "b572b099-7cf7-48d6-b05d-58610561258d",
+        "chatSessionId": "sess_f4084e74-6c31-4427-aebd-a64985c7749b",
+        "timestamp": 1786820699664
+      }
+    ],
+    "2.2 Add `MEMORY_HOT_TIER_COUNT` to `src/constants.ts` — parse as integer from `process.env.MEMORY_HOT_TIER_COUNT`, default `100`": [
+      {
+        "executionId": "5e43f37e-2ea3-4a9f-98f0-bd1fdd862381",
+        "chatSessionId": "sess_e1711762-3af0-4b30-8a64-6c5d8fe8127a",
+        "timestamp": 1786820710286
+      },
+      {
+        "executionId": "5e43f37e-2ea3-4a9f-98f0-bd1fdd862381",
+        "chatSessionId": "sess_e1711762-3af0-4b30-8a64-6c5d8fe8127a",
+        "timestamp": 1786820785778
+      }
+    ],
+    "2.3 Update `.env.example` with both vars, each with a comment explaining purpose and default": [
+      {
+        "executionId": "b5a66d2a-8826-43ea-ba82-ad8633c529fc",
+        "chatSessionId": "sess_dbb576f6-d40a-4baa-92f5-cff8f5b4f389",
+        "timestamp": 1786820810366
+      },
+      {
+        "executionId": "b5a66d2a-8826-43ea-ba82-ad8633c529fc",
+        "chatSessionId": "sess_dbb576f6-d40a-4baa-92f5-cff8f5b4f389",
+        "timestamp": 1786820839791
+      }
+    ],
+    "2.4 Add startup warning in `src/monitor.ts`: if `MEMORY_ENABLED=true` and `VOYAGE_API_KEY` is empty, log `WARNING: VOYAGE_API_KEY not set — hot-tier Voyage embedding disabled`": [
+      {
+        "executionId": "cb0047f2-79d2-4a44-b35b-f667030ae8b7",
+        "chatSessionId": "sess_6a23829f-5d74-4367-ba41-91fa3415caf2",
+        "timestamp": 1786820858855
+      },
+      {
+        "executionId": "cb0047f2-79d2-4a44-b35b-f667030ae8b7",
+        "chatSessionId": "sess_6a23829f-5d74-4367-ba41-91fa3415caf2",
+        "timestamp": 1786820946498
+      }
+    ],
+    "2.5 Write unit tests for constants parsing: verify `MEMORY_HOT_TIER_COUNT` falls back to 100 when env var is absent, and that non-integer values produce the default": [
+      {
+        "executionId": "5692f602-46a0-4943-a6a5-c9d7561be0ac",
+        "chatSessionId": "sess_707bfbb2-c7dc-4fcd-ab54-11201a3a8c7a",
+        "timestamp": 1786820963744
+      },
+      {
+        "executionId": "5692f602-46a0-4943-a6a5-c9d7561be0ac",
+        "chatSessionId": "sess_707bfbb2-c7dc-4fcd-ab54-11201a3a8c7a",
+        "timestamp": 1786821396015
+      }
+    ],
+    "2. Constants and Configuration — Add the two new env vars required by Phase 6.2": [
+      {
+        "executionId": "5692f602-46a0-4943-a6a5-c9d7561be0ac",
+        "chatSessionId": "sess_707bfbb2-c7dc-4fcd-ab54-11201a3a8c7a",
+        "timestamp": 1786821396325
+      }
     ]
   }
 }

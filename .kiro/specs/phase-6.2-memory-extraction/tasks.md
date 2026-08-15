@@ -88,12 +88,12 @@ These skills do NOT activate automatically during spec task execution.
   - [x] 1.6 Start the monitor and verify migration 004 applies cleanly; confirm the table and indexes appear in the SQLite schema
   - [x] 1.7 Write a migration test: apply 004 to an in-memory SQLite DB and assert all columns and indexes exist via `PRAGMA table_info` and `PRAGMA index_list`
 
-- [ ] 2. Constants and Configuration — Add the two new env vars required by Phase 6.2
-  - [ ] 2.1 Add `VOYAGE_API_KEY` to `src/constants.ts` — read from `process.env.VOYAGE_API_KEY`, default empty string
-  - [ ] 2.2 Add `MEMORY_HOT_TIER_COUNT` to `src/constants.ts` — parse as integer from `process.env.MEMORY_HOT_TIER_COUNT`, default `100`
-  - [ ] 2.3 Update `.env.example` with both vars, each with a comment explaining purpose and default
-  - [ ] 2.4 Add startup warning in `src/monitor.ts`: if `MEMORY_ENABLED=true` and `VOYAGE_API_KEY` is empty, log `WARNING: VOYAGE_API_KEY not set — hot-tier Voyage embedding disabled`
-  - [ ] 2.5 Write unit tests for constants parsing: verify `MEMORY_HOT_TIER_COUNT` falls back to 100 when env var is absent, and that non-integer values produce the default
+- [x] 2. Constants and Configuration — Add the two new env vars required by Phase 6.2
+  - [x] 2.1 Add `VOYAGE_API_KEY` to `src/constants.ts` — read from `process.env.VOYAGE_API_KEY`, default empty string
+  - [x] 2.2 Add `MEMORY_HOT_TIER_COUNT` to `src/constants.ts` — parse as integer from `process.env.MEMORY_HOT_TIER_COUNT`, default `100`
+  - [x] 2.3 Update `.env.example` with both vars, each with a comment explaining purpose and default
+  - [x] 2.4 Add startup warning in `src/monitor.ts`: if `MEMORY_ENABLED=true` and `VOYAGE_API_KEY` is empty, log `WARNING: VOYAGE_API_KEY not set — hot-tier Voyage embedding disabled`
+  - [x] 2.5 Write unit tests for constants parsing: verify `MEMORY_HOT_TIER_COUNT` falls back to 100 when env var is absent, and that non-integer values produce the default
 
 - [ ] 3. Extraction Pipeline — Implement `src/memory/extraction.ts` with in-flight guard, LLM calls, quality gate, pattern filter, dedup, and DB upsert
   - [ ] 3.1 Create `src/memory/extraction.ts` — export `extractAndStore(job, db, client)` with module-level `_inFlight = new Set<string>()`

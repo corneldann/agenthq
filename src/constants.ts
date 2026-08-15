@@ -67,6 +67,14 @@ export function resolveConstants(env: NodeJS.ProcessEnv) {
   const MEMORY_DECAY_DAYS = Number(env.MEMORY_DECAY_DAYS) || 90;
   const MEMORY_RETRY_PATH = env.MEMORY_RETRY_PATH ?? 'data/memory-retry-queue.jsonl';
 
+  // Phase 6.2: Voyage AI embedding key — required for hot-tier embedding
+  const VOYAGE_API_KEY = env.VOYAGE_API_KEY ?? '';
+
+  // Phase 6.2: Hot-tier window size — number of most-recent completed jobs eligible for
+  // immediate Voyage embedding. Defaults to 100 if absent or non-integer.
+  const _hotTierRaw = parseInt(env.MEMORY_HOT_TIER_COUNT ?? '', 10);
+  const MEMORY_HOT_TIER_COUNT = Number.isNaN(_hotTierRaw) ? 100 : _hotTierRaw;
+
   return {
     PORT,
     POLL_LOG_MAX,
@@ -91,6 +99,8 @@ export function resolveConstants(env: NodeJS.ProcessEnv) {
     MEMORY_CONTEXT_TOKEN_BUDGET,
     MEMORY_DECAY_DAYS,
     MEMORY_RETRY_PATH,
+    VOYAGE_API_KEY,
+    MEMORY_HOT_TIER_COUNT,
   };
 }
 
@@ -120,3 +130,5 @@ export const MEMORY_MAX_CONTEXT_MEMORIES = constants.MEMORY_MAX_CONTEXT_MEMORIES
 export const MEMORY_CONTEXT_TOKEN_BUDGET = constants.MEMORY_CONTEXT_TOKEN_BUDGET;
 export const MEMORY_DECAY_DAYS = constants.MEMORY_DECAY_DAYS;
 export const MEMORY_RETRY_PATH = constants.MEMORY_RETRY_PATH;
+export const VOYAGE_API_KEY = constants.VOYAGE_API_KEY;
+export const MEMORY_HOT_TIER_COUNT = constants.MEMORY_HOT_TIER_COUNT;

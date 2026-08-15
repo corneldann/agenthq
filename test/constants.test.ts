@@ -2,6 +2,125 @@ import { describe, it, expect } from 'bun:test';
 import * as fc from 'fast-check';
 import { resolveConstants } from '../src/constants';
 
+// ============================================================================
+// Phase 6.2 — VOYAGE_API_KEY and MEMORY_HOT_TIER_COUNT constants
+// ============================================================================
+
+describe('resolveConstants — Phase 6.2 constants', () => {
+  // --------------------------------------------------------------------------
+  // VOYAGE_API_KEY
+  // --------------------------------------------------------------------------
+
+  it('should return VOYAGE_API_KEY as empty string when env var is absent', () => {
+    const result = resolveConstants({});
+    expect(result.VOYAGE_API_KEY).toBe('');
+  });
+
+  it('should return VOYAGE_API_KEY from env when provided', () => {
+    const result = resolveConstants({ VOYAGE_API_KEY: 'pa-abc123' });
+    expect(result.VOYAGE_API_KEY).toBe('pa-abc123');
+  });
+
+  // --------------------------------------------------------------------------
+  // MEMORY_HOT_TIER_COUNT — default fallback
+  // --------------------------------------------------------------------------
+
+  it('should return MEMORY_HOT_TIER_COUNT=100 when env var is absent', () => {
+    const result = resolveConstants({});
+    expect(result.MEMORY_HOT_TIER_COUNT).toBe(100);
+  });
+
+  it('should return MEMORY_HOT_TIER_COUNT=100 when env var is an empty string', () => {
+    const result = resolveConstants({ MEMORY_HOT_TIER_COUNT: '' });
+    expect(result.MEMORY_HOT_TIER_COUNT).toBe(100);
+  });
+
+  it('should return MEMORY_HOT_TIER_COUNT=100 when env var is alphabetic', () => {
+    const result = resolveConstants({ MEMORY_HOT_TIER_COUNT: 'abc' });
+    expect(result.MEMORY_HOT_TIER_COUNT).toBe(100);
+  });
+
+  it('should truncate float strings to integer part (parseInt behaviour) — "3.5" → 3', () => {
+    // parseInt('3.5', 10) === 3: a valid integer, so no fallback applies
+    const result = resolveConstants({ MEMORY_HOT_TIER_COUNT: '3.5' });
+    expect(result.MEMORY_HOT_TIER_COUNT).toBe(3);
+  });
+
+  it('should return MEMORY_HOT_TIER_COUNT=100 when env var is "NaN"', () => {
+    const result = resolveConstants({ MEMORY_HOT_TIER_COUNT: 'NaN' });
+    expect(result.MEMORY_HOT_TIER_COUNT).toBe(100);
+  });
+
+  it('should return MEMORY_HOT_TIER_COUNT=100 when env var is whitespace', () => {
+    const result = resolveConstants({ MEMORY_HOT_TIER_COUNT: '   ' });
+    expect(result.MEMORY_HOT_TIER_COUNT).toBe(100);
+  });
+
+  it('should parse MEMORY_HOT_TIER_COUNT correctly when env var is a valid integer string', () => {
+    const result = resolveConstants({ MEMORY_HOT_TIER_COUNT: '250' });
+    expect(result.MEMORY_HOT_TIER_COUNT).toBe(250);
+  });
+
+  it('should parse MEMORY_HOT_TIER_COUNT=1 (minimum valid value)', () => {
+    const result = resolveConstants({ MEMORY_HOT_TIER_COUNT: '1' });
+    expect(result.MEMORY_HOT_TIER_COUNT).toBe(1);
+  });
+
+  // --------------------------------------------------------------------------
+  // MEMORY_HOT_TIER_COUNT — parameterised non-integer inputs that fall back
+  // --------------------------------------------------------------------------
+
+  const nonIntegerInputs: Array<{ label: string; value: string }> = [
+    { label: 'alphabetic', value: 'abc' },
+    { label: 'empty string', value: '' },
+    { label: 'whitespace only', value: '   ' },
+    { label: '"NaN" literal', value: 'NaN' },
+    { label: 'special chars', value: '!@#$' },
+    { label: 'json object', value: '{}' },
+    { label: 'boolean string', value: 'true' },
+  ];
+
+  for (const { label, value } of nonIntegerInputs) {
+    it(`should return MEMORY_HOT_TIER_COUNT=100 when env var is ${label}`, () => {
+      const result = resolveConstants({ MEMORY_HOT_TIER_COUNT: value });
+      expect(result.MEMORY_HOT_TIER_COUNT).toBe(100);
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // Property test: any non-integer string → default 100
+  // --------------------------------------------------------------------------
+
+  it('property: non-numeric strings always produce MEMORY_HOT_TIER_COUNT=100', () => {
+    // Arbitrary: strings that parseInt would consider NaN (no leading digit)
+    const nonNumericStringArb = fc.stringMatching(/^[^0-9\-\+][^0-9]*/);
+
+    fc.assert(
+      fc.property(nonNumericStringArb, (value) => {
+        const result = resolveConstants({ MEMORY_HOT_TIER_COUNT: value });
+        expect(result.MEMORY_HOT_TIER_COUNT).toBe(100);
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  // --------------------------------------------------------------------------
+  // Property test: valid integer strings ≥ 1 round-trip correctly
+  // --------------------------------------------------------------------------
+
+  it('property: valid positive integer strings round-trip through MEMORY_HOT_TIER_COUNT', () => {
+    const positiveIntegerArb = fc.integer({ min: 1, max: 10_000 });
+
+    fc.assert(
+      fc.property(positiveIntegerArb, (n) => {
+        const result = resolveConstants({ MEMORY_HOT_TIER_COUNT: String(n) });
+        expect(result.MEMORY_HOT_TIER_COUNT).toBe(n);
+      }),
+      { numRuns: 200 },
+    );
+  });
+});
+
 /**
  * Property-Based Tests for resolveConstants defaults
  *

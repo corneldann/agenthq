@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { existsSync } from 'node:fs';
-import { KIRO_TOOLS_DIR, PORT, WORKSPACE_ROOT, SHUTDOWN_TIMEOUT_MS, OUTPUT_DIR, SESSIONS_DIR, WORKFLOW_DIR, MEMORY_ENABLED, HINDSIGHT_URL, MEMORY_RETRY_PATH } from './constants.ts';
+import { KIRO_TOOLS_DIR, PORT, WORKSPACE_ROOT, SHUTDOWN_TIMEOUT_MS, OUTPUT_DIR, SESSIONS_DIR, WORKFLOW_DIR, MEMORY_ENABLED, HINDSIGHT_URL, MEMORY_RETRY_PATH, VOYAGE_API_KEY } from './constants.ts';
 import { findUnconfiguredVars, validateEnvPaths } from './validation.ts';
 import { createRouter } from './router.ts';
 
@@ -56,6 +56,9 @@ if (hasErrors) {
 
 // Memory layer status (Req 1.10)
 console.log(MEMORY_ENABLED ? `Memory: enabled (hindsight @ ${HINDSIGHT_URL})` : 'Memory: disabled');
+if (MEMORY_ENABLED && !VOYAGE_API_KEY) {
+  console.warn('WARNING: VOYAGE_API_KEY not set — hot-tier Voyage embedding disabled');
+}
 
 // ========== Worker Imports (after validation guard) ==========
 import { startSSEBroadcaster } from './workers/ssebroadcaster.ts';
