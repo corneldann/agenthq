@@ -4,12 +4,12 @@
 
 Phase 6.2 builds the extraction pipeline: when an agent job reaches `done` status, its output
 file is read, structured memory facts are derived via an LLM call, scored by a quality gate,
-deduplicated, and stored via the `IMemoryClient` introduced in Phase 6.1. A hybrid 3-tier
+deduplicated, and stored via the `IMemoryClient` introduced in Phase 6.1. A hybrid 2-tier
 embedding strategy classifies jobs as hot (embed immediately) or cold (batch every 6 hours)
 to balance search latency against embedding cost.
 
 **Prerequisite:** Phase 6.1 complete. `IMemoryClient`, `MemoryCircuitBreaker`, and
-`RetryQueue` are available.
+`RetryQueue` are available. `VOYAGE_API_KEY` must be configured for hot-tier embedding.
 
 ---
 
@@ -17,12 +17,14 @@ to balance search latency against embedding cost.
 
 | Term | Definition |
 |------|-----------|
-| **Quality gate** | Evaluator-optimizer loop from `agentic-eval` skill. Scores each extracted fact on accuracy (0.4), relevance (0.3), specificity (0.3). Rejects facts below 0.75. |
-| **Hot tier** | The most-recent 100 completed jobs — embedded immediately for sub-second recall. |
+| **Quality gate** | A second LLM call that scores each candidate fact on three dimensions and rejects facts below the threshold. |
+| **Scoring rubric** | accuracy (weight 0.4) + relevance (weight 0.3) + specificity (weight 0.3) = weighted score ∈ [0, 1]. |
+| **Hot tier** | The N most-recently-completed jobs where N is configurable via `MEMORY_HOT_TIER_COUNT` (default 100). Embedded immediately for sub-second recall. |
 | **Cold tier** | All jobs beyond the hot window — raw text stored with `embedding_status = 'pending'`; embedded in 6-hour batch. |
 | **memory_extraction** | DB table tracking extraction status per job (migration 004). |
 | **Voyage Batch API** | Voyage AI's batch embedding endpoint — 33% cheaper than real-time, 12-hour completion window. |
-| **Deduplication** | Rejecting a new fact when cosine similarity against an existing memory in the same scope exceeds 0.92. |
+| **Deduplication** | Rejecting a new fact when the top `recall` result for the same scope has `similarityScore > 0.92`. |
+| **In-flight guard** | A `Set<string>` of job IDs currently undergoing extraction, preventing duplicate concurrent runs for the same job. |
 
 ---
 
@@ -56,29 +58,34 @@ without any manual steps so that the memory store fills up passively as I work.
 
 1. `src/memory/extraction.ts` exports `extractAndStore(job: Job, db: DbAdapter,
    client: IMemoryClient): Promise<void>`.
-2. The function reads the job's `.md` output file. If the file is absent or empty, the
+2. An in-flight guard (`Set<string>` keyed by `job.id`) prevents concurrent duplicate
+   extractions for the same job. If an extraction for that job ID is already running, the
+   new call returns immediately without doing any work or logging an error.
+3. The function reads the job's `.md` output file. If the file is absent or empty, the
    function logs a warning and returns without writing anything to the DB.
-3. An LLM call (via `src/agent.ts`'s configured model) extracts candidate facts from the
-   file text. The prompt instructs the model to return a JSON array of `{ text, category }`
-   objects where `category` is one of `architecture`, `error`, `resolution`, `procedure`,
-   `constraint`.
-4. The quality gate scores each fact: accuracy (weight 0.4) + relevance (0.3) +
-   specificity (0.3). Facts with `score < 0.75` are dropped.
-5. If the mean score of all candidate facts is below 0.75, a single refinement pass is
-   triggered: the evaluator's critique is appended to the extraction prompt and the LLM is
-   called again. Only one refinement pass is attempted.
-6. Generic fact patterns are explicitly rejected regardless of score:
+4. A first LLM call (the **extractor**) reads the file text and returns a JSON array of
+   `{ text: string, category: string }` objects where `category` is one of `architecture`,
+   `error`, `resolution`, `procedure`, `constraint`.
+5. A second LLM call (the **quality gate scorer**) evaluates each candidate fact against the
+   scoring rubric — accuracy (0.4) + relevance (0.3) + specificity (0.3) — and returns
+   a `{ score: number, critique: string }` for each fact. Facts with `score < 0.75` are
+   dropped before any storage occurs.
+6. If the mean score of all scored facts is below 0.75, a single refinement pass is triggered:
+   the scorer's critique for each low-scoring fact is appended to the extractor prompt and the
+   extractor LLM is called again. Only one refinement pass is attempted per job.
+7. Generic fact patterns are explicitly rejected regardless of score:
    - Text matching `/the system has \w+/i`
    - Text matching `/build (is )?currently failing/i`
    - Text shorter than 20 characters
    - Text longer than 500 characters
-7. Before calling `client.retain`, a deduplication check queries Hindsight for semantically
-   similar memories in the same scope. Facts with cosine similarity > 0.92 against an existing
-   memory are discarded.
-8. Each accepted fact is stored via `client.retain(text, scopeFromJob(job))`.
-9. A `memory_extraction` row is upserted for the job with `extracted_at`, `raw_text`,
-   `memory_count`, `quality_score`, `embedding_status`, and `tier` fields populated.
-10. If the LLM call throws, the row is written with `quality_score = 0`, `memory_count = 0`,
+8. Before calling `client.retain`, a deduplication check calls `client.recall(text, scope, 1)`.
+   If the returned `Memory` array is non-empty and the first result's `similarityScore > 0.92`,
+   the fact is discarded as a duplicate. If `Memory.similarityScore` is absent (Hindsight does
+   not return scores), the deduplication check is skipped with a debug log.
+9. Each accepted fact is stored via `client.retain(text, scopeFromJob(job))`.
+10. A `memory_extraction` row is upserted for the job with `extracted_at`, `raw_text`,
+    `memory_count`, `quality_score`, `embedding_status`, and `tier` fields populated.
+11. If either LLM call throws, the row is written with `quality_score = 0`, `memory_count = 0`,
     `embedding_status = 'failed'`, and the exception is logged but not re-thrown.
 
 ### Requirement 3: Hybrid Embedding Tiers
@@ -89,23 +96,30 @@ embedding costs for everything.
 
 #### Acceptance Criteria
 
-1. `src/memory/embedding.ts` exports `classifyTier(db: DbAdapter, workspaceId: string):
-   Promise<'hot' | 'cold'>` which counts jobs completed in the last 7 days; if that count
-   is ≤ 100 the current job is `hot`, otherwise `cold`.
-2. Hot jobs: `embedding_status` is set to `embedded` immediately and the real-time Voyage
-   API (`voyage-3-large`) is called with the raw text. The returned vector is stored in
-   Hindsight alongside the memory record.
-3. Cold jobs: `embedding_status` is set to `pending` and no Voyage API call is made
-   immediately.
-4. `src/workers/memoryBatchEmbed.ts` exports `startBatchEmbedWorker(db, client)` which
+1. `VOYAGE_API_KEY` is added to `src/constants.ts` and `.env.example`. It is required when
+   `MEMORY_ENABLED=true`; the monitor logs a warning at startup if it is absent.
+2. `MEMORY_HOT_TIER_COUNT` (default `100`) is added to `src/constants.ts`. It defines the
+   maximum number of recently-completed jobs that qualify for the hot tier.
+3. `src/memory/embedding.ts` exports `classifyTier(db: DbAdapter, workspaceId: string):
+   Promise<'hot' | 'cold'>` which queries the count of non-deleted completed jobs for the
+   workspace ordered by `timestamp DESC`. Returns `'hot'` if the current job would fall within
+   the most-recent `MEMORY_HOT_TIER_COUNT` rows, `'cold'` otherwise.
+4. Hot jobs: `embedding_status` is set to `embedded` and the Voyage real-time API
+   (`voyage-3-large`) is called with the raw extracted text. Hindsight handles its own
+   embedding internally — the Voyage call here pre-warms the embedding via a `retain` request
+   that includes the pre-computed vector. If the Hindsight version in use does not accept
+   pre-computed vectors, the Voyage call is skipped and Hindsight embeds the text itself on
+   first recall; `embedding_status` is still set to `embedded` in the local DB.
+5. Cold jobs: `embedding_status` is set to `pending` and no Voyage API call is made immediately.
+6. `src/workers/memoryBatchEmbed.ts` exports `startBatchEmbedWorker(db, client)` which
    runs every 6 hours via `setInterval`.
-5. Each batch run: queries up to 1 000 `pending` rows ordered by `extracted_at ASC`, sends
+7. Each batch run: queries up to 1 000 `pending` rows ordered by `extracted_at ASC`, sends
    them to the Voyage Batch API, polls for completion (up to 4 hours), then updates
    `embedding_status` to `embedded` for successes or `failed` for errors.
-6. Rows with `embed_attempts >= 3` are marked `failed` and skipped in future batch runs.
-7. `embed_attempts` is incremented on each batch attempt regardless of outcome.
-8. If the Voyage Batch API call itself throws, the worker logs the error and exits the current
-   run cleanly — it will retry on the next 6-hour tick.
+8. Rows with `embed_attempts >= 3` are marked `failed` and skipped in future batch runs.
+9. `embed_attempts` is incremented on each batch attempt regardless of outcome.
+10. If the Voyage Batch API call itself throws, the worker logs the error and exits the current
+    run cleanly — it will retry on the next 6-hour tick.
 
 ### Requirement 4: Manual Re-trigger and Backfill
 
@@ -118,11 +132,14 @@ memory store from existing work.
 1. `POST /api/memory/extract/:jobId` re-runs `extractAndStore` for the given job, overwriting
    any existing `memory_extraction` row. Returns `{ jobId, memoryCount, qualityScore }`.
 2. The route returns 404 if the job ID does not exist in the DB.
-3. The route returns 503 if `MEMORY_EXTRACTION_ENABLED=false`.
+3. The route returns 503 if `MEMORY_EXTRACTION_ENABLED=false` — this applies only when the
+   endpoint is explicitly called via HTTP. The automatic background trigger (AC 6 below)
+   silently skips when the flag is off and does not produce any HTTP response.
 4. `POST /api/memory/backfill` accepts `{ workspaceId, limit?: number }` (default limit 100)
    and enqueues extraction for the most-recent `limit` completed jobs that have no
    `memory_extraction` row. Returns `{ queued: number }`.
 5. Backfill runs extractions sequentially (not concurrently) to avoid LLM rate-limit bursts,
    with a 500 ms delay between each job.
 6. Extraction is triggered automatically from `src/routes/jobs.ts` whenever a job status
-   transitions to `done` and `MEMORY_EXTRACTION_ENABLED=true`.
+   transitions to `done` and `MEMORY_EXTRACTION_ENABLED=true`. When the flag is `false`, the
+   trigger is silently skipped — no error thrown, no warning logged beyond a single DEBUG line.
