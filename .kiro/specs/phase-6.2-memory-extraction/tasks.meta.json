@@ -163,6 +163,61 @@
         "chatSessionId": "sess_707bfbb2-c7dc-4fcd-ab54-11201a3a8c7a",
         "timestamp": 1786821396325
       }
+    ],
+    "3.1 Create `src/memory/extraction.ts` — export `extractAndStore(job, db, client)` with module-level `_inFlight = new Set<string>()`": [
+      {
+        "executionId": "41790d57-4037-40cd-90e7-e520e303583f",
+        "chatSessionId": "sess_45400ab8-70fd-4129-a047-a0353ca7eacf",
+        "timestamp": 1786821618589
+      },
+      {
+        "executionId": "41790d57-4037-40cd-90e7-e520e303583f",
+        "chatSessionId": "sess_45400ab8-70fd-4129-a047-a0353ca7eacf",
+        "timestamp": 1786821807109
+      }
+    ],
+    "3.2 Implement in-flight guard: if `_inFlight.has(job.id)` return immediately; add to set in try block, remove in finally": [
+      {
+        "executionId": "1158048f-1010-4bd6-85b5-7bf4d55348f9",
+        "chatSessionId": "sess_b6789b85-209e-47a3-820e-d115c78159cc",
+        "timestamp": 1786821819276
+      },
+      {
+        "executionId": "1158048f-1010-4bd6-85b5-7bf4d55348f9",
+        "chatSessionId": "sess_b6789b85-209e-47a3-820e-d115c78159cc",
+        "timestamp": 1786822229358
+      }
+    ],
+    "3.3 Implement file read: use `Bun.file(job.mdFile)` — if absent or empty, call `_writeFailedRow` and return": [
+      {
+        "executionId": "20b17dc5-8f8b-40ab-8aab-02950d56270d",
+        "chatSessionId": "sess_ff13c2dd-1004-4ed1-87ba-2aa10e88a861",
+        "timestamp": 1786822240601
+      },
+      {
+        "executionId": "20b17dc5-8f8b-40ab-8aab-02950d56270d",
+        "chatSessionId": "sess_ff13c2dd-1004-4ed1-87ba-2aa10e88a861",
+        "timestamp": 1786822910054
+      }
+    ],
+    "3.4 Implement `_callExtractor(text, critiques?)` — LLM call returning `CandidateFact[]`; on JSON parse failure or wrong shape, throw": [
+      {
+        "executionId": "c5261cc8-7b35-4b05-b20d-4f212e89b24e",
+        "chatSessionId": "sess_8a24392d-787a-43fe-af6c-3d3c87831cba",
+        "timestamp": 1786822924245
+      },
+      {
+        "executionId": "c5261cc8-7b35-4b05-b20d-4f212e89b24e",
+        "chatSessionId": "sess_8a24392d-787a-43fe-af6c-3d3c87831cba",
+        "timestamp": 1786886722070
+      }
+    ],
+    "3.5 Implement `_callScorer(facts)` — second LLM call returning `ScoredFact[]`; validate returned array length matches input; on mismatch treat as scorer error": [
+      {
+        "executionId": "b5824f4e-a494-4aa4-b638-0441a61d633e",
+        "chatSessionId": "sess_14fdf465-1ed4-424b-83fa-338d7f7221f1",
+        "timestamp": 1786886744259
+      }
     ]
   }
 }

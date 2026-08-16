@@ -12,7 +12,7 @@
 
 CREATE TABLE IF NOT EXISTS memory_extraction (
   id               INTEGER PRIMARY KEY AUTOINCREMENT,
-  job_id           TEXT    NOT NULL REFERENCES jobs(id),
+  job_id           TEXT    NOT NULL UNIQUE REFERENCES jobs(id),
   workspace_id     TEXT    NOT NULL,
   extracted_at     TEXT    NOT NULL,
   raw_text         TEXT    NOT NULL,

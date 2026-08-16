@@ -1,0 +1,461 @@
+// ---------------------------------------------------------------------------
+// Memory extraction pipeline — transforms completed job output files into
+// structured, quality-gated, deduplicated memory facts stored via IMemoryClient.
+//
+// Entry point: extractAndStore(job, db, client)
+// In-flight guard: module-level _inFlight Set prevents concurrent duplicate
+// extractions for the same job ID.
+//
+// Sub-tasks 3.2–3.12 implement the body of _doExtract. This file provides the
+// skeleton: types, constants, guard, and stubs.
+// ---------------------------------------------------------------------------
+
+import type { Job } from '../types.ts';
+import type { DbAdapter } from '../db/adapter.ts';
+import type { IMemoryClient } from './types.ts';
+import { OpenRouter } from '@openrouter/sdk';
+import { loadConfig } from '../config.ts';
+
+// ---------------------------------------------------------------------------
+// Internal type vocabulary
+// ---------------------------------------------------------------------------
+
+type FactCategory = 'architecture' | 'error' | 'resolution' | 'procedure' | 'constraint';
+
+type CandidateFact = {
+  text: string;
+  category: FactCategory;
+};
+
+type ScoredFact = CandidateFact & {
+  /** Weighted quality score ∈ [0, 1]: accuracy×0.4 + relevance×0.3 + specificity×0.3. */
+  score: number;
+  /** Scorer's explanation — appended to the extractor prompt in the refinement pass. */
+  critique: string;
+};
+
+type ExtractionResult = {
+  acceptedFacts: Array<{ text: string; category: FactCategory; retainedId: string }>;
+  meanQualityScore: number;
+  tier: 'hot' | 'cold';
+};
+
+// ---------------------------------------------------------------------------
+// Module-level constants
+// ---------------------------------------------------------------------------
+
+const GENERIC_REJECT_PATTERNS: RegExp[] = [
+  /the system has \w+/i,
+  /build (is )?currently failing/i,
+];
+
+const MIN_FACT_LENGTH = 20;
+const MAX_FACT_LENGTH = 500;
+const QUALITY_THRESHOLD = 0.75;
+const DEDUP_SIMILARITY_THRESHOLD = 0.92;
+
+// ---------------------------------------------------------------------------
+// In-flight guard — process-global; shared across all extractAndStore calls
+// ---------------------------------------------------------------------------
+
+const _inFlight = new Set<string>();
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract memory facts from a completed job's output file and store them via
+ * `client.retain`. Writes a `memory_extraction` DB row on both success and
+ * failure.
+ *
+ * If an extraction for `job.id` is already in progress (concurrent call),
+ * returns immediately without doing any work.
+ *
+ * @param job    The completed job whose `.mdFile` will be read.
+ * @param db     Database adapter for writing the `memory_extraction` row.
+ * @param client IMemoryClient used for deduplication recall and fact retention.
+ */
+export async function extractAndStore(
+  job: Job,
+  db: DbAdapter,
+  client: IMemoryClient,
+): Promise<void> {
+  // In-flight guard — prevents duplicate concurrent extractions for the same job
+  if (_inFlight.has(job.id)) return;
+  _inFlight.add(job.id);
+
+  try {
+    await _doExtract(job, db, client);
+  } finally {
+    _inFlight.delete(job.id);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Internal — extraction body (stub; implemented in sub-tasks 3.2–3.12)
+// ---------------------------------------------------------------------------
+
+async function _doExtract(
+  job: Job,
+  db: DbAdapter,
+  client: IMemoryClient,
+): Promise<void> {
+  // Step 1: Read the job's output file.
+  // If the file is absent or empty, write a failed row and return without
+  // proceeding to any LLM calls.
+  let rawText = '';
+  try {
+    const file = Bun.file(job.mdFile);
+    const exists = await file.exists();
+    if (!exists) {
+      console.warn(`[extraction] output file absent for job ${job.id}: ${job.mdFile}`);
+      await _writeFailedRow(db, job, '');
+      return;
+    }
+    rawText = await file.text();
+  } catch (err) {
+    console.warn(`[extraction] failed to read output file for job ${job.id}:`, err);
+    await _writeFailedRow(db, job, '');
+    return;
+  }
+
+  if (rawText.trim().length === 0) {
+    console.warn(`[extraction] output file is empty for job ${job.id}: ${job.mdFile}`);
+    await _writeFailedRow(db, job, '');
+    return;
+  }
+
+  // Step 3: Extract candidate facts via LLM extractor call.
+  let candidates: CandidateFact[];
+  try {
+    candidates = await _callExtractor(rawText);
+  } catch (err) {
+    console.error(`[extraction] LLM extractor failed for job ${job.id}:`, err);
+    await _writeFailedRow(db, job, rawText);
+    return;
+  }
+
+  // Steps 4–12 will follow here (scoring, refinement, pattern filter, dedup, retain, upsert).
+  // Suppress unused-parameter warnings until those steps are implemented.
+  void candidates;
+  void client;
+}
+
+// ---------------------------------------------------------------------------
+// Internal — LLM extractor call
+// ---------------------------------------------------------------------------
+
+/** System prompt for the memory fact extractor. */
+const EXTRACTOR_SYSTEM_PROMPT = `You are a memory extraction assistant. Your job is to read agent job output and extract structured, factual memories that would be useful to recall in future sessions.
+
+Extract facts about: architecture decisions, errors encountered, resolutions applied, procedures used, and constraints discovered.
+
+Return ONLY a JSON object with a single key "facts" whose value is an array of objects. Each object must have:
+- "text": a clear, self-contained statement (20–500 characters)
+- "category": one of "architecture", "error", "resolution", "procedure", "constraint"
+
+Example:
+{"facts": [{"text": "SQLite WAL mode is enabled by the adapter on first connection.", "category": "architecture"}]}`;
+
+/**
+ * Call the LLM extractor to derive candidate facts from a job's raw text.
+ *
+ * On JSON parse failure or wrong response shape, throws an Error — the caller
+ * catches and writes a failed row.
+ *
+ * @param text      Raw text content of the job's output file.
+ * @param critiques Optional list of scorer critiques from the previous pass,
+ *                  appended to the prompt for the refinement pass.
+ * @returns Array of validated candidate facts.
+ * @throws {Error} When the LLM returns unparseable JSON or a non-conforming shape.
+ */
+async function _callExtractor(
+  text: string,
+  critiques?: string[],
+): Promise<CandidateFact[]> {
+  const config = loadConfig({}, { skipApiKey: true });
+  const apiKey = config.apiKey || process.env.OPENROUTER_API_KEY || '';
+
+  if (!apiKey) {
+    throw new Error('[extraction] OPENROUTER_API_KEY is not set — cannot call extractor');
+  }
+
+  // Build the user message, appending critiques for refinement passes
+  let userContent = `Extract memory facts from the following agent job output:\n\n${text}`;
+  if (critiques !== undefined && critiques.length > 0) {
+    const critiqueBlock = critiques
+      .map((c, i) => `  ${i + 1}. ${c}`)
+      .join('\n');
+    userContent += `\n\nPrevious extraction had low-quality facts. Critiques from the scorer:\n${critiqueBlock}\n\nPlease produce more specific, accurate, and relevant facts based on this feedback.`;
+  }
+
+  const client = new OpenRouter({ apiKey });
+
+  const result = await client.chat.send({
+    chatRequest: {
+      model: config.model,
+      messages: [
+        { role: 'system', content: EXTRACTOR_SYSTEM_PROMPT },
+        { role: 'user', content: userContent },
+      ],
+      responseFormat: { type: 'json_object' },
+      temperature: 0.1,
+      maxTokens: 2048,
+    },
+  });
+
+  // Extract text content from the response
+  const rawContent = result.choices[0]?.message?.content;
+  const responseText = typeof rawContent === 'string' ? rawContent : '';
+
+  if (!responseText) {
+    throw new Error('[extraction] extractor returned empty response');
+  }
+
+  // Parse JSON — throw on failure so the caller can write a failed row
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(responseText);
+  } catch (cause) {
+    throw new Error(
+      `[extraction] extractor returned invalid JSON: ${String(cause)}`,
+    );
+  }
+
+  // Validate shape: must be { facts: Array<{ text: string, category: FactCategory }> }
+  if (
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    !Array.isArray((parsed as Record<string, unknown>)['facts'])
+  ) {
+    throw new Error(
+      '[extraction] extractor response missing "facts" array — got: ' +
+      JSON.stringify(parsed).slice(0, 200),
+    );
+  }
+
+  const factsRaw = (parsed as Record<string, unknown[]>)['facts'];
+  const VALID_CATEGORIES = new Set<string>([
+    'architecture', 'error', 'resolution', 'procedure', 'constraint',
+  ]);
+
+  const facts: CandidateFact[] = [];
+  for (let i = 0; i < factsRaw.length; i++) {
+    const item = factsRaw[i];
+    if (
+      typeof item !== 'object' ||
+      item === null ||
+      typeof (item as Record<string, unknown>)['text'] !== 'string' ||
+      typeof (item as Record<string, unknown>)['category'] !== 'string'
+    ) {
+      throw new Error(
+        `[extraction] extractor fact[${i}] missing required 'text' or 'category' string fields`,
+      );
+    }
+    const category = (item as Record<string, unknown>)['category'] as string;
+    if (!VALID_CATEGORIES.has(category)) {
+      throw new Error(
+        `[extraction] extractor fact[${i}] has invalid category '${category}' — ` +
+        'must be one of: architecture, error, resolution, procedure, constraint',
+      );
+    }
+    facts.push({
+      text: (item as Record<string, unknown>)['text'] as string,
+      category: category as FactCategory,
+    });
+  }
+
+  return facts;
+}
+
+// ---------------------------------------------------------------------------
+// Internal — LLM scorer call
+// ---------------------------------------------------------------------------
+
+/** System prompt for the quality gate scorer. */
+const SCORER_SYSTEM_PROMPT = `You are a memory quality scorer. Your job is to evaluate each candidate memory fact on three dimensions and return a numeric score with an explanation.
+
+Scoring rubric (weights must sum to 1.0):
+- accuracy   (weight 0.4): Is the fact factually correct and precise?
+- relevance  (weight 0.3): Is the fact useful to recall in a future agent session?
+- specificity (weight 0.3): Is the fact specific enough to be actionable (not generic)?
+
+For EACH fact, compute: score = (accuracy × 0.4) + (relevance × 0.3) + (specificity × 0.3)
+The final score must be a number in [0, 1].
+
+Return ONLY a JSON object with a single key "scores" whose value is an array of objects — one object per input fact, in the same order as the input. Each object must have:
+- "score": a number in [0, 1] (three decimal places is fine)
+- "critique": a short sentence explaining the score (used to guide a refinement pass)
+
+Example for 2 input facts:
+{"scores": [{"score": 0.85, "critique": "Specific and actionable architecture fact."}, {"score": 0.40, "critique": "Too generic — does not identify which component or version."}]}`;
+
+/**
+ * Call the LLM quality gate scorer to score each candidate fact.
+ *
+ * Returns a `ScoredFact[]` in the same order as the input `facts` array.
+ * Throws when:
+ * - The LLM call itself throws
+ * - The returned JSON is invalid or missing the "scores" array
+ * - The returned array length does not match `facts.length`
+ * - Any item is missing a numeric `score` ∈ [0, 1] or a string `critique`
+ *
+ * @param facts Candidate facts from the extractor pass to score.
+ * @returns Parallel `ScoredFact[]` with score and critique merged in.
+ * @throws {Error} On any validation failure — the caller writes a failed row.
+ */
+async function _callScorer(facts: CandidateFact[]): Promise<ScoredFact[]> {
+  const config = loadConfig({}, { skipApiKey: true });
+  const apiKey = config.apiKey || process.env.OPENROUTER_API_KEY || '';
+
+  if (!apiKey) {
+    throw new Error('[extraction] OPENROUTER_API_KEY is not set — cannot call scorer');
+  }
+
+  // Serialize the facts array so the LLM knows exactly what to score
+  const factsJson = JSON.stringify(
+    facts.map((f, i) => ({ index: i, text: f.text, category: f.category })),
+    null,
+    2,
+  );
+
+  const userContent =
+    `Score each of the following ${facts.length} memory facts using the rubric described in the system prompt.\n\n` +
+    `Return exactly ${facts.length} score objects in the same order.\n\n` +
+    `Facts:\n${factsJson}`;
+
+  const client = new OpenRouter({ apiKey });
+
+  const result = await client.chat.send({
+    chatRequest: {
+      model: config.model,
+      messages: [
+        { role: 'system', content: SCORER_SYSTEM_PROMPT },
+        { role: 'user', content: userContent },
+      ],
+      responseFormat: { type: 'json_object' },
+      temperature: 0.1,
+      maxTokens: 2048,
+    },
+  });
+
+  // Extract text content from the response
+  const rawContent = result.choices[0]?.message?.content;
+  const responseText = typeof rawContent === 'string' ? rawContent : '';
+
+  if (!responseText) {
+    throw new Error('[extraction] scorer returned empty response');
+  }
+
+  // Parse JSON — throw on failure so the caller can write a failed row
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(responseText);
+  } catch (cause) {
+    throw new Error(
+      `[extraction] scorer returned invalid JSON: ${String(cause)}`,
+    );
+  }
+
+  // Validate outer shape: must be { scores: Array<...> }
+  if (
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    !Array.isArray((parsed as Record<string, unknown>)['scores'])
+  ) {
+    throw new Error(
+      '[extraction] scorer response missing "scores" array — got: ' +
+      JSON.stringify(parsed).slice(0, 200),
+    );
+  }
+
+  const scoresRaw = (parsed as Record<string, unknown[]>)['scores'];
+
+  // Validate array length matches input — mismatch is a scorer error
+  if (scoresRaw.length !== facts.length) {
+    throw new Error(
+      `[extraction] scorer array length mismatch: expected ${facts.length} got ${scoresRaw.length}`,
+    );
+  }
+
+  // Validate each item and merge into ScoredFact[]
+  const scoredFacts: ScoredFact[] = [];
+  for (let i = 0; i < scoresRaw.length; i++) {
+    const item = scoresRaw[i];
+
+    if (typeof item !== 'object' || item === null) {
+      throw new Error(
+        `[extraction] scorer scores[${i}] is not an object — got: ${JSON.stringify(item)}`,
+      );
+    }
+
+    const raw = item as Record<string, unknown>;
+    const score = raw['score'];
+    const critique = raw['critique'];
+
+    if (typeof score !== 'number') {
+      throw new Error(
+        `[extraction] scorer scores[${i}].score is not a number — got: ${JSON.stringify(score)}`,
+      );
+    }
+
+    if (score < 0 || score > 1) {
+      throw new Error(
+        `[extraction] scorer scores[${i}].score is out of range [0, 1] — got: ${score}`,
+      );
+    }
+
+    if (typeof critique !== 'string') {
+      throw new Error(
+        `[extraction] scorer scores[${i}].critique is not a string — got: ${JSON.stringify(critique)}`,
+      );
+    }
+
+    scoredFacts.push({
+      text: facts[i]!.text,
+      category: facts[i]!.category,
+      score,
+      critique,
+    });
+  }
+
+  return scoredFacts;
+}
+
+// ---------------------------------------------------------------------------
+// Internal — failure row writer
+// ---------------------------------------------------------------------------
+
+/**
+ * Upsert a failed `memory_extraction` row for the given job.
+ * Uses `ON CONFLICT(job_id) DO UPDATE` so repeated failures overwrite the
+ * previous record rather than accumulating extra rows.
+ *
+ * @param db      Database adapter.
+ * @param job     The job that failed extraction.
+ * @param rawText Raw text read from the job file, or empty string if unreadable.
+ */
+async function _writeFailedRow(
+  db: DbAdapter,
+  job: Job,
+  rawText: string,
+): Promise<void> {
+  const now = Date.now();
+  await db.execute(
+    `INSERT INTO memory_extraction
+       (job_id, workspace_id, extracted_at, raw_text, memory_count,
+        quality_score, embedding_status, tier, last_modified)
+     VALUES (?, ?, ?, ?, 0, 0.0, 'failed', 'cold', ?)
+     ON CONFLICT(job_id) DO UPDATE SET
+       extracted_at     = excluded.extracted_at,
+       raw_text         = excluded.raw_text,
+       memory_count     = 0,
+       quality_score    = 0.0,
+       embedding_status = 'failed',
+       last_modified    = excluded.last_modified`,
+    [job.id, job.workspaceId, new Date().toISOString(), rawText, now],
+  );
+}
+
+
