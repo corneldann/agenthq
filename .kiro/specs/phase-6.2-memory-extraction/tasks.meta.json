@@ -217,6 +217,126 @@
         "executionId": "b5824f4e-a494-4aa4-b638-0441a61d633e",
         "chatSessionId": "sess_14fdf465-1ed4-424b-83fa-338d7f7221f1",
         "timestamp": 1786886744259
+      },
+      {
+        "executionId": "b5824f4e-a494-4aa4-b638-0441a61d633e",
+        "chatSessionId": "sess_14fdf465-1ed4-424b-83fa-338d7f7221f1",
+        "timestamp": 1786886887656
+      }
+    ],
+    "3.6 Implement refinement pass: if mean score < `QUALITY_THRESHOLD` (0.75), call `_callExtractor` again with scorer critiques appended; re-score; one pass only; store results regardless of post-refinement scores": [
+      {
+        "executionId": "5a3bb627-37ff-44bd-88c1-bb93ed4481ed",
+        "chatSessionId": "sess_c05888d6-2c40-43a5-8bfa-ac9a80d75c88",
+        "timestamp": 1786886902393
+      },
+      {
+        "executionId": "8e850483-7e24-4509-a949-a057169990c6",
+        "chatSessionId": "sess_c05888d6-2c40-43a5-8bfa-ac9a80d75c88",
+        "timestamp": 1786891588350
+      }
+    ],
+    "3.7 Implement generic pattern rejection: `GENERIC_REJECT_PATTERNS`, `MIN_FACT_LENGTH`, `MAX_FACT_LENGTH` — reject matching facts before dedup": [
+      {
+        "executionId": "b33dbe42-0f61-42fb-ac29-2bea951e2c41",
+        "chatSessionId": "sess_f406c1c8-a080-43d5-858c-250f7dfcfd7d",
+        "timestamp": 1786890913805
+      },
+      {
+        "executionId": "b33dbe42-0f61-42fb-ac29-2bea951e2c41",
+        "chatSessionId": "sess_f406c1c8-a080-43d5-858c-250f7dfcfd7d",
+        "timestamp": 1786891525775
+      }
+    ],
+    "3.8 Implement dedup: for each remaining fact, call `client.recall(text, scope, 1)`; if first result `similarityScore > DEDUP_SIMILARITY_THRESHOLD` (0.92) discard; if `recall` throws, reject fact and log WARN; if `similarityScore` absent, skip check and proceed": [
+      {
+        "executionId": "9bf5be60-6009-4636-9589-c1e57be93462",
+        "chatSessionId": "sess_c5a4beac-cc63-4073-b32e-d91f7f8e5937",
+        "timestamp": 1786891651302
+      },
+      {
+        "executionId": "9bf5be60-6009-4636-9589-c1e57be93462",
+        "chatSessionId": "sess_c5a4beac-cc63-4073-b32e-d91f7f8e5937",
+        "timestamp": 1786892196547
+      }
+    ],
+    "3.9 Implement `client.retain` loop — collect returned IDs in `retainedIds` array for rollback": [
+      {
+        "executionId": "cde0083c-b89a-49b8-8ebb-1e2b366e79f6",
+        "chatSessionId": "sess_9071346c-37ef-4441-ab87-e4b0f54b0e58",
+        "timestamp": 1786892211103
+      },
+      {
+        "executionId": "cde0083c-b89a-49b8-8ebb-1e2b366e79f6",
+        "chatSessionId": "sess_9071346c-37ef-4441-ab87-e4b0f54b0e58",
+        "timestamp": 1786892323806
+      }
+    ],
+    "3.10 Implement `_writeFailedRow` helper with `ON CONFLICT(job_id) DO UPDATE` upsert": [
+      {
+        "executionId": "9bbd7f6a-e768-4063-9d8c-0bd64d6c22ab",
+        "chatSessionId": "sess_5c104da0-f2b3-45ec-a0a9-12d615cf9e6a",
+        "timestamp": 1786892342355
+      },
+      {
+        "executionId": "9bbd7f6a-e768-4063-9d8c-0bd64d6c22ab",
+        "chatSessionId": "sess_5c104da0-f2b3-45ec-a0a9-12d615cf9e6a",
+        "timestamp": 1786892410925
+      }
+    ],
+    "3.11 Implement success upsert in `_doExtract`: `INSERT INTO memory_extraction ... ON CONFLICT(job_id) DO UPDATE`; on DB upsert failure: call `client.delete` for each `retainedId`, then call `_writeFailedRow`": [
+      {
+        "executionId": "3ad8752f-ee83-49bc-aef7-5583d95215ad",
+        "chatSessionId": "sess_3636b631-e01c-4d05-bdb9-7313ad558623",
+        "timestamp": 1786892424284
+      },
+      {
+        "executionId": "3ad8752f-ee83-49bc-aef7-5583d95215ad",
+        "chatSessionId": "sess_3636b631-e01c-4d05-bdb9-7313ad558623",
+        "timestamp": 1786892631620
+      }
+    ],
+    "3.12 Wire `classifyTier` (Task 4) into the extraction flow to set `tier` on the upsert row": [
+      {
+        "executionId": "bced577d-e916-4693-95fa-4398ccfe3ee9",
+        "chatSessionId": "sess_1ec00576-de3c-4f90-991e-380127807542",
+        "timestamp": 1786892665790
+      },
+      {
+        "executionId": "bced577d-e916-4693-95fa-4398ccfe3ee9",
+        "chatSessionId": "sess_1ec00576-de3c-4f90-991e-380127807542",
+        "timestamp": 1786893232690
+      }
+    ],
+    "3.13 Write unit tests: in-flight guard; missing/empty file writes failed row; LLM throw writes failed row; quality gate pass writes actual metrics; generic patterns reject before dedup; `client.recall` throw rejects fact and continues; DB upsert fail rolls back retained facts": [
+      {
+        "executionId": "fafc71d1-60b8-46f0-8372-843c76774f81",
+        "chatSessionId": "sess_ae6d17c0-f943-43b9-a342-f416807f40ae",
+        "timestamp": 1786893256753
+      },
+      {
+        "executionId": "fafc71d1-60b8-46f0-8372-843c76774f81",
+        "chatSessionId": "sess_ae6d17c0-f943-43b9-a342-f416807f40ae",
+        "timestamp": 1786893690118
+      }
+    ],
+    "3.14 Write property-based tests (fast-check): reject-pattern facts always rejected regardless of score; `memory_count` equals retained ID count; mean quality score ∈ [0, 1]": [
+      {
+        "executionId": "ba7244d3-585d-4334-8962-e626befabd07",
+        "chatSessionId": "sess_2e7a6cd7-ccd7-4d7c-915d-058923ee369b",
+        "timestamp": 1786893722998
+      },
+      {
+        "executionId": "ba7244d3-585d-4334-8962-e626befabd07",
+        "chatSessionId": "sess_2e7a6cd7-ccd7-4d7c-915d-058923ee369b",
+        "timestamp": 1786893995478
+      }
+    ],
+    "3. Extraction Pipeline — Implement `src/memory/extraction.ts` with in-flight guard, LLM calls, quality gate, pattern filter, dedup, and DB upsert": [
+      {
+        "executionId": "ba7244d3-585d-4334-8962-e626befabd07",
+        "chatSessionId": "sess_2e7a6cd7-ccd7-4d7c-915d-058923ee369b",
+        "timestamp": 1786893995608
       }
     ]
   }

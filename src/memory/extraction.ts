@@ -12,7 +12,9 @@
 
 import type { Job } from '../types.ts';
 import type { DbAdapter } from '../db/adapter.ts';
-import type { IMemoryClient } from './types.ts';
+import type { IMemoryClient, Memory } from './types.ts';
+import { scopeFromJob } from './scopes.ts';
+import { classifyTier } from './embedding.ts';
 import { OpenRouter } from '@openrouter/sdk';
 import { loadConfig } from '../config.ts';
 
@@ -136,10 +138,233 @@ async function _doExtract(
     return;
   }
 
-  // Steps 4–12 will follow here (scoring, refinement, pattern filter, dedup, retain, upsert).
-  // Suppress unused-parameter warnings until those steps are implemented.
-  void candidates;
-  void client;
+  // Step 4: Score candidate facts via the LLM quality gate scorer.
+  let scoredFacts: ScoredFact[];
+  try {
+    scoredFacts = await _callScorer(candidates);
+  } catch (err) {
+    console.error(`[extraction] LLM scorer failed for job ${job.id}:`, err);
+    await _writeFailedRow(db, job, rawText);
+    return;
+  }
+
+  // Step 5: Refinement pass — if mean score < QUALITY_THRESHOLD, re-extract
+  // with scorer critiques appended, then re-score. One pass only; the result
+  // is used regardless of whether post-refinement scores improved.
+  const meanScoreBeforeRefinement = _meanScore(scoredFacts);
+  if (meanScoreBeforeRefinement < QUALITY_THRESHOLD) {
+    const critiques = scoredFacts.map(f => f.critique);
+    let refinedCandidates: CandidateFact[];
+    try {
+      refinedCandidates = await _callExtractor(rawText, critiques);
+    } catch (refineErr) {
+      console.warn(
+        `[extraction] refinement extractor call failed for job ${job.id} — using original facts:`,
+        refineErr,
+      );
+      // Fall through with original scoredFacts unchanged
+      refinedCandidates = [];
+    }
+
+    if (refinedCandidates.length > 0) {
+      let refinedScored: ScoredFact[];
+      try {
+        refinedScored = await _callScorer(refinedCandidates);
+        // Replace scoredFacts with the refined results
+        scoredFacts = refinedScored;
+      } catch (scorerErr) {
+        console.warn(
+          `[extraction] refinement scorer call failed for job ${job.id} — using original facts:`,
+          scorerErr,
+        );
+        // Fall through with original scoredFacts unchanged
+      }
+    }
+  }
+
+  // Step 6: Generic pattern rejection — applied before any network calls.
+  // Rejects facts that match blocked patterns, are too short, or are too long.
+  const patternFiltered: ScoredFact[] = [];
+  for (const fact of scoredFacts) {
+    const len = fact.text.length;
+    if (len < MIN_FACT_LENGTH) {
+      console.debug(
+        `[extraction] job ${job.id}: rejected fact (too short: ${len} < ${MIN_FACT_LENGTH}): "${fact.text.slice(0, 50)}"`,
+      );
+      continue;
+    }
+    if (len > MAX_FACT_LENGTH) {
+      console.debug(
+        `[extraction] job ${job.id}: rejected fact (too long: ${len} > ${MAX_FACT_LENGTH}): "${fact.text.slice(0, 50)}..."`,
+      );
+      continue;
+    }
+    let patternMatched = false;
+    for (const pattern of GENERIC_REJECT_PATTERNS) {
+      if (pattern.test(fact.text)) {
+        console.debug(
+          `[extraction] job ${job.id}: rejected fact (pattern match: ${pattern}): "${fact.text.slice(0, 80)}"`,
+        );
+        patternMatched = true;
+        break;
+      }
+    }
+    if (!patternMatched) {
+      patternFiltered.push(fact);
+    }
+  }
+
+  // Step 6: Classify embedding tier — determined before dedup/retain so the tier is
+  // available for the success upsert row. Hot-tier jobs receive immediate Voyage embedding;
+  // cold-tier rows are queued for the 6-hour batch worker.
+  const tier = await classifyTier(db, job.workspaceId);
+
+  // Step 7: Deduplication — skipped entirely when no facts remain after pattern filtering.
+  // For each remaining fact, call client.recall to check for near-duplicate memories.
+  const dedupedFacts: ScoredFact[] = [];
+
+  if (patternFiltered.length > 0) {
+    const scope = scopeFromJob(job);
+
+    for (const fact of patternFiltered) {
+      let recallResult: Memory[];
+      try {
+        recallResult = await client.recall(fact.text, scope, 1);
+      } catch (recallErr) {
+        // recall threw — reject this fact and continue with the rest
+        console.warn(
+          `[extraction] job ${job.id}: dedup recall failed for fact "${fact.text.slice(0, 80)}" — rejecting fact:`,
+          recallErr,
+        );
+        continue;
+      }
+
+      if (recallResult.length === 0) {
+        // No existing memory found — proceed to storage
+        dedupedFacts.push(fact);
+        continue;
+      }
+
+      const topResult = recallResult[0]!;
+
+      // Check whether the result carries a similarityScore field.
+      // The Memory type does not declare this field (Hindsight may or may not return it).
+      const rawResult = topResult as Record<string, unknown>;
+      const similarityScore = rawResult['similarityScore'];
+
+      if (typeof similarityScore === 'undefined') {
+        // similarityScore absent — skip the check and proceed to storage
+        console.debug(
+          `[extraction] job ${job.id}: similarityScore absent on recall result — skipping dedup check for fact "${fact.text.slice(0, 80)}"`,
+        );
+        dedupedFacts.push(fact);
+        continue;
+      }
+
+      if (typeof similarityScore === 'number' && similarityScore > DEDUP_SIMILARITY_THRESHOLD) {
+        // High-similarity duplicate found — discard this fact
+        console.debug(
+          `[extraction] job ${job.id}: discarding duplicate fact (similarityScore=${similarityScore.toFixed(3)} > ${DEDUP_SIMILARITY_THRESHOLD}): "${fact.text.slice(0, 80)}"`,
+        );
+        continue;
+      }
+
+      // similarityScore present but at or below threshold — proceed to storage
+      dedupedFacts.push(fact);
+    }
+  }
+
+  // Step 9: Retain accepted facts — collect returned IDs for rollback in step 10.
+  // Per design spec: individual retain failures are logged at WARN and skipped;
+  // a single failure does not abort the whole extraction unless ALL facts fail.
+  const scope = scopeFromJob(job);
+  const retainedIds: string[] = [];
+
+  for (const fact of dedupedFacts) {
+    let retainedId: string;
+    try {
+      retainedId = await client.retain(fact.text, scope);
+    } catch (retainErr) {
+      console.warn(
+        `[extraction] job ${job.id}: client.retain failed for fact "${fact.text.slice(0, 80)}" — skipping:`,
+        retainErr,
+      );
+      continue;
+    }
+    retainedIds.push(retainedId);
+  }
+
+  // Step 10: Upsert the success row using the tier classified in step 6.
+  // embedding_status = 'embedded' for hot tier, 'pending' for cold tier.
+  const embeddingStatus: 'embedded' | 'pending' = tier === 'hot' ? 'embedded' : 'pending';
+  const meanScore = _meanScore(dedupedFacts);
+  const extractedAt = new Date().toISOString();
+  const lastModified = Date.now();
+
+  try {
+    await db.execute(
+      `INSERT INTO memory_extraction
+         (job_id, workspace_id, extracted_at, raw_text, memory_count,
+          quality_score, embedding_status, tier, last_modified)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(job_id) DO UPDATE SET
+         extracted_at     = excluded.extracted_at,
+         raw_text         = excluded.raw_text,
+         memory_count     = excluded.memory_count,
+         quality_score    = excluded.quality_score,
+         embedding_status = excluded.embedding_status,
+         tier             = excluded.tier,
+         last_modified    = excluded.last_modified`,
+      [
+        job.id,
+        job.workspaceId,
+        extractedAt,
+        rawText,
+        retainedIds.length,
+        meanScore,
+        embeddingStatus,
+        tier,
+        lastModified,
+      ],
+    );
+  } catch (upsertErr) {
+    // DB upsert failed — roll back all retained facts to keep Hindsight consistent
+    // with the local DB, then write a failed row to record the failure.
+    console.error(
+      `[extraction] DB upsert failed for job ${job.id} — rolling back ${retainedIds.length} retained fact(s):`,
+      upsertErr,
+    );
+
+    for (const retainedId of retainedIds) {
+      try {
+        await client.delete(retainedId);
+      } catch (deleteErr) {
+        console.warn(
+          `[extraction] job ${job.id}: failed to roll back retained fact id="${retainedId}":`,
+          deleteErr,
+        );
+      }
+    }
+
+    await _writeFailedRow(db, job, rawText);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Internal — scoring helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute the arithmetic mean of `score` values across a `ScoredFact[]`.
+ * Returns `0` for an empty array so callers can use it directly in comparisons.
+ *
+ * @param facts Array of scored facts (may be empty).
+ * @returns Mean score ∈ [0, 1], or 0 when the array is empty.
+ */
+function _meanScore(facts: ScoredFact[]): number {
+  if (facts.length === 0) return 0;
+  const total = facts.reduce((sum, f) => sum + f.score, 0);
+  return total / facts.length;
 }
 
 // ---------------------------------------------------------------------------
@@ -190,7 +415,7 @@ async function _callExtractor(
     userContent += `\n\nPrevious extraction had low-quality facts. Critiques from the scorer:\n${critiqueBlock}\n\nPlease produce more specific, accurate, and relevant facts based on this feedback.`;
   }
 
-  const client = new OpenRouter({ apiKey });
+  const client = new OpenRouter({ apiKey, retryConfig: { strategy: 'none' } });
 
   const result = await client.chat.send({
     chatRequest: {
@@ -325,7 +550,7 @@ async function _callScorer(facts: CandidateFact[]): Promise<ScoredFact[]> {
     `Return exactly ${facts.length} score objects in the same order.\n\n` +
     `Facts:\n${factsJson}`;
 
-  const client = new OpenRouter({ apiKey });
+  const client = new OpenRouter({ apiKey, retryConfig: { strategy: 'none' } });
 
   const result = await client.chat.send({
     chatRequest: {

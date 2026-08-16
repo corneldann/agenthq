@@ -95,21 +95,21 @@ These skills do NOT activate automatically during spec task execution.
   - [x] 2.4 Add startup warning in `src/monitor.ts`: if `MEMORY_ENABLED=true` and `VOYAGE_API_KEY` is empty, log `WARNING: VOYAGE_API_KEY not set — hot-tier Voyage embedding disabled`
   - [x] 2.5 Write unit tests for constants parsing: verify `MEMORY_HOT_TIER_COUNT` falls back to 100 when env var is absent, and that non-integer values produce the default
 
-- [ ] 3. Extraction Pipeline — Implement `src/memory/extraction.ts` with in-flight guard, LLM calls, quality gate, pattern filter, dedup, and DB upsert
+- [x] 3. Extraction Pipeline — Implement `src/memory/extraction.ts` with in-flight guard, LLM calls, quality gate, pattern filter, dedup, and DB upsert
   - [x] 3.1 Create `src/memory/extraction.ts` — export `extractAndStore(job, db, client)` with module-level `_inFlight = new Set<string>()`
   - [x] 3.2 Implement in-flight guard: if `_inFlight.has(job.id)` return immediately; add to set in try block, remove in finally
   - [x] 3.3 Implement file read: use `Bun.file(job.mdFile)` — if absent or empty, call `_writeFailedRow` and return
   - [x] 3.4 Implement `_callExtractor(text, critiques?)` — LLM call returning `CandidateFact[]`; on JSON parse failure or wrong shape, throw
-  - [-] 3.5 Implement `_callScorer(facts)` — second LLM call returning `ScoredFact[]`; validate returned array length matches input; on mismatch treat as scorer error
-  - [~] 3.6 Implement refinement pass: if mean score < `QUALITY_THRESHOLD` (0.75), call `_callExtractor` again with scorer critiques appended; re-score; one pass only; store results regardless of post-refinement scores
-  - [~] 3.7 Implement generic pattern rejection: `GENERIC_REJECT_PATTERNS`, `MIN_FACT_LENGTH`, `MAX_FACT_LENGTH` — reject matching facts before dedup
-  - [~] 3.8 Implement dedup: for each remaining fact, call `client.recall(text, scope, 1)`; if first result `similarityScore > DEDUP_SIMILARITY_THRESHOLD` (0.92) discard; if `recall` throws, reject fact and log WARN; if `similarityScore` absent, skip check and proceed
-  - [~] 3.9 Implement `client.retain` loop — collect returned IDs in `retainedIds` array for rollback
-  - [~] 3.10 Implement `_writeFailedRow` helper with `ON CONFLICT(job_id) DO UPDATE` upsert
-  - [~] 3.11 Implement success upsert in `_doExtract`: `INSERT INTO memory_extraction ... ON CONFLICT(job_id) DO UPDATE`; on DB upsert failure: call `client.delete` for each `retainedId`, then call `_writeFailedRow`
-  - [~] 3.12 Wire `classifyTier` (Task 4) into the extraction flow to set `tier` on the upsert row
-  - [~] 3.13 Write unit tests: in-flight guard; missing/empty file writes failed row; LLM throw writes failed row; quality gate pass writes actual metrics; generic patterns reject before dedup; `client.recall` throw rejects fact and continues; DB upsert fail rolls back retained facts
-  - [~] 3.14 Write property-based tests (fast-check): reject-pattern facts always rejected regardless of score; `memory_count` equals retained ID count; mean quality score ∈ [0, 1]
+  - [x] 3.5 Implement `_callScorer(facts)` — second LLM call returning `ScoredFact[]`; validate returned array length matches input; on mismatch treat as scorer error
+  - [x] 3.6 Implement refinement pass: if mean score < `QUALITY_THRESHOLD` (0.75), call `_callExtractor` again with scorer critiques appended; re-score; one pass only; store results regardless of post-refinement scores
+  - [x] 3.7 Implement generic pattern rejection: `GENERIC_REJECT_PATTERNS`, `MIN_FACT_LENGTH`, `MAX_FACT_LENGTH` — reject matching facts before dedup
+  - [x] 3.8 Implement dedup: for each remaining fact, call `client.recall(text, scope, 1)`; if first result `similarityScore > DEDUP_SIMILARITY_THRESHOLD` (0.92) discard; if `recall` throws, reject fact and log WARN; if `similarityScore` absent, skip check and proceed
+  - [x] 3.9 Implement `client.retain` loop — collect returned IDs in `retainedIds` array for rollback
+  - [x] 3.10 Implement `_writeFailedRow` helper with `ON CONFLICT(job_id) DO UPDATE` upsert
+  - [x] 3.11 Implement success upsert in `_doExtract`: `INSERT INTO memory_extraction ... ON CONFLICT(job_id) DO UPDATE`; on DB upsert failure: call `client.delete` for each `retainedId`, then call `_writeFailedRow`
+  - [x] 3.12 Wire `classifyTier` (Task 4) into the extraction flow to set `tier` on the upsert row
+  - [x] 3.13 Write unit tests: in-flight guard; missing/empty file writes failed row; LLM throw writes failed row; quality gate pass writes actual metrics; generic patterns reject before dedup; `client.recall` throw rejects fact and continues; DB upsert fail rolls back retained facts
+  - [x] 3.14 Write property-based tests (fast-check): reject-pattern facts always rejected regardless of score; `memory_count` equals retained ID count; mean quality score ∈ [0, 1]
 
 - [ ] 4. Embedding Tier Classification — Implement `src/memory/embedding.ts` with hot/cold tier classification and Voyage API wrapper
   - [ ] 4.1 Create `src/memory/embedding.ts` — export `classifyTier(db, workspaceId)`
