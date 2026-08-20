@@ -98,6 +98,8 @@ import { HindsightAdapter } from './memory/hindsight.ts';
 import { MemoryCircuitBreaker } from './memory/circuit-breaker.ts';
 import { RetryQueue } from './memory/retry-queue.ts';
 import { startMemoryRetryWorker } from './workers/memoryRetry.ts';
+import { startBatchEmbedWorker } from './workers/memoryBatchEmbed.ts';
+import { register as registerMemoryExtraction } from './routes/memory-extraction.ts';
 
 const DIST_DIR = path.resolve(import.meta.dir, '../dist');
 const FLAT_ASSET_RE = /^\/(index-[a-z0-9]+\.(js|css))$/;
@@ -183,6 +185,10 @@ if (dbConfig.enabled) {
     // Register DB-backed routes only when the DB is available (Req 8.4)
     registerStatusHistory(router, dbAdapter);
     registerAnalytics(router, dbAdapter);
+    // Phase 6.2: memory-extraction routes — only when DB is ready and memory is configured
+    if (memoryCircuitBreaker !== null) {
+      registerMemoryExtraction(router, dbAdapter, memoryCircuitBreaker);
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`Database initialisation failed: ${msg}`);
@@ -326,9 +332,20 @@ if (memoryRetryQueue !== null) {
   startMemoryRetryWorker(memoryRetryQueue);
 }
 
+// ========== Phase 6.2: Batch Embed Worker ==========
+// Start when both memory and DB are ready. memoryCircuitBreaker implements
+// IMemoryClient — retained here for future pre-computed vector retain support.
+if (MEMORY_ENABLED && dbReady && dbAdapter !== null && memoryCircuitBreaker !== null) {
+  startBatchEmbedWorker(dbAdapter, memoryCircuitBreaker);
+}
+
 // ========== Phase 5.1: File Watcher (Req 2.1, 6.6) ==========
 // Start after Bun.serve() so the watcher does not block HTTP startup.
 // Only runs when the DB is enabled and successfully initialised.
 if (dbConfig.enabled && dbAdapter !== null) {
-  startFileWatcher(dbAdapter, OUTPUT_DIR);
+  startFileWatcher(
+    dbAdapter,
+    OUTPUT_DIR,
+    MEMORY_ENABLED && memoryCircuitBreaker !== null ? memoryCircuitBreaker : null,
+  );
 }

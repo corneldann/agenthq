@@ -111,56 +111,56 @@ These skills do NOT activate automatically during spec task execution.
   - [x] 3.13 Write unit tests: in-flight guard; missing/empty file writes failed row; LLM throw writes failed row; quality gate pass writes actual metrics; generic patterns reject before dedup; `client.recall` throw rejects fact and continues; DB upsert fail rolls back retained facts
   - [x] 3.14 Write property-based tests (fast-check): reject-pattern facts always rejected regardless of score; `memory_count` equals retained ID count; mean quality score ∈ [0, 1]
 
-- [ ] 4. Embedding Tier Classification — Implement `src/memory/embedding.ts` with hot/cold tier classification and Voyage API wrapper
-  - [ ] 4.1 Create `src/memory/embedding.ts` — export `classifyTier(db, workspaceId)`
-  - [ ] 4.2 Implement `classifyTier` query: count non-deleted completed jobs with `ORDER BY timestamp DESC LIMIT MEMORY_HOT_TIER_COUNT`; return `'hot'` if `cnt < MEMORY_HOT_TIER_COUNT`, else `'cold'`
-  - [ ] 4.3 Implement `embedHot(text)` — `fetch` to Voyage `voyage-3-large`; `AbortSignal.timeout(10_000)`; return `number[] | null`; return `null` on any error
-  - [ ] 4.4 Export `VoyageBatchClient` class with `submit(texts): Promise<string>` and `poll(batchId, timeoutMs): Promise<BatchResult>` methods
-  - [ ] 4.5 Write unit tests for `classifyTier`: 0 jobs → hot; count − 1 → hot; count → cold; deleted jobs excluded
-  - [ ] 4.6 Write unit tests for `embedHot`: empty key → null without fetch; non-200 → null; timeout → null
-  - [ ] 4.7 Write unit tests for `VoyageBatchClient.poll`: timeout exceeded → rejects; success → returns `BatchResult` with `failed` indices
+- [x] 4. Embedding Tier Classification — Implement `src/memory/embedding.ts` with hot/cold tier classification and Voyage API wrapper
+  - [x] 4.1 Create `src/memory/embedding.ts` — export `classifyTier(db, workspaceId)`
+  - [x] 4.2 Implement `classifyTier` query: count non-deleted completed jobs with `ORDER BY timestamp DESC LIMIT MEMORY_HOT_TIER_COUNT`; return `'hot'` if `cnt < MEMORY_HOT_TIER_COUNT`, else `'cold'`
+  - [x] 4.3 Implement `embedHot(text)` — `fetch` to Voyage `voyage-3-large`; `AbortSignal.timeout(10_000)`; return `number[] | null`; return `null` on any error
+  - [x] 4.4 Export `VoyageBatchClient` class with `submit(texts): Promise<string>` and `poll(batchId, timeoutMs): Promise<BatchResult>` methods
+  - [x] 4.5 Write unit tests for `classifyTier`: 0 jobs → hot; count − 1 → hot; count → cold; deleted jobs excluded
+  - [x] 4.6 Write unit tests for `embedHot`: empty key → null without fetch; non-200 → null; timeout → null
+  - [x] 4.7 Write unit tests for `VoyageBatchClient.poll`: timeout exceeded → rejects; success → returns `BatchResult` with `failed` indices
 
-- [ ] 5. Batch Embedding Worker — Implement `src/workers/memoryBatchEmbed.ts` for 6-hour cold-tier embedding
-  - [ ] 5.1 Create `src/workers/memoryBatchEmbed.ts` — export `startBatchEmbedWorker(db, client)`
-  - [ ] 5.2 Implement worker loop: `setInterval` at 6 hours; initial fire delayed 60 seconds after startup
-  - [ ] 5.3 Implement DB query: `SELECT ... WHERE embedding_status = 'pending' AND embed_attempts < 3 AND deleted_at IS NULL ORDER BY extracted_at ASC LIMIT 1000`
-  - [ ] 5.4 Implement Voyage Batch API submission via `VoyageBatchClient.submit` — on throw: log ERROR, return without modifying `embed_attempts`
-  - [ ] 5.5 Implement `embed_attempts` increment transaction — runs after successful submit, before poll
-  - [ ] 5.6 Implement polling with 4-hour timeout via `VoyageBatchClient.poll`
-  - [ ] 5.7 Implement status update transaction: set `embedding_status` to `'embedded'` or `'failed'` per Voyage result; only update rows with `embed_attempts < 3`
-  - [ ] 5.8 Implement `_markExhaustedAsFailed`: mark rows with `embed_attempts >= 3` as `embedding_status = 'failed'`
-  - [ ] 5.9 Wire `startBatchEmbedWorker` into `src/monitor.ts` when `MEMORY_ENABLED=true` and `dbReady=true`
-  - [ ] 5.10 Write unit tests: empty rows → no Voyage call; submit throws → no `embed_attempts` increment; poll timeout → exhausted rows failed, others pending; success → correct status per index; `embed_attempts = 3` rows excluded from query
-  - [ ] 5.11 Write property test: after any batch run, no row has `embed_attempts > 3`
+- [x] 5. Batch Embedding Worker — Implement `src/workers/memoryBatchEmbed.ts` for 6-hour cold-tier embedding
+  - [x] 5.1 Create `src/workers/memoryBatchEmbed.ts` — export `startBatchEmbedWorker(db, client)`
+  - [x] 5.2 Implement worker loop: `setInterval` at 6 hours; initial fire delayed 60 seconds after startup
+  - [x] 5.3 Implement DB query: `SELECT ... WHERE embedding_status = 'pending' AND embed_attempts < 3 AND deleted_at IS NULL ORDER BY extracted_at ASC LIMIT 1000`
+  - [x] 5.4 Implement Voyage Batch API submission via `VoyageBatchClient.submit` — on throw: log ERROR, return without modifying `embed_attempts`
+  - [x] 5.5 Implement `embed_attempts` increment transaction — runs after successful submit, before poll
+  - [x] 5.6 Implement polling with 4-hour timeout via `VoyageBatchClient.poll`
+  - [x] 5.7 Implement status update transaction: set `embedding_status` to `'embedded'` or `'failed'` per Voyage result; only update rows with `embed_attempts < 3`
+  - [x] 5.8 Implement `_markExhaustedAsFailed`: mark rows with `embed_attempts >= 3` as `embedding_status = 'failed'`
+  - [x] 5.9 Wire `startBatchEmbedWorker` into `src/monitor.ts` when `MEMORY_ENABLED=true` and `dbReady=true`
+  - [x] 5.10 Write unit tests: empty rows → no Voyage call; submit throws → no `embed_attempts` increment; poll timeout → exhausted rows failed, others pending; success → correct status per index; `embed_attempts = 3` rows excluded from query
+  - [x] 5.11 Write property test: after any batch run, no row has `embed_attempts > 3`
 
-- [ ] 6. Extraction Routes — Implement `src/routes/memory-extraction.ts` with re-trigger and backfill endpoints
-  - [ ] 6.1 Create `src/routes/memory-extraction.ts` — export `register(router, db, client)`
-  - [ ] 6.2 Implement `POST /api/memory/extract/:jobId`: check `MEMORY_EXTRACTION_ENABLED` first (503); then job existence (404); call `extractAndStore`; return `{ jobId, memoryCount, qualityScore }`
-  - [ ] 6.3 Implement `POST /api/memory/backfill`: validate `workspaceId` (400 if missing); validate `limit` (400 if < 1 or non-integer; silent cap at 100); query unprocessed jobs; run sequentially with 500ms delay; return `{ queued, appliedLimit }`
-  - [ ] 6.4 Register routes in `src/monitor.ts` only when `dbReady=true`
-  - [ ] 6.5 Write unit tests for `POST /api/memory/extract/:jobId`: disabled → 503 before DB query; missing job → 404; valid job → correct response shape
-  - [ ] 6.6 Write unit tests for `POST /api/memory/backfill`: missing `workspaceId` → 400; `limit = 0` → 400; `limit = -1` → 400; `limit = 0.5` → 400; `limit = 150` → capped at 100; valid → `appliedLimit` in response
+- [x] 6. Extraction Routes — Implement `src/routes/memory-extraction.ts` with re-trigger and backfill endpoints
+  - [x] 6.1 Create `src/routes/memory-extraction.ts` — export `register(router, db, client)`
+  - [x] 6.2 Implement `POST /api/memory/extract/:jobId`: check `MEMORY_EXTRACTION_ENABLED` first (503); then job existence (404); call `extractAndStore`; return `{ jobId, memoryCount, qualityScore }`
+  - [x] 6.3 Implement `POST /api/memory/backfill`: validate `workspaceId` (400 if missing); validate `limit` (400 if < 1 or non-integer; silent cap at 100); query unprocessed jobs; run sequentially with 500ms delay; return `{ queued, appliedLimit }`
+  - [x] 6.4 Register routes in `src/monitor.ts` only when `dbReady=true`
+  - [x] 6.5 Write unit tests for `POST /api/memory/extract/:jobId`: disabled → 503 before DB query; missing job → 404; valid job → correct response shape
+  - [x] 6.6 Write unit tests for `POST /api/memory/backfill`: missing `workspaceId` → 400; `limit = 0` → 400; `limit = -1` → 400; `limit = 0.5` → 400; `limit = 150` → capped at 100; valid → `appliedLimit` in response
 
-- [ ] 7. FileWatcher Integration — Wire extraction trigger into `src/workers/fileWatcher.ts` sync callback
-  - [ ] 7.1 Update `startFileWatcher` signature to accept optional `memoryClient: IMemoryClient | null` parameter
-  - [ ] 7.2 After `syncTool.syncFile` succeeds, query jobs by `md_file` or `log_file` matching the resolved path
-  - [ ] 7.3 For each matched job with `status = 'done'`: call `extractAndStore` fire-and-forget; catch and log errors
-  - [ ] 7.4 Guard block with `if (MEMORY_EXTRACTION_ENABLED && memoryClient !== null)` — no-op when disabled
-  - [ ] 7.5 Update `src/monitor.ts` to pass `memoryClient` to `startFileWatcher` when `MEMORY_ENABLED=true`
-  - [ ] 7.6 Implement `jobFromDbRow(row: DbJob): Job` helper mapping snake_case DB columns to camelCase `Job` fields
-  - [ ] 7.7 Write integration test: `done` job transition → `extractAndStore` called with correct job and client
-  - [ ] 7.8 Write test: `MEMORY_EXTRACTION_ENABLED=false` → `extractAndStore` never called even for `done` jobs
+- [x] 7. FileWatcher Integration — Wire extraction trigger into `src/workers/fileWatcher.ts` sync callback
+  - [x] 7.1 Update `startFileWatcher` signature to accept optional `memoryClient: IMemoryClient | null` parameter
+  - [x] 7.2 After `syncTool.syncFile` succeeds, query jobs by `md_file` or `log_file` matching the resolved path
+  - [x] 7.3 For each matched job with `status = 'done'`: call `extractAndStore` fire-and-forget; catch and log errors
+  - [x] 7.4 Guard block with `if (MEMORY_EXTRACTION_ENABLED && memoryClient !== null)` — no-op when disabled
+  - [x] 7.5 Update `src/monitor.ts` to pass `memoryClient` to `startFileWatcher` when `MEMORY_ENABLED=true`
+  - [x] 7.6 Implement `jobFromDbRow(row: DbJob): Job` helper mapping snake_case DB columns to camelCase `Job` fields
+  - [x] 7.7 Write integration test: `done` job transition → `extractAndStore` called with correct job and client
+  - [x] 7.8 Write test: `MEMORY_EXTRACTION_ENABLED=false` → `extractAndStore` never called even for `done` jobs
 
-- [ ] 8. Phase 6.2 Checkpoint — Verify the complete extraction pipeline end-to-end
-  - [ ] 8.1 Run `bun test test/` — all tests pass
-  - [ ] 8.2 Run `tsc --noEmit` — zero errors
-  - [ ] 8.3 Start the monitor with `MEMORY_ENABLED=true`, `MEMORY_EXTRACTION_ENABLED=true`, and a running Hindsight instance
-  - [ ] 8.4 Trigger a job completion (or use `POST /api/memory/extract/:jobId` on an existing done job)
-  - [ ] 8.5 Verify a `memory_extraction` row appears in the DB with correct `quality_score`, `memory_count`, and `tier`
-  - [ ] 8.6 Verify memories appear in Hindsight via `GET /api/memory/search?q=<topic>&workspaceId=<id>`
-  - [ ] 8.7 Call `POST /api/memory/backfill` with `{ workspaceId, limit: 5 }` — verify `{ queued: N, appliedLimit: 5 }` response
-  - [ ] 8.8 Verify the batch embed worker starts (log line `[batch-embed]`) and processes cold-tier rows
-  - [ ] 8.9 Confirm `GET /api/memory/circuit-breaker` returns `state: 'closed'` with no failures
+- [x] 8. Phase 6.2 Checkpoint — Verify the complete extraction pipeline end-to-end
+  - [x] 8.1 Run `bun test test/` — all tests pass
+  - [x] 8.2 Run `tsc --noEmit` — zero errors
+  - [x] 8.3 Start the monitor with `MEMORY_ENABLED=true`, `MEMORY_EXTRACTION_ENABLED=true`, and a running Hindsight instance
+  - [x] 8.4 Trigger a job completion (or use `POST /api/memory/extract/:jobId` on an existing done job)
+  - [x] 8.5 Verify a `memory_extraction` row appears in the DB with correct `quality_score`, `memory_count`, and `tier`
+  - [x] 8.6 Verify memories appear in Hindsight via `GET /api/memory/search?q=<topic>&workspaceId=<id>`
+  - [x] 8.7 Call `POST /api/memory/backfill` with `{ workspaceId, limit: 5 }` — verify `{ queued: N, appliedLimit: 5 }` response
+  - [x] 8.8 Verify the batch embed worker starts (log line `[batch-embed]`) and processes cold-tier rows
+  - [x] 8.9 Confirm `GET /api/memory/circuit-breaker` returns `state: 'closed'` with no failures
 
 ---
 

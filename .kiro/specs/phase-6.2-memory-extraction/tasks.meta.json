@@ -338,6 +338,504 @@
         "chatSessionId": "sess_2e7a6cd7-ccd7-4d7c-915d-058923ee369b",
         "timestamp": 1786893995608
       }
+    ],
+    "4.1 Create `src/memory/embedding.ts` — export `classifyTier(db, workspaceId)`": [
+      {
+        "executionId": "9de2bfd1-4f12-4eab-aa1e-9bab2fec02f4",
+        "chatSessionId": "sess_8858a074-17ae-4ced-91e8-d65c482012a4",
+        "timestamp": 1786895465833
+      }
+    ],
+    "4.2 Implement `classifyTier` query: count non-deleted completed jobs with `ORDER BY timestamp DESC LIMIT MEMORY_HOT_TIER_COUNT`; return `'hot'` if `cnt < MEMORY_HOT_TIER_COUNT`, else `'cold'`": [
+      {
+        "executionId": "911fedac-5924-47f9-a182-853ad4b779b7",
+        "chatSessionId": "sess_0a62da2f-7074-4001-8b6f-f3f87c5d3d1a",
+        "timestamp": 1786991981566
+      },
+      {
+        "executionId": "8aa41817-2d77-4988-ba6e-bf952d239ffb",
+        "chatSessionId": "sess_0ed4d248-a8a4-4684-be99-5556abb26b04",
+        "timestamp": 1787076076714
+      }
+    ],
+    "4.3 Implement `embedHot(text)` — `fetch` to Voyage `voyage-3-large`; `AbortSignal.timeout(10_000)`; return `number[] | null`; return `null` on any error": [
+      {
+        "executionId": "a11c8c77-2a88-4bce-9b51-56a7b4cdc9d4",
+        "chatSessionId": "sess_5a1b634b-f5e7-40e9-8f3b-58aa41ad357b",
+        "timestamp": 1787079091422
+      },
+      {
+        "executionId": "a11c8c77-2a88-4bce-9b51-56a7b4cdc9d4",
+        "chatSessionId": "sess_5a1b634b-f5e7-40e9-8f3b-58aa41ad357b",
+        "timestamp": 1787079179667
+      }
+    ],
+    "4.4 Export `VoyageBatchClient` class with `submit(texts): Promise<string>` and `poll(batchId, timeoutMs): Promise<BatchResult>` methods": [
+      {
+        "executionId": "3cde2437-d2ae-432e-a043-26a7eb4167c9",
+        "chatSessionId": "sess_a9e1de22-7b7f-4692-a384-56ae28135980",
+        "timestamp": 1787079193091
+      },
+      {
+        "executionId": "3cde2437-d2ae-432e-a043-26a7eb4167c9",
+        "chatSessionId": "sess_a9e1de22-7b7f-4692-a384-56ae28135980",
+        "timestamp": 1787079313548
+      }
+    ],
+    "4.5 Write unit tests for `classifyTier`: 0 jobs → hot; count − 1 → hot; count → cold; deleted jobs excluded": [
+      {
+        "executionId": "5cbbe26a-6d9b-4ca0-8cdd-d1b0c2919648",
+        "chatSessionId": "sess_8cef72b0-6679-4865-97b2-b917e9d43a12",
+        "timestamp": 1787079326783
+      },
+      {
+        "executionId": "5cbbe26a-6d9b-4ca0-8cdd-d1b0c2919648",
+        "chatSessionId": "sess_8cef72b0-6679-4865-97b2-b917e9d43a12",
+        "timestamp": 1787079525511
+      }
+    ],
+    "4.6 Write unit tests for `embedHot`: empty key → null without fetch; non-200 → null; timeout → null": [
+      {
+        "executionId": "83dc9dde-286b-41d1-8b72-f0d66580b4f7",
+        "chatSessionId": "sess_f2cd3945-0d66-4643-afbd-96dea424f506",
+        "timestamp": 1787081233182
+      },
+      {
+        "executionId": "83dc9dde-286b-41d1-8b72-f0d66580b4f7",
+        "chatSessionId": "sess_f2cd3945-0d66-4643-afbd-96dea424f506",
+        "timestamp": 1787081484509
+      }
+    ],
+    "4.7 Write unit tests for `VoyageBatchClient.poll`: timeout exceeded → rejects; success → returns `BatchResult` with `failed` indices": [
+      {
+        "executionId": "69339437-6f9f-4774-9334-4568c2189e61",
+        "chatSessionId": "sess_b0184e27-c135-4cae-b47d-c4aa08396204",
+        "timestamp": 1787081501635
+      },
+      {
+        "executionId": "69339437-6f9f-4774-9334-4568c2189e61",
+        "chatSessionId": "sess_b0184e27-c135-4cae-b47d-c4aa08396204",
+        "timestamp": 1787081670617
+      }
+    ],
+    "4. Embedding Tier Classification — Implement `src/memory/embedding.ts` with hot/cold tier classification and Voyage API wrapper": [
+      {
+        "executionId": "69339437-6f9f-4774-9334-4568c2189e61",
+        "chatSessionId": "sess_b0184e27-c135-4cae-b47d-c4aa08396204",
+        "timestamp": 1787081670717
+      }
+    ],
+    "5.1 Create `src/workers/memoryBatchEmbed.ts` — export `startBatchEmbedWorker(db, client)`": [
+      {
+        "executionId": "82a7479e-f942-4346-a170-4686460d1c56",
+        "chatSessionId": "sess_3feccd70-3030-44c6-b0f0-f04da9bd96b4",
+        "timestamp": 1787081715815
+      },
+      {
+        "executionId": "82a7479e-f942-4346-a170-4686460d1c56",
+        "chatSessionId": "sess_3feccd70-3030-44c6-b0f0-f04da9bd96b4",
+        "timestamp": 1787081916076
+      }
+    ],
+    "5.2 Implement worker loop: `setInterval` at 6 hours; initial fire delayed 60 seconds after startup": [
+      {
+        "executionId": "305aecf1-68cf-44c7-8fc8-9e10e5bddd28",
+        "chatSessionId": "sess_3c51a6a2-98cb-41ad-bb87-6c82a80e1b7b",
+        "timestamp": 1787081932420
+      },
+      {
+        "executionId": "305aecf1-68cf-44c7-8fc8-9e10e5bddd28",
+        "chatSessionId": "sess_3c51a6a2-98cb-41ad-bb87-6c82a80e1b7b",
+        "timestamp": 1787082054878
+      }
+    ],
+    "5.3 Implement DB query: `SELECT ... WHERE embedding_status = 'pending' AND embed_attempts < 3 AND deleted_at IS NULL ORDER BY extracted_at ASC LIMIT 1000`": [
+      {
+        "executionId": "c00174b0-4ddd-49a1-bc66-199b89ee6937",
+        "chatSessionId": "sess_bd2e894e-acc8-4777-a10a-75eb9ef36f08",
+        "timestamp": 1787082643703
+      },
+      {
+        "executionId": "c00174b0-4ddd-49a1-bc66-199b89ee6937",
+        "chatSessionId": "sess_bd2e894e-acc8-4777-a10a-75eb9ef36f08",
+        "timestamp": 1787082763934
+      }
+    ],
+    "5.4 Implement Voyage Batch API submission via `VoyageBatchClient.submit` — on throw: log ERROR, return without modifying `embed_attempts`": [
+      {
+        "executionId": "deffddf7-70c1-4074-bf4e-a90ccfec14ee",
+        "chatSessionId": "sess_2028d311-c48b-4820-a34c-3cc8e995805f",
+        "timestamp": 1787082831734
+      },
+      {
+        "executionId": "deffddf7-70c1-4074-bf4e-a90ccfec14ee",
+        "chatSessionId": "sess_2028d311-c48b-4820-a34c-3cc8e995805f",
+        "timestamp": 1787083017634
+      }
+    ],
+    "5.5 Implement `embed_attempts` increment transaction — runs after successful submit, before poll": [
+      {
+        "executionId": "438fe9f3-a290-4b89-8784-940035173e8c",
+        "chatSessionId": "sess_bca96fc1-53a4-472c-abcd-0eba10528840",
+        "timestamp": 1787083034111
+      },
+      {
+        "executionId": "438fe9f3-a290-4b89-8784-940035173e8c",
+        "chatSessionId": "sess_bca96fc1-53a4-472c-abcd-0eba10528840",
+        "timestamp": 1787083293717
+      }
+    ],
+    "5.6 Implement polling with 4-hour timeout via `VoyageBatchClient.poll`": [
+      {
+        "executionId": "91666aa3-440e-4748-8d1c-73a5d44f3b30",
+        "chatSessionId": "sess_513ff47e-c10c-46e6-bf25-186ced42464f",
+        "timestamp": 1787083308057
+      },
+      {
+        "executionId": "91666aa3-440e-4748-8d1c-73a5d44f3b30",
+        "chatSessionId": "sess_513ff47e-c10c-46e6-bf25-186ced42464f",
+        "timestamp": 1787083412501
+      }
+    ],
+    "5.7 Implement status update transaction: set `embedding_status` to `'embedded'` or `'failed'` per Voyage result; only update rows with `embed_attempts < 3`": [
+      {
+        "executionId": "967bfaee-6d4c-4c70-af12-0d6515e5f7e1",
+        "chatSessionId": "sess_b3c32239-27c2-40b3-a63e-1e21df00f2bb",
+        "timestamp": 1787083425190
+      },
+      {
+        "executionId": "967bfaee-6d4c-4c70-af12-0d6515e5f7e1",
+        "chatSessionId": "sess_b3c32239-27c2-40b3-a63e-1e21df00f2bb",
+        "timestamp": 1787083963680
+      }
+    ],
+    "5.8 Implement `_markExhaustedAsFailed`: mark rows with `embed_attempts >= 3` as `embedding_status = 'failed'`": [
+      {
+        "executionId": "f67249ab-e6cf-471d-a5c8-8e3b38845ec9",
+        "chatSessionId": "sess_ebe8cbec-8de3-42d4-908f-b449bda21e9a",
+        "timestamp": 1787083983192
+      },
+      {
+        "executionId": "f67249ab-e6cf-471d-a5c8-8e3b38845ec9",
+        "chatSessionId": "sess_ebe8cbec-8de3-42d4-908f-b449bda21e9a",
+        "timestamp": 1787161134724
+      }
+    ],
+    "5.10 Write unit tests: empty rows → no Voyage call; submit throws → no `embed_attempts` increment; poll timeout → exhausted rows failed, others pending; success → correct status per index; `embed_attempts = 3` rows excluded from query": [
+      {
+        "executionId": "78e2f403-3bb2-49e9-9afc-ab28f322e082",
+        "chatSessionId": "sess_4911f2ac-1d51-4bdd-b7ab-7c6226f9abc2",
+        "timestamp": 1787161298581
+      },
+      {
+        "executionId": "78e2f403-3bb2-49e9-9afc-ab28f322e082",
+        "chatSessionId": "sess_4911f2ac-1d51-4bdd-b7ab-7c6226f9abc2",
+        "timestamp": 1787161526807
+      }
+    ],
+    "5.11 Write property test: after any batch run, no row has `embed_attempts > 3`": [
+      {
+        "executionId": "ee3e9b14-49cb-465c-9766-60103398d3b1",
+        "chatSessionId": "sess_5b3200b2-b380-4de3-83f6-9acc537f470c",
+        "timestamp": 1787161781139
+      }
+    ],
+    "5. Batch Embedding Worker — Implement `src/workers/memoryBatchEmbed.ts` for 6-hour cold-tier embedding": [
+      {
+        "executionId": "ee3e9b14-49cb-465c-9766-60103398d3b1",
+        "chatSessionId": "sess_5b3200b2-b380-4de3-83f6-9acc537f470c",
+        "timestamp": 1787161781466
+      }
+    ],
+    "6.1 Create `src/routes/memory-extraction.ts` — export `register(router, db, client)`": [
+      {
+        "executionId": "35134fa0-f483-4115-a483-3dc2e506ee13",
+        "chatSessionId": "sess_6ffb6f94-d35d-486c-9249-6f8c579c6b54",
+        "timestamp": 1787162103879
+      },
+      {
+        "executionId": "35134fa0-f483-4115-a483-3dc2e506ee13",
+        "chatSessionId": "sess_6ffb6f94-d35d-486c-9249-6f8c579c6b54",
+        "timestamp": 1787162319417
+      }
+    ],
+    "6.2 Implement `POST /api/memory/extract/:jobId`: check `MEMORY_EXTRACTION_ENABLED` first (503); then job existence (404); call `extractAndStore`; return `{ jobId, memoryCount, qualityScore }`": [
+      {
+        "executionId": "54aba0ed-0c8a-4f7c-915a-0b8335901513",
+        "chatSessionId": "sess_84115139-f2a3-4290-b135-117b836c57cb",
+        "timestamp": 1787162332847
+      },
+      {
+        "executionId": "54aba0ed-0c8a-4f7c-915a-0b8335901513",
+        "chatSessionId": "sess_84115139-f2a3-4290-b135-117b836c57cb",
+        "timestamp": 1787162615035
+      }
+    ],
+    "6.3 Implement `POST /api/memory/backfill`: validate `workspaceId` (400 if missing); validate `limit` (400 if < 1 or non-integer; silent cap at 100); query unprocessed jobs; run sequentially with 500ms delay; return `{ queued, appliedLimit }`": [
+      {
+        "executionId": "6279ded4-678a-4036-a38f-7088c2442039",
+        "chatSessionId": "sess_3fe272a9-43f4-4c83-b605-2002bcca4ad7",
+        "timestamp": 1787162633385
+      },
+      {
+        "executionId": "6279ded4-678a-4036-a38f-7088c2442039",
+        "chatSessionId": "sess_3fe272a9-43f4-4c83-b605-2002bcca4ad7",
+        "timestamp": 1787163196380
+      }
+    ],
+    "6.4 Register routes in `src/monitor.ts` only when `dbReady=true`": [
+      {
+        "executionId": "c3f90e3d-2d24-49f3-a672-80fa727aca6b",
+        "chatSessionId": "sess_b9e184df-8069-44c0-a933-0c583c1fdee6",
+        "timestamp": 1787163275486
+      },
+      {
+        "executionId": "c3f90e3d-2d24-49f3-a672-80fa727aca6b",
+        "chatSessionId": "sess_b9e184df-8069-44c0-a933-0c583c1fdee6",
+        "timestamp": 1787163399603
+      }
+    ],
+    "6.5 Write unit tests for `POST /api/memory/extract/:jobId`: disabled → 503 before DB query; missing job → 404; valid job → correct response shape": [
+      {
+        "executionId": "92bb8a95-29ae-4055-9f40-cf9298790d41",
+        "chatSessionId": "sess_5644e044-94e5-4446-8715-a107d7f6f3a4",
+        "timestamp": 1787163419168
+      },
+      {
+        "executionId": "92bb8a95-29ae-4055-9f40-cf9298790d41",
+        "chatSessionId": "sess_5644e044-94e5-4446-8715-a107d7f6f3a4",
+        "timestamp": 1787163575304
+      }
+    ],
+    "6.6 Write unit tests for `POST /api/memory/backfill`: missing `workspaceId` → 400; `limit = 0` → 400; `limit = -1` → 400; `limit = 0.5` → 400; `limit = 150` → capped at 100; valid → `appliedLimit` in response": [
+      {
+        "executionId": "6145e2c0-9b77-4f88-85f2-cb509d6911d3",
+        "chatSessionId": "sess_c6e0e894-3ea9-4ac3-8c7a-389f255d9185",
+        "timestamp": 1787164880457
+      },
+      {
+        "executionId": "6145e2c0-9b77-4f88-85f2-cb509d6911d3",
+        "chatSessionId": "sess_c6e0e894-3ea9-4ac3-8c7a-389f255d9185",
+        "timestamp": 1787165024445
+      }
+    ],
+    "6. Extraction Routes — Implement `src/routes/memory-extraction.ts` with re-trigger and backfill endpoints": [
+      {
+        "executionId": "6145e2c0-9b77-4f88-85f2-cb509d6911d3",
+        "chatSessionId": "sess_c6e0e894-3ea9-4ac3-8c7a-389f255d9185",
+        "timestamp": 1787165024691
+      }
+    ],
+    "7.1 Update `startFileWatcher` signature to accept optional `memoryClient: IMemoryClient | null` parameter": [
+      {
+        "executionId": "050738c1-a84d-4672-a83f-ab96b5ee7acc",
+        "chatSessionId": "sess_7af500cb-b27c-4736-a800-dd638b023e49",
+        "timestamp": 1787165308808
+      },
+      {
+        "executionId": "050738c1-a84d-4672-a83f-ab96b5ee7acc",
+        "chatSessionId": "sess_7af500cb-b27c-4736-a800-dd638b023e49",
+        "timestamp": 1787165451875
+      }
+    ],
+    "7.2 After `syncTool.syncFile` succeeds, query jobs by `md_file` or `log_file` matching the resolved path": [
+      {
+        "executionId": "70cdf6ad-d6ad-4012-aa5d-635bd17d2748",
+        "chatSessionId": "sess_94ab1d72-c065-4710-b2e0-8aada06a6b52",
+        "timestamp": 1787167248445
+      },
+      {
+        "executionId": "70cdf6ad-d6ad-4012-aa5d-635bd17d2748",
+        "chatSessionId": "sess_94ab1d72-c065-4710-b2e0-8aada06a6b52",
+        "timestamp": 1787167485847
+      }
+    ],
+    "7.3 For each matched job with `status = 'done'`: call `extractAndStore` fire-and-forget; catch and log errors": [
+      {
+        "executionId": "d2768e6d-5fdf-4bee-9f26-63c254d69e88",
+        "chatSessionId": "sess_3186d028-3a0e-4e93-8148-1f4e5ef77fdd",
+        "timestamp": 1787167501493
+      },
+      {
+        "executionId": "d2768e6d-5fdf-4bee-9f26-63c254d69e88",
+        "chatSessionId": "sess_3186d028-3a0e-4e93-8148-1f4e5ef77fdd",
+        "timestamp": 1787167618669
+      }
+    ],
+    "7.4 Guard block with `if (MEMORY_EXTRACTION_ENABLED && memoryClient !== null)` — no-op when disabled": [
+      {
+        "executionId": "2bb6ff28-6576-418f-b29a-b280e234041f",
+        "chatSessionId": "sess_6abe794b-20c0-496f-b231-9894c99f0224",
+        "timestamp": 1787167636505
+      },
+      {
+        "executionId": "2bb6ff28-6576-418f-b29a-b280e234041f",
+        "chatSessionId": "sess_6abe794b-20c0-496f-b231-9894c99f0224",
+        "timestamp": 1787167756590
+      }
+    ],
+    "7.5 Update `src/monitor.ts` to pass `memoryClient` to `startFileWatcher` when `MEMORY_ENABLED=true`": [
+      {
+        "executionId": "259d3a7d-6954-4584-ad70-448c78f5187c",
+        "chatSessionId": "sess_5482529d-2d4d-4562-b94d-a0d3baaf7d84",
+        "timestamp": 1787167805744
+      },
+      {
+        "executionId": "259d3a7d-6954-4584-ad70-448c78f5187c",
+        "chatSessionId": "sess_5482529d-2d4d-4562-b94d-a0d3baaf7d84",
+        "timestamp": 1787167863019
+      }
+    ],
+    "7.6 Implement `jobFromDbRow(row: DbJob): Job` helper mapping snake_case DB columns to camelCase `Job` fields": [
+      {
+        "executionId": "ccee5aa6-5c52-4c0b-84d3-a55ab9bcef56",
+        "chatSessionId": "sess_dddb8ec1-cf5d-4ffe-9fca-5d23a3887e77",
+        "timestamp": 1787167878605
+      },
+      {
+        "executionId": "ccee5aa6-5c52-4c0b-84d3-a55ab9bcef56",
+        "chatSessionId": "sess_dddb8ec1-cf5d-4ffe-9fca-5d23a3887e77",
+        "timestamp": 1787167970397
+      }
+    ],
+    "7.7 Write integration test: `done` job transition → `extractAndStore` called with correct job and client": [
+      {
+        "executionId": "337f2826-3a55-4646-9d0b-f1719185dec0",
+        "chatSessionId": "sess_2ddd8726-a849-4f93-af7b-1f27e8748c7e",
+        "timestamp": 1787168392964
+      },
+      {
+        "executionId": "337f2826-3a55-4646-9d0b-f1719185dec0",
+        "chatSessionId": "sess_2ddd8726-a849-4f93-af7b-1f27e8748c7e",
+        "timestamp": 1787168729667
+      }
+    ],
+    "7.8 Write test: `MEMORY_EXTRACTION_ENABLED=false` → `extractAndStore` never called even for `done` jobs": [
+      {
+        "executionId": "59e2ba89-1971-437e-8b18-acc066711c04",
+        "chatSessionId": "sess_41de4ab0-9093-4f4f-a7d4-324845247600",
+        "timestamp": 1787168751922
+      },
+      {
+        "executionId": "59e2ba89-1971-437e-8b18-acc066711c04",
+        "chatSessionId": "sess_41de4ab0-9093-4f4f-a7d4-324845247600",
+        "timestamp": 1787169093570
+      }
+    ],
+    "7. FileWatcher Integration — Wire extraction trigger into `src/workers/fileWatcher.ts` sync callback": [
+      {
+        "executionId": "59e2ba89-1971-437e-8b18-acc066711c04",
+        "chatSessionId": "sess_41de4ab0-9093-4f4f-a7d4-324845247600",
+        "timestamp": 1787169093735
+      }
+    ],
+    "8.1 Run `bun test test/` — all tests pass": [
+      {
+        "executionId": "72307247-c2db-4c39-91b3-eb569a43a21b",
+        "chatSessionId": "sess_7624c0e3-20a2-4638-9ebd-0e3567ca9c10",
+        "timestamp": 1787169699086
+      },
+      {
+        "executionId": "9b8ee603-347c-483f-92e0-518e0f67be1b",
+        "chatSessionId": "sess_8aa54300-b04f-4a79-91f0-cc02836cc3ff",
+        "timestamp": 1787169720778
+      },
+      {
+        "executionId": "9b8ee603-347c-483f-92e0-518e0f67be1b",
+        "chatSessionId": "sess_8aa54300-b04f-4a79-91f0-cc02836cc3ff",
+        "timestamp": 1787170065500
+      }
+    ],
+    "8.2 Run `tsc --noEmit` — zero errors": [
+      {
+        "executionId": "60e1c569-1fc5-479e-a158-ad07fa694b5b",
+        "chatSessionId": "sess_17f21fab-7a7b-4979-a6c6-4903f5fcfc52",
+        "timestamp": 1787170079296
+      },
+      {
+        "executionId": "60e1c569-1fc5-479e-a158-ad07fa694b5b",
+        "chatSessionId": "sess_17f21fab-7a7b-4979-a6c6-4903f5fcfc52",
+        "timestamp": 1787170139752
+      }
+    ],
+    "8.4 Trigger a job completion (or use `POST /api/memory/extract/:jobId` on an existing done job)": [
+      {
+        "executionId": "8b3be131-d2f9-455e-830c-9dec40078122",
+        "chatSessionId": "sess_baf9f01c-0188-405d-807d-017be3f1c118",
+        "timestamp": 1787170370176
+      },
+      {
+        "executionId": "8b3be131-d2f9-455e-830c-9dec40078122",
+        "chatSessionId": "sess_baf9f01c-0188-405d-807d-017be3f1c118",
+        "timestamp": 1787170971545
+      }
+    ],
+    "8.5 Verify a `memory_extraction` row appears in the DB with correct `quality_score`, `memory_count`, and `tier`": [
+      {
+        "executionId": "325f177d-536a-4296-afe9-25ef186f7cfc",
+        "chatSessionId": "sess_5c06d486-f6b2-44f2-bf19-49e37ea8ba34",
+        "timestamp": 1787171103724
+      },
+      {
+        "executionId": "432e4201-04b8-4b1d-932a-6685923acd36",
+        "chatSessionId": "sess_d0bb0b3c-d413-450f-806b-00bf9776f84e",
+        "timestamp": 1787224904454
+      },
+      {
+        "executionId": "432e4201-04b8-4b1d-932a-6685923acd36",
+        "chatSessionId": "sess_d0bb0b3c-d413-450f-806b-00bf9776f84e",
+        "timestamp": 1787227042712
+      }
+    ],
+    "8.6 Verify memories appear in Hindsight via `GET /api/memory/search?q=<topic>&workspaceId=<id>`": [
+      {
+        "executionId": "25703594-5a3a-464b-8ec0-55e618d6412d",
+        "chatSessionId": "sess_865158c0-b311-4644-aefb-6acd3cbf9ec0",
+        "timestamp": 1787227060773
+      }
+    ],
+    "8.7 Call `POST /api/memory/backfill` with `{ workspaceId, limit: 5 }` — verify `{ queued: N, appliedLimit: 5 }` response": [
+      {
+        "executionId": "c5b9779d-e203-4278-a764-1a25d8b0ab22",
+        "chatSessionId": "sess_d196a212-4981-431c-a01f-4ad5a8f73882",
+        "timestamp": 1787227081878
+      },
+      {
+        "executionId": "c5b9779d-e203-4278-a764-1a25d8b0ab22",
+        "chatSessionId": "sess_d196a212-4981-431c-a01f-4ad5a8f73882",
+        "timestamp": 1787227280543
+      }
+    ],
+    "8.8 Verify the batch embed worker starts (log line `[batch-embed]`) and processes cold-tier rows": [
+      {
+        "executionId": "efc5fefd-5b93-4870-a235-a21946d75061",
+        "chatSessionId": "sess_cee9bdd3-b6d5-4a7e-8cc1-b4a4308cc02f",
+        "timestamp": 1787227298703
+      },
+      {
+        "executionId": "efc5fefd-5b93-4870-a235-a21946d75061",
+        "chatSessionId": "sess_cee9bdd3-b6d5-4a7e-8cc1-b4a4308cc02f",
+        "timestamp": 1787227501022
+      }
+    ],
+    "8.9 Confirm `GET /api/memory/circuit-breaker` returns `state: 'closed'` with no failures": [
+      {
+        "executionId": "01671802-6e5e-44d8-b51d-92ef270b0eb7",
+        "chatSessionId": "sess_c169034f-6b3f-4643-8a70-3c06b960a553",
+        "timestamp": 1787227516792
+      },
+      {
+        "executionId": "01671802-6e5e-44d8-b51d-92ef270b0eb7",
+        "chatSessionId": "sess_c169034f-6b3f-4643-8a70-3c06b960a553",
+        "timestamp": 1787227755704
+      }
+    ],
+    "8. Phase 6.2 Checkpoint — Verify the complete extraction pipeline end-to-end": [
+      {
+        "executionId": "01671802-6e5e-44d8-b51d-92ef270b0eb7",
+        "chatSessionId": "sess_c169034f-6b3f-4643-8a70-3c06b960a553",
+        "timestamp": 1787227755911
+      }
     ]
   }
 }

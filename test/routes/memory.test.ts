@@ -219,4 +219,37 @@ describe('GET /api/memory/circuit-breaker — MEMORY_ENABLED=true', () => {
     expect(body.lastSuccessAt).toBe('2025-01-10T09:00:00.000Z');
     expect(body.openedAt).toBe('2025-01-10T10:00:00.000Z');
   });
+
+  // Phase 6.2 checkpoint 8.9 — circuit is closed with no recorded failures
+  it('should return state "closed" with no failures when the circuit breaker has not been tripped', async () => {
+    // Arrange — metrics as they appear on a freshly-started monitor with no
+    // Hindsight errors ever recorded.
+    const freshMetrics: CircuitBreakerMetrics = {
+      state: 'closed',
+      consecutiveFailures: 0,
+      totalFailures: 0,
+      totalSuccesses: 0,
+      lastFailureAt: null,
+      lastSuccessAt: null,
+      openedAt: null,
+    };
+    const { register } = await import('../../src/routes/memory.ts');
+    const router = createRouter();
+    const fakeBreaker = makeFakeCircuitBreaker(freshMetrics);
+    register(router, fakeBreaker);
+
+    // Act
+    const res = await dispatch(router, '/api/memory/circuit-breaker');
+
+    // Assert
+    expect(res.status).toBe(200);
+    const body = await res.json() as CircuitBreakerMetrics;
+    expect(body.state).toBe('closed');
+    expect(body.consecutiveFailures).toBe(0);
+    expect(body.totalFailures).toBe(0);
+    expect(body.totalSuccesses).toBe(0);
+    expect(body.lastFailureAt).toBeNull();
+    expect(body.lastSuccessAt).toBeNull();
+    expect(body.openedAt).toBeNull();
+  });
 });

@@ -13,8 +13,12 @@
 
 import { watch } from 'node:fs';
 import { join } from 'node:path';
-import type { DbAdapter } from '../db/adapter.js';
+import type { DbAdapter, DbJob } from '../db/adapter.js';
+import type { IMemoryClient } from '../memory/types.js';
+import type { Job } from '../types.js';
 import { DbSyncTool } from '../db/sync.js';
+import { extractAndStore } from '../memory/extraction.js';
+import { MEMORY_EXTRACTION_ENABLED } from '../constants.js';
 
 // ---------------------------------------------------------------------------
 // Exported debounce helper — separated for unit testability (Task 8.1)
@@ -50,6 +54,41 @@ export function createDebouncer(
 }
 
 // ---------------------------------------------------------------------------
+// jobFromDbRow — DB row → domain type mapper
+// ---------------------------------------------------------------------------
+
+/**
+ * Map a `DbJob` row (snake_case) to the `Job` domain type (camelCase).
+ *
+ * Boolean columns (`has_log`, `log_error`) are stored as integers (0/1) in
+ * SQLite; they are coerced to `boolean` here.
+ *
+ * @param row A raw row from the `jobs` table.
+ * @returns The equivalent `Job` domain object.
+ */
+export function jobFromDbRow(row: DbJob): Job {
+  return {
+    id: row.id,
+    name: row.name,
+    jobChain: row.job_chain,
+    sessionChainId: row.session_chain_id,
+    timestamp: row.timestamp,
+    type: row.type,
+    agent: row.agent,
+    status: row.status,
+    lines: row.lines,
+    lastLine: row.last_line,
+    hasLog: row.has_log !== 0,
+    logError: row.log_error !== 0,
+    mdFile: row.md_file,
+    logFile: row.log_file,
+    agentDone: row.agent_done,
+    sizeBytes: row.size_bytes,
+    workspaceId: row.workspace_id,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // startFileWatcher — public entry point
 // ---------------------------------------------------------------------------
 
@@ -63,13 +102,23 @@ export function createDebouncer(
  *  4. Each change event is debounced per-path at 500 ms; on fire, calls
  *     `syncFile(resolvedPath, outputDir)`.
  *
+ * After each successful `syncFile`, if `MEMORY_EXTRACTION_ENABLED` is true and
+ * `memoryClient` is non-null, queries jobs matching the synced path and fires
+ * `extractAndStore` (fire-and-forget) for any job with `status='done'`.
+ *
  * All errors are caught and logged via `console.error` — this function never
  * throws.
  *
- * @param db        Database adapter (already open, migrations already applied)
- * @param outputDir Absolute path to the agent output directory; also used as workspaceId
+ * @param db           Database adapter (already open, migrations already applied)
+ * @param outputDir    Absolute path to the agent output directory; also used as workspaceId
+ * @param memoryClient Optional memory client for extraction on job completion.
+ *                     Pass `null` (default) to disable extraction triggering.
  */
-export function startFileWatcher(db: DbAdapter, outputDir: string): void {
+export function startFileWatcher(
+  db: DbAdapter,
+  outputDir: string,
+  memoryClient: IMemoryClient | null = null,
+): void {
   const syncTool = new DbSyncTool(db);
 
   // ── Startup full sync ───────────────────────────────────────────────────
@@ -88,11 +137,31 @@ export function startFileWatcher(db: DbAdapter, outputDir: string): void {
     (resolvedPath: string) => {
       const start = Date.now();
       syncTool.syncFile(resolvedPath, outputDir)
-        .then(() => {
+        .then(async () => {
           const duration = Date.now() - start;
           console.log(
             `[file-watcher] synced path="${resolvedPath}" duration=${duration}ms`,
           );
+
+          // After a successful sync, check if any job that owns this file
+          // has transitioned to 'done' and trigger memory extraction.
+          if (MEMORY_EXTRACTION_ENABLED && memoryClient !== null) {
+            const { rows } = await db.query<DbJob>(
+              `SELECT * FROM jobs WHERE (md_file = ? OR log_file = ?) AND deleted_at IS NULL`,
+              [resolvedPath, resolvedPath],
+            );
+            for (const row of rows) {
+              if (row.status === 'done') {
+                // Fire and forget — extraction errors are logged inside extractAndStore
+                extractAndStore(jobFromDbRow(row), db, memoryClient).catch((err: unknown) => {
+                  console.error(
+                    `[file-watcher] extraction error for job=${row.id}:`,
+                    err instanceof Error ? err.stack : err,
+                  );
+                });
+              }
+            }
+          }
         })
         .catch((err: unknown) => {
           console.error(
