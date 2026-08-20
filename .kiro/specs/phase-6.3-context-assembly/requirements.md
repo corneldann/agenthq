@@ -53,7 +53,9 @@ before it starts working so that it avoids repeating known mistakes and applies 
 6. If no memories pass the budget filter, an empty string is returned (not the heading alone).
 7. Token counting uses a simple approximation: `Math.ceil(text.length / 4)` characters per
    token. This avoids a tokenizer dependency while remaining conservative.
-8. The function completes within 500 ms at p95 under normal Hindsight response times.
+8. WHILE processing memories, the function SHALL continue iterating through all candidates
+   even when the elapsed time exceeds the 500 ms p95 target, completing the full token-budget
+   pass before returning.
 
 ### Requirement 2: Agent Integration
 
@@ -62,14 +64,17 @@ agent job so that I do not need to manually manage context between sessions.
 
 #### Acceptance Criteria
 
-1. `src/agent.ts` calls `assembleContext` before constructing the final system prompt.
+1. `src/agent.ts` SHALL call `assembleContext` before constructing the final system prompt,
+   and the system prompt construction SHALL NOT proceed unless `assembleContext` has been
+   called and its result is available (empty string or memory block).
 2. The memory block is appended after the base system prompt content and before any
    job-specific instructions.
 3. When `MEMORY_AUTO_INJECT=false`, `assembleContext` is still called and its result logged
    at DEBUG level, but it is not appended to the prompt.
-4. When the circuit breaker is Open, `assembleContext` catches the fallback empty result,
-   logs `WARN: memory circuit open — skipping injection`, and continues without memory.
-5. When `MEMORY_ENABLED=false`, the `assembleContext` call is skipped entirely (no-op stub).
+4. The system SHALL always call `assembleContext` regardless of circuit breaker state. IF the
+   circuit breaker is Open, `assembleContext` SHALL catch the fallback empty result, log
+   `WARN: memory circuit open — skipping injection`, and continue without memory.
+5. WHEN `MEMORY_ENABLED=false`, the system SHALL skip `assembleContext` entirely — no call, no log, and no stub execution. WHEN `MEMORY_ENABLED=true` AND `MEMORY_AUTO_INJECT=false`, `assembleContext` SHALL still be called and its result logged at DEBUG level, but it SHALL NOT be appended to the prompt (covered in AC3). `assembleContext` SHALL only be invoked when both `MEMORY_ENABLED=true` AND `MEMORY_AUTO_INJECT=true`.
 6. The total time added to agent startup by memory operations must not exceed 500 ms at p95.
    This is enforced by a 450 ms timeout on the `assembleContext` call; if exceeded, the call
    is abandoned and the agent runs without memory context.
@@ -91,6 +96,9 @@ in its output so that high-confidence agent-generated insights are persisted for
 5. If `client.retain` fails for a marker fact, the error is logged and the retry queue is
    used — the failure does not affect the job's own completion flow.
 6. The scan is skipped entirely when `MEMORY_EXTRACTION_ENABLED=false`.
+7. IF a fact passes the pre-storage validation in criterion 2 but arrives at the storage
+   layer in an invalid state, the storage layer SHALL re-validate and reject the fact,
+   logging the rejection at WARN level without propagating an error to the caller.
 
 ### Requirement 4: Diagnostic Route
 
@@ -102,9 +110,8 @@ running a full agent execution.
 
 1. `POST /api/memory/inject-test` accepts `{ jobId: string }` and returns
    `{ memoryCount, tokenCount, memories: Memory[], dropped: number, circuitState: string }`.
-2. It performs the same `assembleContext` call as the real agent path but does not store
-   anything or modify any state.
-3. Returns 404 if the job does not exist.
+2. WHERE the job exists and is in a valid state, the endpoint SHALL perform the same `assembleContext` recall and token-budget pass as the real agent path. The endpoint SHALL actively prevent any storage operations by passing a read-only memory client that throws on any write method call, ensuring no state is modified during diagnostic execution.
+3. IF the job does not exist, the endpoint SHALL return 404 immediately without invoking `assembleContext`. IF the job exists but is in an invalid state for memory assembly (e.g., job is still running or has a failed status), the endpoint SHALL return 400 without invoking `assembleContext`.
 4. Returns 503 if `MEMORY_ENABLED=false`.
 5. The response includes `assemblyMs` — the wall-clock time taken for the recall and
    token-budget pass.
