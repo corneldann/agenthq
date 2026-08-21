@@ -18,6 +18,7 @@ import type { IMemoryClient } from '../memory/types.js';
 import type { Job } from '../types.js';
 import { DbSyncTool } from '../db/sync.js';
 import { extractAndStore } from '../memory/extraction.js';
+import { extractMarkersFromOutput } from '../routes/jobs.js';
 import { MEMORY_EXTRACTION_ENABLED } from '../constants.js';
 
 // ---------------------------------------------------------------------------
@@ -152,13 +153,30 @@ export function startFileWatcher(
             );
             for (const row of rows) {
               if (row.status === 'done') {
+                const job = jobFromDbRow(row);
+                
                 // Fire and forget — extraction errors are logged inside extractAndStore
-                extractAndStore(jobFromDbRow(row), db, memoryClient).catch((err: unknown) => {
+                extractAndStore(job, db, memoryClient).catch((err: unknown) => {
                   console.error(
-                    `[file-watcher] extraction error for job=${row.id}:`,
+                    `[file-watcher] extractAndStore error for job=${row.id}:`,
                     err instanceof Error ? err.stack : err,
                   );
                 });
+                
+                // Fire and forget — extract MEMORY: markers from job output
+                // Only extract markers if the job has an md_file (output file)
+                if (row.md_file) {
+                  Bun.file(row.md_file).text()
+                    .then((output: string) => {
+                      return extractMarkersFromOutput(output, job, memoryClient, db);
+                    })
+                    .catch((err: unknown) => {
+                      console.error(
+                        `[file-watcher] extractMarkersFromOutput error for job=${row.id}:`,
+                        err instanceof Error ? err.stack : err,
+                      );
+                    });
+                }
               }
             }
           }

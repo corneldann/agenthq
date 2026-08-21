@@ -1,0 +1,57 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Create `src/memory/assembly.ts` — types, token counting, and `assembleContext`": [
+      {
+        "executionId": "ebfb76ab-8126-485b-af00-b402266b0faa",
+        "chatSessionId": "sess_9fb68513-934c-4a8f-9ecd-55a6e2d45d2e",
+        "timestamp": 1787250596312
+      },
+      {
+        "executionId": "ebfb76ab-8126-485b-af00-b402266b0faa",
+        "chatSessionId": "sess_9fb68513-934c-4a8f-9ecd-55a6e2d45d2e",
+        "timestamp": 1787250816164
+      }
+    ],
+    "2.1 Add `assembleContext` call with `Promise.race` 450 ms timeout guard": [
+      {
+        "executionId": "4ab346c1-8dba-4819-a6a7-079d260e559c",
+        "chatSessionId": "sess_456a7b96-4724-4d08-899d-b629a7778b8b",
+        "timestamp": 1787251413746
+      }
+    ],
+    "3.1 Implement `isValidFact` and `extractMarkersFromOutput`": [
+      {
+        "executionId": "ea8cb210-b787-4cf4-9129-970840453c96",
+        "chatSessionId": "sess_b4fe800d-350d-4b7b-aa9b-289b2492c119",
+        "timestamp": 1787252439208
+      },
+      {
+        "executionId": "ea8cb210-b787-4cf4-9129-970840453c96",
+        "chatSessionId": "sess_b4fe800d-350d-4b7b-aa9b-289b2492c119",
+        "timestamp": 1787252629706
+      }
+    ],
+    "4.1 Implement the route handler": [
+      {
+        "executionId": "cbde1b1b-c510-4944-ad14-d78b99daddd4",
+        "chatSessionId": "sess_c914d4a2-e4f0-4ebc-88a9-36d7a1ca3a3b",
+        "timestamp": 1787254457518
+      }
+    ],
+    "4. Add `POST /api/memory/inject-test` to `src/routes/memory.ts`": [
+      {
+        "executionId": "cbde1b1b-c510-4944-ad14-d78b99daddd4",
+        "chatSessionId": "sess_c914d4a2-e4f0-4ebc-88a9-36d7a1ca3a3b",
+        "timestamp": 1787254457575
+      }
+    ],
+    "5. Checkpoint — type-check before writing tests": [
+      {
+        "executionId": "27609b9e-b985-4707-8fca-67921182891c",
+        "chatSessionId": "sess_34de7365-0015-43e1-b129-78b1293822b6",
+        "timestamp": 1787254505204
+      }
+    ]
+  }
+}

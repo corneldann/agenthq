@@ -46,7 +46,7 @@ type ExtractionResult = {
 // Module-level constants
 // ---------------------------------------------------------------------------
 
-const GENERIC_REJECT_PATTERNS: RegExp[] = [
+export const GENERIC_REJECT_PATTERNS: RegExp[] = [
   /the system has \w+/i,
   /build (is )?currently failing/i,
 ];

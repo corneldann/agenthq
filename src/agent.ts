@@ -3,6 +3,15 @@ import type { Item } from '@openrouter/agent';
 import { stepCountIs, maxCost } from '@openrouter/agent/stop-conditions';
 import type { AgentConfig } from './config.js';
 import { tools } from './tools/index.js';
+import type { Job } from './types.js';
+import type { IMemoryClient } from './memory/types.js';
+import { assembleContext } from './memory/assembly.js';
+import {
+  MEMORY_ENABLED,
+  MEMORY_AUTO_INJECT,
+  MEMORY_MAX_CONTEXT_MEMORIES,
+  MEMORY_CONTEXT_TOKEN_BUDGET,
+} from './constants.js';
 
 export type ChatMessage = { role: 'user' | 'assistant' | 'system'; content: string };
 
@@ -14,17 +23,100 @@ export type AgentEvent =
   | { type: 'turn_end' }
   | { type: 'done'; usage: { inputTokens?: number; outputTokens?: number; totalTokens?: number } | null | undefined; durationMs: number };
 
+/**
+ * Build system prompt with optional memory context injection.
+ * 
+ * When MEMORY_ENABLED=false: returns basePrompt immediately with no call.
+ * When MEMORY_ENABLED=true: calls assembleContext with 450ms timeout guard.
+ * When MEMORY_AUTO_INJECT=false: logs result at DEBUG but does not append.
+ * When MEMORY_AUTO_INJECT=true and non-empty result: appends memory block.
+ * 
+ * @param basePrompt - Base system prompt before memory injection
+ * @param job - Optional job for memory context assembly
+ * @param memoryClient - Optional memory client for recall
+ * @returns System prompt with or without memory context
+ */
+async function buildPromptWithMemory(
+  basePrompt: string,
+  job?: Job,
+  memoryClient?: IMemoryClient,
+): Promise<string> {
+  // Skip entirely when memory is disabled
+  if (!MEMORY_ENABLED) {
+    return basePrompt;
+  }
+
+  // Skip if job or client not provided (no context to assemble)
+  if (job === undefined || memoryClient === undefined) {
+    return basePrompt;
+  }
+
+  // Race assembleContext against 450ms timeout
+  let memoryBlock = '';
+  try {
+    memoryBlock = await Promise.race([
+      assembleContext(job, memoryClient, {
+        candidateLimit: MEMORY_MAX_CONTEXT_MEMORIES * 2,
+        tokenBudget: MEMORY_CONTEXT_TOKEN_BUDGET,
+      }),
+      new Promise<string>((_, reject) =>
+        setTimeout(
+          () => reject(new Error('assembleContext timeout')),
+          450,
+        ),
+      ),
+    ]);
+  } catch (err) {
+    // Timeout or error during assembly
+    const isTimeout = err instanceof Error && err.message === 'assembleContext timeout';
+    if (isTimeout) {
+      console.warn('WARN: assembleContext timed out after 450ms — running without memory context');
+    } else {
+      // Circuit breaker open returns empty array -> empty string (no error thrown)
+      // But if an unexpected error occurs, log it
+      console.warn('WARN: memory circuit open — skipping injection');
+    }
+    memoryBlock = '';
+  }
+
+  // When auto-inject is disabled, log but do not append
+  if (!MEMORY_AUTO_INJECT) {
+    console.debug('assembleContext result (not injected):', memoryBlock);
+    return basePrompt;
+  }
+
+  // Append non-empty memory block to system prompt
+  if (memoryBlock === '') {
+    return basePrompt;
+  }
+
+  return `${basePrompt}\n\n${memoryBlock}`;
+}
+
 export async function runAgent(
   config: AgentConfig,
   input: string | ChatMessage[],
-  options?: { onEvent?: (event: AgentEvent) => void; signal?: AbortSignal },
+  options?: {
+    onEvent?: (event: AgentEvent) => void;
+    signal?: AbortSignal;
+    job?: Job;
+    memoryClient?: IMemoryClient;
+  },
 ) {
   const startedAt = Date.now();
+  
+  // Build system prompt with memory context if applicable
+  const systemPrompt = await buildPromptWithMemory(
+    config.systemPrompt,
+    options?.job,
+    options?.memoryClient,
+  );
+  
   const client = new OpenRouter({ apiKey: config.apiKey });
 
   const result = client.callModel({
     model: config.model,
-    instructions: config.systemPrompt.replace('{cwd}', process.cwd()),
+    instructions: systemPrompt.replace('{cwd}', process.cwd()),
     input: input as string | Item[],
     tools,
     stopWhen: [stepCountIs(config.maxSteps), maxCost(config.maxCost)],
@@ -105,7 +197,13 @@ export async function runAgent(
 export async function runAgentWithRetry(
   config: AgentConfig,
   input: string | ChatMessage[],
-  options?: { onEvent?: (event: AgentEvent) => void; signal?: AbortSignal; maxRetries?: number },
+  options?: {
+    onEvent?: (event: AgentEvent) => void;
+    signal?: AbortSignal;
+    maxRetries?: number;
+    job?: Job;
+    memoryClient?: IMemoryClient;
+  },
 ) {
   for (let attempt = 0, max = options?.maxRetries ?? 3; attempt <= max; attempt++) {
     let toolCallsMade = 0;
