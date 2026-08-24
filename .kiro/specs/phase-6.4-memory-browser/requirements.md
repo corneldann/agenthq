@@ -43,9 +43,15 @@ so that the dashboard can present a complete management interface.
 5. `DELETE /api/memory/:id` calls `client.delete(id)` and returns 204.
 6. `POST /api/memory/reflect` accepts `{ topic: string, workspaceId: string }` and calls
    `client.reflect`. Returns `{ reflection: string | null }`.
-7. All routes return 503 with `{ error: 'memory disabled' }` when `MEMORY_ENABLED=false`.
-8. All routes return 503 with `{ error: 'circuit open', metrics: CircuitBreakerMetrics }`
-   when the circuit breaker is in the Open state.
+7. WHEN `MEMORY_ENABLED=false`, ALL memory routes except health/debug endpoints SHALL
+   return 503 with `{ error: 'memory disabled' }`. Health and debug routes (e.g.,
+   `/api/memory/health`) SHALL continue to work normally even when memory is disabled,
+   allowing operational monitoring without enabling the full memory system.
+8. WHEN the circuit breaker is in the Open state, THE SYSTEM SHALL return 502 with
+   `{ error: 'circuit open', metrics: CircuitBreakerMetrics }` to distinguish circuit
+   breaker failures from memory-disabled state. Database connectivity failures SHALL
+   return 504 with `{ error: 'database timeout' }`. Other upstream service failures
+   SHALL return 502 with appropriate error messages.
 9. `workspaceId` is validated as a non-empty string on every route; missing or empty returns
    400 with `{ error: 'workspaceId required' }`.
 
@@ -62,8 +68,10 @@ everything the system has learned about my workspace.
    the top.
 3. Below the filters, a search input with debounce (300 ms) triggers
    `GET /api/memory/search` and replaces the timeline with results.
-4. The default view (no search) loads the first page from `GET /api/memory/list` and renders
-   50 memory cards per page. A "Load more" button appends the next page.
+4. WHEN the memory page loads in default view (no search active), THE SYSTEM SHALL call
+   `GET /api/memory/list` and render memory cards only after the API call succeeds.
+   IF the API call fails, THE SYSTEM SHALL show an error state with a retry prompt instead
+   of rendering cards. A "Load more" button appends subsequent pages.
 5. Each memory card shows: text excerpt (max 200 chars, ellipsised), scope tags as pills,
    quality score badge (colour-coded: green ≥ 0.85, amber ≥ 0.65, red < 0.65), relative
    timestamp, and Edit / Delete action buttons.
@@ -71,9 +79,17 @@ everything the system has learned about my workspace.
    `PATCH /api/memory/:id`; Cancel restores the card.
 7. Delete shows a confirmation tooltip ("Delete this memory?") before calling
    `DELETE /api/memory/:id`.
-8. After a successful delete the card is removed from the DOM without a full page reload.
-9. All text rendered in memory cards passes through the existing `esc()` utility to prevent
-   XSS injection.
+8. WHEN the delete button is clicked after confirmation, THE SYSTEM SHALL immediately
+   display a loading state on the card (spinner or disabled appearance with reduced
+   opacity) while the `DELETE /api/memory/:id` call is in progress.
+9. WHEN the delete API call succeeds, THE SYSTEM SHALL remove the card from the DOM
+   without a full page reload. IF the DOM removal fails due to a JavaScript error
+   after a successful delete, THE SYSTEM SHALL automatically retry the DOM removal once.
+   IF the retry also fails, THE SYSTEM SHALL fall back to a full page reload to ensure
+   the deleted memory is no longer visible and the UI remains synchronized with the
+   backend state.
+10. All text rendered in memory cards passes through the existing `esc()` utility to prevent
+    XSS injection.
 
 ### Requirement 3: Memory Graph View
 
@@ -96,8 +112,10 @@ I can understand how concepts in my workspace are connected in the memory store.
    by shape (circle vs diamond).
 6. All text elements in the SVG graph have a minimum contrast ratio of 4.5:1 against the
    SVG background colour.
-7. The graph is not rendered if the workspace has fewer than 3 entity nodes — the tab shows
-   "Not enough data to display graph" instead.
+7. WHEN the workspace has fewer than 3 entity nodes, THE SYSTEM SHALL render an empty SVG
+   container that satisfies all accessibility requirements (role, tabindex, aria-label) but
+   contains no nodes or edges, and SHALL display the message "Not enough data to display
+   graph" inside the container in place of graph content.
 
 ### Requirement 4: Reflect Panel and Real-time Updates
 
@@ -114,8 +132,12 @@ topic and see new memories appear in real-time so that the browser is always cur
 3. When a `memory-update` WebSocket event arrives with the current workspace ID, the
    timeline list is refreshed via a silent `GET /api/memory/list` call — no full page
    reload, no visible flicker.
-4. The memory page registers and deregisters its WebSocket listener on mount and unmount
-   respectively to avoid duplicate handlers.
+4. WHEN a reflection operation begins on the memory page, THE SYSTEM SHALL register the
+   WebSocket listener if not already registered. THE SYSTEM SHALL deregister the listener
+   on page unmount. IF a component unmounts unexpectedly without proper deregistration,
+   THE SYSTEM SHALL employ a failsafe cleanup mechanism (e.g., a WeakRef-based registry
+   or periodic sweep) to detect and remove orphaned listeners, preventing duplicate
+   handler accumulation.
 5. If `GET /api/memory/list` returns an error during a background refresh, a non-intrusive
    toast notification is shown ("Memory refresh failed — retrying") using the existing
    `enqueueToast` mechanism.
