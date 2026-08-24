@@ -18,7 +18,7 @@ import { GENERIC_REJECT_PATTERNS } from '../memory/extraction.ts';
 const MEMORY_MARKER_REGEX = /^MEMORY:\s*(.+)$/gim;
 
 // ---------------------------------------------------------------------------
-// Module-private validation
+// Module-private validation (exported for testing)
 // ---------------------------------------------------------------------------
 
 /**
@@ -31,7 +31,7 @@ const MEMORY_MARKER_REGEX = /^MEMORY:\s*(.+)$/gim;
  * @param text The fact text to validate
  * @returns true if the fact is valid, false otherwise
  */
-function isValidFact(text: string): boolean {
+export function isValidFact(text: string): boolean {
   const len = text.length;
   
   // Length check: must be in [20, 500]

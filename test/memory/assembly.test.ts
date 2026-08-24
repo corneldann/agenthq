@@ -11,8 +11,9 @@ import {
 import type { IMemoryClient, Memory, MemoryScope } from '../../src/memory/types.ts';
 import type { Job } from '../../src/types.ts';
 import { MemoryClientError } from '../../src/memory/errors.ts';
-import { extractMarkersFromOutput } from '../../src/routes/jobs.ts';
+import { extractMarkersFromOutput, isValidFact } from '../../src/routes/jobs.ts';
 import type { DbAdapter } from '../../src/db/adapter.ts';
+import { GENERIC_REJECT_PATTERNS } from '../../src/memory/extraction.ts';
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -470,5 +471,185 @@ Another line with MEMORY: embedded
     // Assert — only the line starting with MEMORY: should match
     expect(retainedFacts).toHaveLength(1);
     expect(retainedFacts[0]).toBe('valid fact at the start');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Property-based tests
+// ---------------------------------------------------------------------------
+
+import fc from 'fast-check';
+
+describe('Property-based tests', () => {
+  // Feature: phase-6.3-context-assembly, Property 1: Token Budget Invariant
+  it('property: token budget is never exceeded regardless of input', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(
+          fc.record({
+            id: fc.string(),
+            text: fc.string({ minLength: 1, maxLength: 600 }),
+            scope: fc.record({
+              workspaceId: fc.string(),
+            }),
+            qualityScore: fc.double({ min: 0, max: 1 }),
+            createdAt: fc.string().map(() => new Date().toISOString()),
+            lastRetrievedAt: fc.string().map(() => new Date().toISOString()),
+            retrievalCount: fc.integer({ min: 0, max: 1000 }),
+            tier: fc.constantFrom('hot' as const, 'warm' as const, 'cold' as const),
+            embeddingStatus: fc.constantFrom('pending' as const, 'ready' as const, 'failed' as const),
+          }),
+          { maxLength: 50 },
+        ),
+        fc.integer({ min: 100, max: 4000 }),
+        async (memories, tokenBudget) => {
+          // Arrange
+          const job = makeJob();
+          const client = new FakeMemoryClient(memories);
+          const config: MemoryAssemblyConfig = { candidateLimit: 100, tokenBudget };
+
+          // Act
+          const result = await assembleContext(job, client, config);
+
+          // Assert
+          const actualTokens = Math.ceil(result.length / 4);
+          return actualTokens <= tokenBudget;
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  // Feature: phase-6.3-context-assembly, Property 2: Empty-String Zero Value
+  // **Validates: Requirements 1.5, 1.6**
+  it('property: returns empty string or proper format when all memories exceed budget', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(
+          fc.record({
+            id: fc.string(),
+            text: fc.string({ minLength: 1, maxLength: 300 }),
+            scope: fc.record({
+              workspaceId: fc.string(),
+            }),
+            qualityScore: fc.double({ min: 0, max: 1 }),
+            createdAt: fc.string().map(() => new Date().toISOString()),
+            lastRetrievedAt: fc.string().map(() => new Date().toISOString()),
+            retrievalCount: fc.integer({ min: 0, max: 1000 }),
+            tier: fc.constantFrom('hot' as const, 'warm' as const, 'cold' as const),
+            embeddingStatus: fc.constantFrom('pending' as const, 'ready' as const, 'failed' as const),
+          }),
+          { minLength: 1, maxLength: 20 },
+        ),
+        fc.integer({ min: 100, max: 500 }),
+        async (memories, tokenBudget) => {
+          // Arrange
+          const job = makeJob();
+          // Generate memories where each text individually exceeds budget
+          const oversizedMemories = memories.map((m) => {
+            const minCharsNeeded = tokenBudget * 4 + 1;
+            const text = 'a'.repeat(minCharsNeeded);
+            return makeMemory({ ...m, text });
+          });
+          const client = new FakeMemoryClient(oversizedMemories);
+          const config: MemoryAssemblyConfig = { candidateLimit: 100, tokenBudget };
+
+          // Act
+          const result = await assembleContext(job, client, config);
+
+          // Assert — result is empty string OR starts with proper format
+          return result === '' || result.startsWith('## Relevant Past Context\n- ');
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  // Feature: phase-6.3-context-assembly, Property 3: Marker Validation Idempotence
+  // **Validates: Requirements 3.2, 3.7**
+  it('property: isValidFact returns true for all strings in [20, 500] chars without reject-pattern matches', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.string({ minLength: 20, maxLength: 500 }).filter((s) => {
+          // Filter out strings that match any GENERIC_REJECT_PATTERNS
+          for (const pattern of GENERIC_REJECT_PATTERNS) {
+            if (pattern.test(s)) {
+              return false;
+            }
+          }
+          return true;
+        }),
+        async (fact) => {
+          // Act
+          const result = isValidFact(fact);
+
+          // Assert — all generated strings should be valid
+          // (they're already in [20, 500] and don't match reject patterns)
+          return result === true;
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  // Feature: phase-6.3-context-assembly, Property 5: Format Consistency
+  // **Validates: Requirements 1.5**
+  it('property: non-empty results have consistent format with no trailing newline', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(
+          fc.record({
+            id: fc.string(),
+            text: fc.string({ minLength: 1, maxLength: 80 }),
+            scope: fc.record({
+              workspaceId: fc.string(),
+            }),
+            qualityScore: fc.double({ min: 0, max: 1 }),
+            createdAt: fc.string().map(() => new Date().toISOString()),
+            lastRetrievedAt: fc.string().map(() => new Date().toISOString()),
+            retrievalCount: fc.integer({ min: 0, max: 1000 }),
+            tier: fc.constantFrom('hot' as const, 'warm' as const, 'cold' as const),
+            embeddingStatus: fc.constantFrom('pending' as const, 'ready' as const, 'failed' as const),
+          }),
+          { minLength: 1, maxLength: 10 },
+        ),
+        async (memories) => {
+          // Arrange
+          const job = makeJob();
+          const client = new FakeMemoryClient(memories);
+          const config: MemoryAssemblyConfig = { candidateLimit: 100, tokenBudget: 4000 };
+
+          // Act
+          const result = await assembleContext(job, client, config);
+
+          // Assert
+          if (result === '') {
+            return true; // Empty result is valid
+          }
+
+          const lines = result.split('\n');
+
+          // First line must be the heading
+          if (lines[0] !== '## Relevant Past Context') {
+            return false;
+          }
+
+          // Every subsequent line must start with "- "
+          for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].startsWith('- ')) {
+              return false;
+            }
+          }
+
+          // Result must not end with a newline
+          if (result.endsWith('\n')) {
+            return false;
+          }
+
+          return true;
+        },
+      ),
+      { numRuns: 100 },
+    );
   });
 });

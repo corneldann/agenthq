@@ -81,7 +81,7 @@ MEMORY marker extraction to `src/routes/jobs.ts`, and exposes a diagnostic endpo
   - Run `node_modules\.bin\tsc.exe --noEmit` (0 errors expected)
   - Ensure all exports align with their import sites; fix any type errors before proceeding.
 
-- [ ] 6. Write tests for `src/memory/assembly.ts`
+- [x] 6. Write tests for `src/memory/assembly.ts`
   - [x] 6.1 Write unit tests in `test/memory/assembly.test.ts`
     - `assembleContext` returns `""` when `client.recall` returns `[]`
     - `assembleContext` returns `""` when the single candidate exceeds the token budget individually
@@ -100,33 +100,33 @@ MEMORY marker extraction to `src/routes/jobs.ts`, and exposes a diagnostic endpo
     - MEMORY marker regex matches `memory:`, `MEMORY:`, `Memory:` (case-insensitive)
     - MEMORY marker regex does not match lines without leading `MEMORY:`
     - _Requirements: 1.1–1.7, 3.1, 3.2_
-  - [~] 6.2 Write property test — Property 1: Token Budget Invariant
+  - [x] 6.2 Write property test — Property 1: Token Budget Invariant
     - Tag: `// Feature: phase-6.3-context-assembly, Property 1: Token Budget Invariant`
     - Generate arbitrary `Memory[]` (text 1–600 chars) and `tokenBudget` (100–4000)
     - Assert `Math.ceil(result.length / 4) <= tokenBudget` for all inputs
     - **Property 1: Token Budget Invariant**
     - **Validates: Requirements 1.4, 1.7**
-  - [~] 6.3 Write property test — Property 2: Empty-String Zero Value
+  - [x] 6.3 Write property test — Property 2: Empty-String Zero Value
     - Tag: `// Feature: phase-6.3-context-assembly, Property 2: Empty-String Zero Value`
     - Generate memories where each text individually exceeds budget (minLength > budget * 4)
     - Assert result is `""` OR starts with `"## Relevant Past Context\n- "`
     - **Property 2: Empty-String Zero Value**
     - **Validates: Requirements 1.5, 1.6**
-  - [~] 6.4 Write property test — Property 3: Marker Validation Idempotence
+  - [x] 6.4 Write property test — Property 3: Marker Validation Idempotence
     - Tag: `// Feature: phase-6.3-context-assembly, Property 3: Marker Validation Idempotence`
     - Generate strings in [20, 500] chars filtered to exclude reject-pattern matches
     - Assert `isValidFact(fact) === true` for all generated inputs
     - **Property 3: Marker Validation Idempotence**
     - **Validates: Requirements 3.2, 3.7**
-  - [~] 6.5 Write property test — Property 5: Format Consistency
+  - [x] 6.5 Write property test — Property 5: Format Consistency
     - Tag: `// Feature: phase-6.3-context-assembly, Property 5: Format Consistency`
     - Generate non-empty `Memory[]` with short text (1–80 chars) within a large budget
     - Assert: first line is `"## Relevant Past Context"`, every subsequent line starts with `"- "`, result does not end with `"\n"`
     - **Property 5: Format Consistency**
     - **Validates: Requirements 1.5**
 
-- [ ] 7. Write tests for the inject-test route in `test/routes/inject-test.test.ts`
-  - [~] 7.1 Write unit tests
+- [x] 7. Write tests for the inject-test route in `test/routes/inject-test.test.ts`
+  - [x] 7.1 Write unit tests
     - Returns 503 when `MEMORY_ENABLED=false`
     - Returns 404 when job is not found
     - Returns 400 when job status is `running`
@@ -136,13 +136,13 @@ MEMORY marker extraction to `src/routes/jobs.ts`, and exposes a diagnostic endpo
     - `dropped` matches the count of candidates that exceeded the budget
     - `ReadOnlyMemoryClient` prevents any write calls reaching the inner client during diagnostic execution
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
-  - [~] 7.2 Write property test — Property 4: Read-Only Diagnostic Isolation
+  - [x] 7.2 Write property test — Property 4: Read-Only Diagnostic Isolation
     - Tag: `// Feature: phase-6.3-context-assembly, Property 4: Read-Only Diagnostic Isolation`
     - For any completed job, assert that calling the endpoint leaves the inner `IMemoryClient` retain/delete call counts at zero
     - **Property 4: Read-Only Diagnostic Isolation**
     - **Validates: Requirements 4.2**
 
-- [~] 8. Final checkpoint — run full test suite
+- [x] 8. Final checkpoint — run full test suite
   - Run `bun test test/memory/assembly.test.ts test/routes/inject-test.test.ts`
   - Run `node_modules\.bin\tsc.exe --noEmit` (0 errors)
   - Ensure all tests pass, ask the user if questions arise.

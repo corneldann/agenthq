@@ -1,5 +1,10 @@
 {
-  "pbtResults": {},
+  "pbtResults": {
+    "6.5 Write property test — Property 5: Format Consistency": {
+      "status": "passed",
+      "lastRunTimestamp": 1787310627361
+    }
+  },
   "executionHistory": {
     "1. Create `src/memory/assembly.ts` — types, token counting, and `assembleContext`": [
       {
@@ -51,6 +56,34 @@
         "executionId": "27609b9e-b985-4707-8fca-67921182891c",
         "chatSessionId": "sess_34de7365-0015-43e1-b129-78b1293822b6",
         "timestamp": 1787254505204
+      }
+    ],
+    "6.3 Write property test — Property 2: Empty-String Zero Value": [
+      {
+        "executionId": "b1fdea6d-e1bb-4c5c-8fb0-e062f036a904",
+        "chatSessionId": "sess_cd21ba16-08ed-4457-aa0c-c661647a9d50",
+        "timestamp": 1787309924846
+      }
+    ],
+    "6.4 Write property test — Property 3: Marker Validation Idempotence": [
+      {
+        "executionId": "7a7ae600-a594-431a-81fd-b08f43a84f00",
+        "chatSessionId": "sess_2ad1b772-72fa-4056-8335-f0750458bd70",
+        "timestamp": 1787310207292
+      }
+    ],
+    "7.2 Write property test — Property 4: Read-Only Diagnostic Isolation": [
+      {
+        "executionId": "7a53e359-3609-4160-b2d7-684a3b8f6cf4",
+        "chatSessionId": "sess_d5c201d7-f33c-4c6c-b07e-25e54c37f7c3",
+        "timestamp": 1787311318254
+      }
+    ],
+    "7. Write tests for the inject-test route in `test/routes/inject-test.test.ts`": [
+      {
+        "executionId": "7a53e359-3609-4160-b2d7-684a3b8f6cf4",
+        "chatSessionId": "sess_d5c201d7-f33c-4c6c-b07e-25e54c37f7c3",
+        "timestamp": 1787311318321
       }
     ]
   }
