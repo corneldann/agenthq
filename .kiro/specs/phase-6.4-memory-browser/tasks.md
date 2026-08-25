@@ -58,7 +58,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - _Requirements: 1.9_
 
 - [ ] 2. Implement memory search and list routes
-  - [-] 2.1 Implement GET /api/memory/search route handler
+  - [x] 2.1 Implement GET /api/memory/search route handler
     - Parse query, workspaceId, limit params with resolveLimit (default 20, max 100)
     - Apply shared guards (feature flag, circuit breaker, workspaceId)
     - Call client.recall with parsed params
@@ -66,7 +66,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Return Memory[] array on success
     - _Requirements: 1.1, 1.7, 1.8, 1.9_
   
-  - [ ] 2.2 Implement GET /api/memory/list route handler
+  - [x] 2.2 Implement GET /api/memory/list route handler
     - Parse workspaceId, cursor, pageSize params (default pageSize 50, max 100)
     - Apply shared guards
     - Call client.list with parsed params
@@ -74,14 +74,14 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Return { memories: Memory[], nextCursor: string | null, total: number }
     - _Requirements: 1.2, 1.7, 1.8, 1.9_
   
-  - [ ] 2.3 Write property test for memory list sort order
+  - [x] 2.3 Write property test for memory list sort order
     - **Property 2: Memory list is sorted descending by createdAt**
     - **Validates: Requirements 1.2**
     - Generate array of Memory objects with random createdAt timestamps
     - Verify sorted list is monotonically non-increasing
     - _Requirements: 1.2_
   
-  - [ ] 2.4 Write unit tests for search and list routes
+  - [x] 2.4 Write unit tests for search and list routes
     - Test MEMORY_ENABLED=false returns 503
     - Test circuit breaker Open returns 502 with metrics
     - Test missing workspaceId returns 400

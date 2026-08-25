@@ -43,6 +43,13 @@ export interface IMemoryClient {
   /** Retrieve memories ordered by descending relevance. */
   recall(query: string, scope: MemoryScope, limit: number): Promise<Memory[]>;
 
+  /** List memories with cursor-based pagination, sorted by createdAt DESC. */
+  list(scope: MemoryScope, pageSize: number, cursor: string | null): Promise<{
+    memories: Memory[];
+    nextCursor: string | null;
+    total: number;
+  }>;
+
   /** Synthesise a reflection on a topic, or return null if none available. */
   reflect(topic: string, scope: MemoryScope): Promise<string | null>;
 
