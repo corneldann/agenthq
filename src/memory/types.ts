@@ -50,6 +50,9 @@ export interface IMemoryClient {
     total: number;
   }>;
 
+  /** Retrieve a single memory by ID, or return null if not found. */
+  get(id: string): Promise<Memory | null>;
+
   /** Synthesise a reflection on a topic, or return null if none available. */
   reflect(topic: string, scope: MemoryScope): Promise<string | null>;
 

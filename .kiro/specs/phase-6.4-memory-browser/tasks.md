@@ -89,29 +89,29 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Test successful list returns correct response shape
     - _Requirements: 1.1, 1.2, 1.7, 1.8, 1.9_
 
-- [ ] 3. Implement memory CRUD routes
-  - [ ] 3.1 Implement GET /api/memory/:id route handler
+- [x] 3. Implement memory CRUD routes
+  - [x] 3.1 Implement GET /api/memory/:id route handler
     - Parse id param from URL
     - Apply shared guards (skip workspaceId validation for single-item GET)
     - Call client.get(id)
     - Return Memory object or 404 if not found
     - _Requirements: 1.3, 1.7, 1.8_
   
-  - [ ] 3.2 Implement PATCH /api/memory/:id route handler
+  - [x] 3.2 Implement PATCH /api/memory/:id route handler
     - Parse id from URL and { text: string } from request body
     - Apply shared guards
     - Call client.retain with updated text (replace operation)
     - Return updated Memory object
     - _Requirements: 1.4, 1.7, 1.8, 1.9_
   
-  - [ ] 3.3 Implement DELETE /api/memory/:id route handler
+  - [x] 3.3 Implement DELETE /api/memory/:id route handler
     - Parse id from URL
     - Apply shared guards
     - Call client.delete(id)
     - Return 204 on success, 404 if not found
     - _Requirements: 1.5, 1.7, 1.8, 1.9_
   
-  - [ ] 3.4 Write unit tests for CRUD routes
+  - [x] 3.4 Write unit tests for CRUD routes
     - Test GET :id returns Memory or 404
     - Test PATCH :id updates text via client.retain
     - Test DELETE :id calls client.delete and returns 204

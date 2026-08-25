@@ -328,30 +328,138 @@ export function register(
   });
 
   // GET /api/memory/:id
-  router.get('/api/memory/:id', (_req, _params) => {
-    if (!MEMORY_ENABLED) {
-      return jsonResponse({ error: 'memory disabled' }, 503);
+  router.get('/api/memory/:id', async (req, params) => {
+    // Guard: feature flag check
+    const disabledResponse = checkMemoryEnabled();
+    if (disabledResponse !== null) return disabledResponse;
+
+    // Guard: circuit breaker state check
+    const openResponse = checkCircuitBreaker(breaker);
+    if (openResponse !== null) return openResponse;
+
+    // Note: workspaceId validation is skipped for single-item GET
+    // (Requirement 1.3: "skip workspaceId validation for single-item GET")
+
+    // Parse id param from URL
+    const id = params.id;
+    if (!id || id.trim() === '') {
+      return jsonResponse({ error: 'id required' }, 400);
     }
-    // TODO: Implement get handler (Task 1.4)
-    return jsonResponse({ error: 'not implemented' }, 501);
+
+    try {
+      // Call client.get with the parsed id
+      const memory = await client.get(id);
+
+      // Return Memory object or 404 if not found
+      if (memory === null) {
+        return jsonResponse({ error: 'not found' }, 404);
+      }
+
+      return jsonResponse(memory);
+    } catch (err) {
+      // Map errors to HTTP status codes per error mapping table
+      return mapMemoryError(err);
+    }
   });
 
   // PATCH /api/memory/:id
-  router.post('/api/memory/:id', (_req, _params) => {
-    if (!MEMORY_ENABLED) {
-      return jsonResponse({ error: 'memory disabled' }, 503);
+  router.patch('/api/memory/:id', async (req, params) => {
+    // Guard: feature flag check
+    const disabledResponse = checkMemoryEnabled();
+    if (disabledResponse !== null) return disabledResponse;
+
+    // Guard: circuit breaker state check
+    const openResponse = checkCircuitBreaker(breaker);
+    if (openResponse !== null) return openResponse;
+
+    // Guard: workspaceId validation
+    const validationError = validateWorkspaceId(req);
+    if (validationError !== null) return validationError;
+
+    // Parse id param from URL
+    const id = params.id;
+    if (!id || id.trim() === '') {
+      return jsonResponse({ error: 'id required' }, 400);
     }
-    // TODO: Implement update handler (Task 1.5)
-    return jsonResponse({ error: 'not implemented' }, 501);
+
+    // Parse request body
+    let body: { text?: string };
+    try {
+      body = await req.json();
+    } catch (err) {
+      return jsonResponse({ error: 'invalid JSON body' }, 400);
+    }
+
+    // Validate text field
+    if (typeof body.text !== 'string' || body.text.trim() === '') {
+      return jsonResponse({ error: 'text field is required and must be a non-empty string' }, 400);
+    }
+
+    const url = new URL(req.url);
+    const workspaceId = url.searchParams.get('workspaceId') ?? ''; // Already validated as non-empty
+
+    try {
+      // First, fetch the existing memory to get its scope
+      const existingMemory = await client.get(id);
+      if (existingMemory === null) {
+        return jsonResponse({ error: 'not found' }, 404);
+      }
+
+      // Call client.retain with updated text and existing scope (replace operation)
+      // Requirement 1.4: PATCH accepts { text: string } and updates via retain
+      // The retain operation with the same scope should replace/update the memory
+      await client.retain(body.text, existingMemory.scope);
+
+      // Fetch the updated memory to return it
+      const updatedMemory = await client.get(id);
+      if (updatedMemory === null) {
+        // Shouldn't happen, but handle gracefully
+        return jsonResponse({ error: 'memory not found after update' }, 500);
+      }
+
+      // Return updated Memory object
+      return jsonResponse(updatedMemory);
+    } catch (err) {
+      // Map errors to HTTP status codes per error mapping table
+      return mapMemoryError(err);
+    }
   });
 
   // DELETE /api/memory/:id
-  router.delete('/api/memory/:id', (_req, _params) => {
-    if (!MEMORY_ENABLED) {
-      return jsonResponse({ error: 'memory disabled' }, 503);
+  router.delete('/api/memory/:id', async (req, params) => {
+    // Guard: feature flag check
+    const disabledResponse = checkMemoryEnabled();
+    if (disabledResponse !== null) return disabledResponse;
+
+    // Guard: circuit breaker state check
+    const openResponse = checkCircuitBreaker(breaker);
+    if (openResponse !== null) return openResponse;
+
+    // Guard: workspaceId validation
+    const validationError = validateWorkspaceId(req);
+    if (validationError !== null) return validationError;
+
+    // Parse id param from URL
+    const id = params.id;
+    if (!id || id.trim() === '') {
+      return jsonResponse({ error: 'id required' }, 400);
     }
-    // TODO: Implement delete handler (Task 1.6)
-    return jsonResponse({ error: 'not implemented' }, 204);
+
+    try {
+      // Call client.delete with the parsed id
+      await client.delete(id);
+
+      // Return 204 on success (no content)
+      return new Response(null, { status: 204 });
+    } catch (err) {
+      // Check if the error indicates memory not found
+      if (err instanceof MemoryClientError && err.statusCode === 404) {
+        return jsonResponse({ error: 'not found' }, 404);
+      }
+
+      // Map other errors to HTTP status codes per error mapping table
+      return mapMemoryError(err);
+    }
   });
 
   // POST /api/memory/reflect

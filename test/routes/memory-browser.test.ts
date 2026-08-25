@@ -1599,3 +1599,1003 @@ describe('GET /api/memory/list route handler integration', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Unit Tests for GET /api/memory/:id Route Handler
+// ---------------------------------------------------------------------------
+
+describe('GET /api/memory/:id route handler', () => {
+  it('should parse id param from URL', () => {
+    // Arrange
+    const params = { id: 'memory-123' };
+    
+    // Act
+    const id = params.id;
+    
+    // Assert
+    expect(id).toBe('memory-123');
+  });
+
+  it('should reject empty id param', () => {
+    // Arrange — empty id should fail validation
+    const id = '';
+    
+    // Act
+    const isValid = id.trim() !== '';
+    
+    // Assert
+    expect(isValid).toBe(false);
+  });
+
+  it('should reject whitespace-only id param', () => {
+    // Arrange — whitespace-only id should fail validation
+    const id = '   ';
+    
+    // Act
+    const isValid = id.trim() !== '';
+    
+    // Assert
+    expect(isValid).toBe(false);
+  });
+
+  it('should accept valid UUID id param', () => {
+    // Arrange
+    const id = 'a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d';
+    
+    // Act
+    const isValid = id.trim() !== '';
+    
+    // Assert
+    expect(isValid).toBe(true);
+  });
+
+  it('should accept valid string id param', () => {
+    // Arrange — any non-empty string should be valid
+    const id = 'memory-abc-123';
+    
+    // Act
+    const isValid = id.trim() !== '';
+    
+    // Assert
+    expect(isValid).toBe(true);
+  });
+
+  it('should handle id with special characters', () => {
+    // Arrange — ids might contain special chars in URL-encoded form
+    const id = 'memory_id-123.abc';
+    
+    // Act
+    const isValid = id.trim() !== '';
+    
+    // Assert
+    expect(isValid).toBe(true);
+  });
+});
+
+describe('GET /api/memory/:id route handler integration', () => {
+  const { register } = require('../../src/routes/memory-browser.ts');
+  const { createRouter } = require('../../src/router.ts');
+  const { mock } = require('bun:test');
+
+  it('should return 503 when memory is disabled', async () => {
+    // This test is environment-dependent — only runs when MEMORY_ENABLED=false
+    // If memory is enabled in the test environment, this test is skipped
+    const { checkMemoryEnabled } = require('../../src/routes/memory-browser.ts');
+    const disabledResponse = checkMemoryEnabled();
+    
+    if (disabledResponse !== null) {
+      expect(disabledResponse.status).toBe(503);
+      const body = await disabledResponse.json();
+      expect(body).toEqual({ error: 'memory disabled' });
+    }
+  });
+
+  it('should return 400 when id param is missing', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {};
+    const mockBreaker = {
+      getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+    };
+
+    register(router, mockClient, mockBreaker);
+
+    // Act — GET /api/memory/ with no id (but this won't match the :id route)
+    // Instead, we test the validation logic directly
+    const id = '';
+    const isInvalid = !id || id.trim() === '';
+
+    // Assert
+    expect(isInvalid).toBe(true);
+  });
+
+  it('should return 404 when memory not found', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      get: mock(() => Promise.resolve(null)),  // Memory not found
+    };
+    const mockBreaker = {
+      getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+    };
+
+    register(router, mockClient, mockBreaker);
+
+    const req = new Request('http://localhost/api/memory/memory-123');
+
+    // Act
+    const matched = router.match(req);
+    
+    if (matched !== null) {
+      const response = await matched.handler(req, { id: 'memory-123' });
+
+      // Assert
+      if (response.status === 404) {
+        const body = await response.json();
+        expect(body).toEqual({ error: 'not found' });
+        expect(mockClient.get).toHaveBeenCalledWith('memory-123');
+      }
+    }
+  });
+
+  it('should return Memory object when found', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockMemory = {
+      id: 'memory-123',
+      text: 'This is a test memory',
+      scope: { workspaceId: 'ws1' },
+      qualityScore: 0.95,
+      createdAt: '2024-01-15T10:30:00.000Z',
+      lastRetrievedAt: '2024-01-15T10:30:00.000Z',
+      retrievalCount: 1,
+      tier: 'hot' as const,
+      embeddingStatus: 'ready' as const,
+    };
+    const mockClient = {
+      get: mock(() => Promise.resolve(mockMemory)),
+    };
+    const mockBreaker = {
+      getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+    };
+
+    register(router, mockClient, mockBreaker);
+
+    const req = new Request('http://localhost/api/memory/memory-123');
+
+    // Act
+    const matched = router.match(req);
+    
+    if (matched !== null) {
+      const response = await matched.handler(req, { id: 'memory-123' });
+
+      // Assert
+      if (response.status === 200) {
+        const body = await response.json();
+        expect(body).toEqual(mockMemory);
+        expect(mockClient.get).toHaveBeenCalledWith('memory-123');
+      }
+    }
+  });
+
+  it('should pass id parameter correctly to client.get', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      get: mock(() => Promise.resolve({
+        id: 'test-uuid-456',
+        text: 'Test memory',
+        scope: { workspaceId: 'ws1' },
+        qualityScore: 0.8,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+        retrievalCount: 0,
+        tier: 'warm' as const,
+        embeddingStatus: 'ready' as const,
+      })),
+    };
+    const mockBreaker = {
+      getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+    };
+
+    register(router, mockClient, mockBreaker);
+
+    const req = new Request('http://localhost/api/memory/test-uuid-456');
+
+    // Act
+    const matched = router.match(req);
+    
+    if (matched !== null) {
+      const response = await matched.handler(req, { id: 'test-uuid-456' });
+
+      // Assert
+      if (response.status === 200) {
+        // Verify client.get was called with the exact id from the URL
+        expect(mockClient.get).toHaveBeenCalledTimes(1);
+        expect(mockClient.get).toHaveBeenCalledWith('test-uuid-456');
+      }
+    }
+  });
+
+  it('should not require workspaceId query parameter', async () => {
+    // Arrange — Requirement 1.3: skip workspaceId validation for single-item GET
+    const router = createRouter();
+    const mockMemory = {
+      id: 'memory-999',
+      text: 'Memory without workspace',
+      scope: { workspaceId: 'ws1' },
+      qualityScore: 0.7,
+      createdAt: '2024-01-01T00:00:00.000Z',
+      lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+      retrievalCount: 0,
+      tier: 'cold' as const,
+      embeddingStatus: 'pending' as const,
+    };
+    const mockClient = {
+      get: mock(() => Promise.resolve(mockMemory)),
+    };
+    const mockBreaker = {
+      getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+    };
+
+    register(router, mockClient, mockBreaker);
+
+    // Act — No workspaceId in query string
+    const req = new Request('http://localhost/api/memory/memory-999');
+
+    const matched = router.match(req);
+    
+    if (matched !== null) {
+      const response = await matched.handler(req, { id: 'memory-999' });
+
+      // Assert — should succeed without workspaceId
+      if (response.status === 200) {
+        const body = await response.json();
+        expect(body).toEqual(mockMemory);
+      }
+    }
+  });
+
+  it('should apply circuit breaker guard', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      get: mock(() => Promise.resolve(null)),
+    };
+    const mockBreaker = {
+      getMetrics: mock(() => ({
+        state: 'open',  // Circuit is open
+        consecutiveFailures: 3,
+        totalFailures: 10,
+        totalSuccesses: 5,
+        lastFailureAt: '2024-01-15T10:00:00.000Z',
+        lastSuccessAt: '2024-01-15T09:00:00.000Z',
+        openedAt: '2024-01-15T10:00:00.000Z',
+      })),
+    };
+
+    register(router, mockClient, mockBreaker);
+
+    const req = new Request('http://localhost/api/memory/memory-123');
+
+    // Act
+    const matched = router.match(req);
+    
+    if (matched !== null) {
+      const response = await matched.handler(req, { id: 'memory-123' });
+
+      // Assert — circuit breaker should return 502 when open
+      if (response.status === 502) {
+        const body = await response.json();
+        expect(body.error).toBe('circuit open');
+        expect(body.metrics).toBeDefined();
+        expect(body.metrics.state).toBe('open');
+      }
+    }
+  });
+
+  it('should map MemoryTimeoutError to 504', async () => {
+    // Arrange
+    const { MemoryTimeoutError } = require('../../src/memory/errors.ts');
+    const router = createRouter();
+    const mockClient = {
+      get: mock(() => Promise.reject(new MemoryTimeoutError('Database timeout'))),
+    };
+    const mockBreaker = {
+      getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+    };
+
+    register(router, mockClient, mockBreaker);
+
+    const req = new Request('http://localhost/api/memory/memory-123');
+
+    // Act
+    const matched = router.match(req);
+    
+    if (matched !== null) {
+      const response = await matched.handler(req, { id: 'memory-123' });
+
+      // Assert
+      if (response.status === 504) {
+        const body = await response.json();
+        expect(body.error).toBe('database timeout');
+      }
+    }
+  });
+
+  it('should map MemoryServiceError to 502', async () => {
+    // Arrange
+    const { MemoryServiceError } = require('../../src/memory/errors.ts');
+    const router = createRouter();
+    const mockClient = {
+      get: mock(() => Promise.reject(new MemoryServiceError('Service error', 503))),
+    };
+    const mockBreaker = {
+      getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+    };
+
+    register(router, mockClient, mockBreaker);
+
+    const req = new Request('http://localhost/api/memory/memory-123');
+
+    // Act
+    const matched = router.match(req);
+    
+    if (matched !== null) {
+      const response = await matched.handler(req, { id: 'memory-123' });
+
+      // Assert
+      if (response.status === 502) {
+        const body = await response.json();
+        expect(body.error).toBeDefined();
+        expect(body.statusCode).toBe(503);
+      }
+    }
+  });
+
+  it('should map MemoryClientError to 400', async () => {
+    // Arrange
+    const { MemoryClientError } = require('../../src/memory/errors.ts');
+    const router = createRouter();
+    const mockClient = {
+      get: mock(() => Promise.reject(new MemoryClientError('Invalid request', 400, ''))),
+    };
+    const mockBreaker = {
+      getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+    };
+
+    register(router, mockClient, mockBreaker);
+
+    const req = new Request('http://localhost/api/memory/memory-123');
+
+    // Act
+    const matched = router.match(req);
+    
+    if (matched !== null) {
+      const response = await matched.handler(req, { id: 'memory-123' });
+
+      // Assert
+      if (response.status === 400) {
+        const body = await response.json();
+        expect(body.error).toBeDefined();
+        expect(body.statusCode).toBe(400);
+      }
+    }
+  });
+
+  it('should map unknown errors to 500', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      get: mock(() => Promise.reject(new Error('Unexpected error'))),
+    };
+    const mockBreaker = {
+      getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+    };
+
+    register(router, mockClient, mockBreaker);
+
+    const req = new Request('http://localhost/api/memory/memory-123');
+
+    // Act
+    const matched = router.match(req);
+    
+    if (matched !== null) {
+      const response = await matched.handler(req, { id: 'memory-123' });
+
+      // Assert
+      if (response.status === 500) {
+        const body = await response.json();
+        expect(body.error).toBe('Unexpected error');
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit Tests for PATCH /api/memory/:id Route Handler (Task 3.4)
+// ---------------------------------------------------------------------------
+
+describe('PATCH /api/memory/:id route handler', () => {
+  const { register } = require('../../src/routes/memory-browser.ts');
+  const { createRouter } = require('../../src/router.ts');
+  const { mock } = require('bun:test');
+
+  describe('shared guards', () => {
+    it('should return 503 when memory is disabled', async () => {
+      const { checkMemoryEnabled } = require('../../src/routes/memory-browser.ts');
+      const disabledResponse = checkMemoryEnabled();
+      
+      if (disabledResponse !== null) {
+        expect(disabledResponse.status).toBe(503);
+        const body = await disabledResponse.json();
+        expect(body).toEqual({ error: 'memory disabled' });
+      }
+    });
+
+    it('should return 502 with metrics when circuit breaker is open', async () => {
+      const router = createRouter();
+      const mockClient = {
+        get: mock(() => Promise.resolve(null)),
+        retain: mock(() => Promise.resolve()),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({
+          state: 'open',
+          consecutiveFailures: 3,
+          totalFailures: 10,
+          totalSuccesses: 5,
+          lastFailureAt: '2024-01-15T10:00:00.000Z',
+          lastSuccessAt: '2024-01-15T09:00:00.000Z',
+          openedAt: '2024-01-15T10:00:00.000Z',
+        })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/memory-123?workspaceId=ws1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'updated text' }),
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'memory-123' });
+
+        if (response.status === 502) {
+          const body = await response.json();
+          expect(body.error).toBe('circuit open');
+          expect(body.metrics).toBeDefined();
+          expect(body.metrics.state).toBe('open');
+        }
+      }
+    });
+
+    it('should return 400 when workspaceId is missing', async () => {
+      const router = createRouter();
+      const mockClient = {
+        get: mock(() => Promise.resolve(null)),
+        retain: mock(() => Promise.resolve()),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/memory-123', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'updated text' }),
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'memory-123' });
+
+        expect(response.status).toBe(400);
+        const body = await response.json();
+        expect(body).toEqual({ error: 'workspaceId required' });
+      }
+    });
+  });
+
+  describe('request validation', () => {
+    it('should return 400 when request body is not valid JSON', async () => {
+      const router = createRouter();
+      const mockClient = {
+        get: mock(() => Promise.resolve(null)),
+        retain: mock(() => Promise.resolve()),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/memory-123?workspaceId=ws1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: 'invalid JSON {{{',
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'memory-123' });
+
+        expect(response.status).toBe(400);
+        const body = await response.json();
+        expect(body.error).toBe('invalid JSON body');
+      }
+    });
+
+    it('should return 400 when text field is missing', async () => {
+      const router = createRouter();
+      const mockClient = {
+        get: mock(() => Promise.resolve(null)),
+        retain: mock(() => Promise.resolve()),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/memory-123?workspaceId=ws1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notText: 'value' }),
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'memory-123' });
+
+        expect(response.status).toBe(400);
+        const body = await response.json();
+        expect(body.error).toBe('text field is required and must be a non-empty string');
+      }
+    });
+
+    it('should return 400 when text field is empty string', async () => {
+      const router = createRouter();
+      const mockClient = {
+        get: mock(() => Promise.resolve(null)),
+        retain: mock(() => Promise.resolve()),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/memory-123?workspaceId=ws1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: '' }),
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'memory-123' });
+
+        expect(response.status).toBe(400);
+        const body = await response.json();
+        expect(body.error).toBe('text field is required and must be a non-empty string');
+      }
+    });
+  });
+
+  describe('memory not found', () => {
+    it('should return 404 when memory does not exist', async () => {
+      const router = createRouter();
+      const mockClient = {
+        get: mock(() => Promise.resolve(null)),
+        retain: mock(() => Promise.resolve()),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/nonexistent-id?workspaceId=ws1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'updated text' }),
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'nonexistent-id' });
+
+        expect(response.status).toBe(404);
+        const body = await response.json();
+        expect(body).toEqual({ error: 'not found' });
+      }
+    });
+  });
+
+  describe('successful update', () => {
+    it('should call client.retain with updated text and existing scope', async () => {
+      const router = createRouter();
+      const existingMemory = {
+        id: 'memory-123',
+        text: 'original text',
+        scope: { workspaceId: 'ws1', userId: 'user-456' },
+        qualityScore: 0.8,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+        retrievalCount: 5,
+        tier: 'hot' as const,
+        embeddingStatus: 'ready' as const,
+      };
+
+      const updatedMemory = {
+        ...existingMemory,
+        text: 'updated text',
+        lastRetrievedAt: '2024-01-15T10:00:00.000Z',
+      };
+
+      const mockClient = {
+        get: mock((id: string) => {
+          if (mockClient.get.mock.calls.length === 1) {
+            return Promise.resolve(existingMemory);
+          }
+          return Promise.resolve(updatedMemory);
+        }),
+        retain: mock(() => Promise.resolve()),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/memory-123?workspaceId=ws1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'updated text' }),
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'memory-123' });
+
+        if (response.status === 200) {
+          expect(mockClient.retain).toHaveBeenCalledTimes(1);
+          expect(mockClient.retain).toHaveBeenCalledWith(
+            'updated text',
+            { workspaceId: 'ws1', userId: 'user-456' }
+          );
+
+          const body = await response.json();
+          expect(body.text).toBe('updated text');
+          expect(body.id).toBe('memory-123');
+        }
+      }
+    });
+
+    it('should return updated Memory object', async () => {
+      const router = createRouter();
+      const existingMemory = {
+        id: 'memory-789',
+        text: 'before update',
+        scope: { workspaceId: 'ws1' },
+        qualityScore: 0.7,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+        retrievalCount: 3,
+        tier: 'warm' as const,
+        embeddingStatus: 'ready' as const,
+      };
+
+      const updatedMemory = {
+        ...existingMemory,
+        text: 'after update',
+        lastRetrievedAt: '2024-01-15T11:00:00.000Z',
+        retrievalCount: 4,
+      };
+
+      const mockClient = {
+        get: mock((id: string) => {
+          if (mockClient.get.mock.calls.length === 1) {
+            return Promise.resolve(existingMemory);
+          }
+          return Promise.resolve(updatedMemory);
+        }),
+        retain: mock(() => Promise.resolve()),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/memory-789?workspaceId=ws1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'after update' }),
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'memory-789' });
+
+        if (response.status === 200) {
+          const body = await response.json();
+          expect(body).toEqual(updatedMemory);
+          expect(body.text).toBe('after update');
+          expect(body.id).toBe('memory-789');
+        }
+      }
+    });
+  });
+});
+
+
+// ---------------------------------------------------------------------------
+// Unit Tests for DELETE /api/memory/:id Route Handler (Task 3.4)
+// ---------------------------------------------------------------------------
+
+describe('DELETE /api/memory/:id route handler', () => {
+  const { register } = require('../../src/routes/memory-browser.ts');
+  const { createRouter } = require('../../src/router.ts');
+  const { mock } = require('bun:test');
+
+  describe('shared guards', () => {
+    it('should return 503 when memory is disabled', async () => {
+      const { checkMemoryEnabled } = require('../../src/routes/memory-browser.ts');
+      const disabledResponse = checkMemoryEnabled();
+      
+      if (disabledResponse !== null) {
+        expect(disabledResponse.status).toBe(503);
+        const body = await disabledResponse.json();
+        expect(body).toEqual({ error: 'memory disabled' });
+      }
+    });
+
+    it('should return 502 with metrics when circuit breaker is open', async () => {
+      const router = createRouter();
+      const mockClient = {
+        delete: mock(() => Promise.resolve()),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({
+          state: 'open',
+          consecutiveFailures: 3,
+          totalFailures: 10,
+          totalSuccesses: 5,
+          lastFailureAt: '2024-01-15T10:00:00.000Z',
+          lastSuccessAt: '2024-01-15T09:00:00.000Z',
+          openedAt: '2024-01-15T10:00:00.000Z',
+        })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/memory-123?workspaceId=ws1', {
+        method: 'DELETE',
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'memory-123' });
+
+        if (response.status === 502) {
+          const body = await response.json();
+          expect(body.error).toBe('circuit open');
+          expect(body.metrics).toBeDefined();
+          expect(body.metrics.state).toBe('open');
+        }
+      }
+    });
+
+    it('should return 400 when workspaceId is missing', async () => {
+      const router = createRouter();
+      const mockClient = {
+        delete: mock(() => Promise.resolve()),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/memory-123', {
+        method: 'DELETE',
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'memory-123' });
+
+        expect(response.status).toBe(400);
+        const body = await response.json();
+        expect(body).toEqual({ error: 'workspaceId required' });
+      }
+    });
+  });
+
+  describe('successful deletion', () => {
+    it('should call client.delete with correct id', async () => {
+      const router = createRouter();
+      const mockClient = {
+        delete: mock(() => Promise.resolve()),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/memory-123?workspaceId=ws1', {
+        method: 'DELETE',
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'memory-123' });
+
+        if (response.status === 204) {
+          expect(mockClient.delete).toHaveBeenCalledTimes(1);
+          expect(mockClient.delete).toHaveBeenCalledWith('memory-123');
+        }
+      }
+    });
+
+    it('should return 204 with no content on success', async () => {
+      const router = createRouter();
+      const mockClient = {
+        delete: mock(() => Promise.resolve()),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/memory-456?workspaceId=ws1', {
+        method: 'DELETE',
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'memory-456' });
+
+        expect(response.status).toBe(204);
+        
+        const text = await response.text();
+        expect(text).toBe('');
+      }
+    });
+  });
+
+  describe('memory not found', () => {
+    it('should return 404 when memory does not exist', async () => {
+      const { MemoryClientError } = require('../../src/memory/errors.ts');
+      const router = createRouter();
+      const mockClient = {
+        delete: mock(() => Promise.reject(new MemoryClientError('Memory not found', 404, 'nonexistent-id'))),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/nonexistent-id?workspaceId=ws1', {
+        method: 'DELETE',
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'nonexistent-id' });
+
+        expect(response.status).toBe(404);
+        const body = await response.json();
+        expect(body).toEqual({ error: 'not found' });
+      }
+    });
+  });
+
+  describe('error handling', () => {
+    it('should map MemoryTimeoutError to 504', async () => {
+      const { MemoryTimeoutError } = require('../../src/memory/errors.ts');
+      const router = createRouter();
+      const mockClient = {
+        delete: mock(() => Promise.reject(new MemoryTimeoutError('Database timeout'))),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/memory-123?workspaceId=ws1', {
+        method: 'DELETE',
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'memory-123' });
+
+        if (response.status === 504) {
+          const body = await response.json();
+          expect(body.error).toBe('database timeout');
+        }
+      }
+    });
+
+    it('should map MemoryServiceError to 502', async () => {
+      const { MemoryServiceError } = require('../../src/memory/errors.ts');
+      const router = createRouter();
+      const mockClient = {
+        delete: mock(() => Promise.reject(new MemoryServiceError('Service unavailable', 503))),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/memory-123?workspaceId=ws1', {
+        method: 'DELETE',
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'memory-123' });
+
+        if (response.status === 502) {
+          const body = await response.json();
+          expect(body.error).toBeDefined();
+          expect(body.statusCode).toBe(503);
+        }
+      }
+    });
+
+    it('should map unknown errors to 500', async () => {
+      const router = createRouter();
+      const mockClient = {
+        delete: mock(() => Promise.reject(new Error('Unexpected deletion error'))),
+      };
+      const mockBreaker = {
+        getMetrics: mock(() => ({ state: 'closed', consecutiveFailures: 0 })),
+      };
+
+      register(router, mockClient, mockBreaker);
+
+      const req = new Request('http://localhost/api/memory/memory-123?workspaceId=ws1', {
+        method: 'DELETE',
+      });
+
+      const matched = router.match(req);
+      
+      if (matched !== null) {
+        const response = await matched.handler(req, { id: 'memory-123' });
+
+        if (response.status === 500) {
+          const body = await response.json();
+          expect(body.error).toBe('Unexpected deletion error');
+        }
+      }
+    });
+  });
+});

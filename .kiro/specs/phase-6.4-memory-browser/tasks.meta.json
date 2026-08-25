@@ -43,6 +43,42 @@
         "chatSessionId": "sess_9b65d011-8279-49a4-b858-e68b1a71e017",
         "timestamp": 1787653412287
       }
+    ],
+    "3.1 Implement GET /api/memory/:id route handler": [
+      {
+        "executionId": "0fcf91ca-fa64-4958-bb04-17b8de6035a2",
+        "chatSessionId": "sess_6d63f672-3e0d-4de7-8844-d9ccea260b80",
+        "timestamp": 1787656227788
+      },
+      {
+        "executionId": "0fcf91ca-fa64-4958-bb04-17b8de6035a2",
+        "chatSessionId": "sess_6d63f672-3e0d-4de7-8844-d9ccea260b80",
+        "timestamp": 1787656966843
+      }
+    ],
+    "3.2 Implement PATCH /api/memory/:id route handler": [
+      {
+        "executionId": "b7b75926-6d98-419b-be24-85dcc1d4bad4",
+        "chatSessionId": "sess_135fbacd-2d00-4aa9-8de5-dc3fac977c39",
+        "timestamp": 1787656988597
+      },
+      {
+        "executionId": "b7b75926-6d98-419b-be24-85dcc1d4bad4",
+        "chatSessionId": "sess_135fbacd-2d00-4aa9-8de5-dc3fac977c39",
+        "timestamp": 1787659353847
+      }
+    ],
+    "3.3 Implement DELETE /api/memory/:id route handler": [
+      {
+        "executionId": "7e86892f-f376-4f03-a188-0c449ed293a8",
+        "chatSessionId": "sess_8dc8e53c-99f1-4d86-9cc6-f2e00b628831",
+        "timestamp": 1787659414322
+      },
+      {
+        "executionId": "7e86892f-f376-4f03-a188-0c449ed293a8",
+        "chatSessionId": "sess_8dc8e53c-99f1-4d86-9cc6-f2e00b628831",
+        "timestamp": 1787659847389
+      }
     ]
   }
 }

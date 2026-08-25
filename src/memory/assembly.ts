@@ -165,6 +165,18 @@ export class ReadOnlyMemoryClient implements IMemoryClient {
     return this.#inner.recall(query, scope, limit);
   }
 
+  list(scope: MemoryScope, pageSize: number, cursor: string | null): Promise<{
+    memories: Memory[];
+    nextCursor: string | null;
+    total: number;
+  }> {
+    return this.#inner.list(scope, pageSize, cursor);
+  }
+
+  get(id: string): Promise<Memory | null> {
+    return this.#inner.get(id);
+  }
+
   reflect(topic: string, scope: MemoryScope): Promise<string | null> {
     return this.#inner.reflect(topic, scope);
   }

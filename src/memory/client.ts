@@ -50,6 +50,18 @@ export class NoOpMemoryClient implements IMemoryClient {
     return Promise.resolve([]);
   }
 
+  list(_scope: MemoryScope, _pageSize: number, _cursor: string | null): Promise<{
+    memories: Memory[];
+    nextCursor: string | null;
+    total: number;
+  }> {
+    return Promise.resolve({ memories: [], nextCursor: null, total: 0 });
+  }
+
+  get(_id: string): Promise<Memory | null> {
+    return Promise.resolve(null);
+  }
+
   reflect(_topic: string, _scope: MemoryScope): Promise<string | null> {
     return Promise.resolve(null);
   }

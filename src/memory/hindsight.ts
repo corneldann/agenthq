@@ -149,6 +149,54 @@ export class HindsightAdapter implements IMemoryClient {
     return extractArray(result) as Memory[];
   }
 
+  async list(scope: MemoryScope, pageSize: number, cursor: string | null): Promise<{
+    memories: Memory[];
+    nextCursor: string | null;
+    total: number;
+  }> {
+    const result = await postMcp(this.#baseUrl, {
+      method: 'tools/call',
+      params: {
+        name: 'memory_list',
+        arguments: { scope, pageSize, cursor },
+      },
+    });
+    
+    // Extract the response fields
+    const memories = extractArray(result) as Memory[];
+    const nextCursor = extractString(result, 'nextCursor') ?? null;
+    const totalStr = extractString(result, 'total');
+    const total = totalStr !== undefined ? parseInt(totalStr, 10) : 0;
+    
+    return { memories, nextCursor, total };
+  }
+
+  async get(id: string): Promise<Memory | null> {
+    const result = await postMcp(this.#baseUrl, {
+      method: 'tools/call',
+      params: {
+        name: 'memory_get',
+        arguments: { id },
+      },
+    });
+    
+    // If the response contains a memory object, return it; otherwise return null (not found)
+    // Try extracting from common MCP response locations
+    const candidates: unknown[] = [
+      result.result,
+      result.content,
+      (result as Record<string, unknown>)['memory'],
+    ];
+    
+    for (const candidate of candidates) {
+      if (isRecord(candidate) && typeof (candidate as Record<string, unknown>)['id'] === 'string') {
+        return candidate as Memory;
+      }
+    }
+    
+    return null;
+  }
+
   async reflect(topic: string, scope: MemoryScope): Promise<string | null> {
     const result = await postMcp(this.#baseUrl, {
       method: 'tools/call',

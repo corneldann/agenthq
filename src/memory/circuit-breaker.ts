@@ -122,6 +122,50 @@ export class MemoryCircuitBreaker implements IMemoryClient {
     }
   }
 
+  async list(scope: MemoryScope, pageSize: number, cursor: string | null): Promise<{
+    memories: Memory[];
+    nextCursor: string | null;
+    total: number;
+  }> {
+    if (this.#isFallbackRequired()) {
+      return { memories: [], nextCursor: null, total: 0 };
+    }
+
+    const probing = this.#state === CircuitState.half_open;
+    if (probing) {
+      this.#inProbe = true;
+    }
+
+    try {
+      const result = await this.#inner.list(scope, pageSize, cursor);
+      this.#onSuccess(probing);
+      return result;
+    } catch (err) {
+      this.#onFailure(err, probing, () => undefined);
+      return { memories: [], nextCursor: null, total: 0 };
+    }
+  }
+
+  async get(id: string): Promise<Memory | null> {
+    if (this.#isFallbackRequired()) {
+      return null;
+    }
+
+    const probing = this.#state === CircuitState.half_open;
+    if (probing) {
+      this.#inProbe = true;
+    }
+
+    try {
+      const memory = await this.#inner.get(id);
+      this.#onSuccess(probing);
+      return memory;
+    } catch (err) {
+      this.#onFailure(err, probing, () => undefined);
+      return null;
+    }
+  }
+
   async reflect(topic: string, scope: MemoryScope): Promise<string | null> {
     if (this.#isFallbackRequired()) {
       return null;
