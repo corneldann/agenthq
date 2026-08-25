@@ -463,11 +463,43 @@ export function register(
   });
 
   // POST /api/memory/reflect
-  router.post('/api/memory/reflect', (_req, _params) => {
-    if (!MEMORY_ENABLED) {
-      return jsonResponse({ error: 'memory disabled' }, 503);
+  router.post('/api/memory/reflect', async (req, _params) => {
+    // Guard: feature flag check
+    const disabledResponse = checkMemoryEnabled();
+    if (disabledResponse !== null) return disabledResponse;
+
+    // Guard: circuit breaker state check
+    const openResponse = checkCircuitBreaker(breaker);
+    if (openResponse !== null) return openResponse;
+
+    // Parse request body
+    let body: { topic?: string; workspaceId?: string };
+    try {
+      body = await req.json();
+    } catch (err) {
+      return jsonResponse({ error: 'invalid JSON body' }, 400);
     }
-    // TODO: Implement reflect handler (Task 1.7)
-    return jsonResponse({ reflection: null });
+
+    // Validate topic field
+    if (typeof body.topic !== 'string' || body.topic.trim() === '') {
+      return jsonResponse({ error: 'topic field is required and must be a non-empty string' }, 400);
+    }
+
+    // Validate workspaceId field
+    if (typeof body.workspaceId !== 'string' || body.workspaceId.trim() === '') {
+      return jsonResponse({ error: 'workspaceId required' }, 400);
+    }
+
+    try {
+      // Call client.reflect with topic and scope
+      // Requirement 1.6: POST /api/memory/reflect accepts { topic, workspaceId } and calls client.reflect
+      const reflection = await client.reflect(body.topic, { workspaceId: body.workspaceId });
+
+      // Return { reflection: string | null }
+      return jsonResponse({ reflection });
+    } catch (err) {
+      // Map errors to HTTP status codes per error mapping table
+      return mapMemoryError(err);
+    }
   });
 }

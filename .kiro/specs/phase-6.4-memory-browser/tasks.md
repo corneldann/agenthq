@@ -118,15 +118,15 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Test all routes respect shared guards
     - _Requirements: 1.3, 1.4, 1.5, 1.7, 1.8, 1.9_
 
-- [ ] 4. Implement reflect route
-  - [ ] 4.1 Implement POST /api/memory/reflect route handler
+- [x] 4. Implement reflect route
+  - [x] 4.1 Implement POST /api/memory/reflect route handler
     - Parse { topic: string, workspaceId: string } from request body
     - Apply shared guards
     - Call client.reflect(topic, workspaceId)
     - Return { reflection: string | null }
     - _Requirements: 1.6, 1.7, 1.8, 1.9_
   
-  - [ ] 4.2 Write unit tests for reflect route
+  - [x] 4.2 Write unit tests for reflect route
     - Test successful reflection returns { reflection: string }
     - Test null reflection returns { reflection: null }
     - Test missing topic or workspaceId returns 400

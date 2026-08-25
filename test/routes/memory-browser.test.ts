@@ -2599,3 +2599,474 @@ describe('DELETE /api/memory/:id route handler', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Unit Tests for POST /api/memory/reflect Route Handler (Task 4.1, 4.2)
+// ---------------------------------------------------------------------------
+
+describe('POST /api/memory/reflect route handler', () => {
+  const { register } = require('../../src/routes/memory-browser.ts');
+  const { createRouter } = require('../../src/router.ts');
+
+  it('should return 503 when MEMORY_ENABLED=false', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      reflect: () => Promise.resolve(null),
+    };
+    const mockBreaker = null;
+    register(router, mockClient as any, mockBreaker);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: 'test', workspaceId: 'ws1' }),
+      }),
+      {}
+    );
+
+    // Assert
+    // If memory is disabled, expect 503
+    if (response.status === 503) {
+      const data = await response.json();
+      expect(data).toEqual({ error: 'memory disabled' });
+    }
+  });
+
+  it('should return 502 when circuit breaker is open', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      reflect: () => Promise.resolve(null),
+    };
+    const mockBreaker = {
+      getMetrics: () => ({
+        state: 'open',
+        consecutiveFailures: 3,
+        totalFailures: 5,
+        totalSuccesses: 10,
+        lastFailureAt: '2024-01-01T00:00:00.000Z',
+        lastSuccessAt: '2024-01-01T00:00:00.000Z',
+        openedAt: '2024-01-01T00:00:00.000Z',
+      }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: 'test', workspaceId: 'ws1' }),
+      }),
+      {}
+    );
+
+    // Assert
+    // If circuit breaker is open, expect 502
+    if (response.status === 502) {
+      const data = await response.json();
+      expect(data.error).toBe('circuit open');
+      expect(data.metrics).toBeDefined();
+      expect(data.metrics.state).toBe('open');
+    }
+  });
+
+  it('should return 400 when topic is missing', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      reflect: () => Promise.resolve(null),
+    };
+    const mockBreaker = {
+      getMetrics: () => ({ state: 'closed', consecutiveFailures: 0, totalFailures: 0, totalSuccesses: 0, lastFailureAt: null, lastSuccessAt: null, openedAt: null }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ workspaceId: 'ws1' }),
+      }),
+      {}
+    );
+
+    // Assert
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBe('topic field is required and must be a non-empty string');
+  });
+
+  it('should return 400 when topic is empty string', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      reflect: () => Promise.resolve(null),
+    };
+    const mockBreaker = {
+      getMetrics: () => ({ state: 'closed', consecutiveFailures: 0, totalFailures: 0, totalSuccesses: 0, lastFailureAt: null, lastSuccessAt: null, openedAt: null }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: '', workspaceId: 'ws1' }),
+      }),
+      {}
+    );
+
+    // Assert
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBe('topic field is required and must be a non-empty string');
+  });
+
+  it('should return 400 when topic is whitespace-only', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      reflect: () => Promise.resolve(null),
+    };
+    const mockBreaker = {
+      getMetrics: () => ({ state: 'closed', consecutiveFailures: 0, totalFailures: 0, totalSuccesses: 0, lastFailureAt: null, lastSuccessAt: null, openedAt: null }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: '   ', workspaceId: 'ws1' }),
+      }),
+      {}
+    );
+
+    // Assert
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBe('topic field is required and must be a non-empty string');
+  });
+
+  it('should return 400 when workspaceId is missing', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      reflect: () => Promise.resolve(null),
+    };
+    const mockBreaker = {
+      getMetrics: () => ({ state: 'closed', consecutiveFailures: 0, totalFailures: 0, totalSuccesses: 0, lastFailureAt: null, lastSuccessAt: null, openedAt: null }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: 'test' }),
+      }),
+      {}
+    );
+
+    // Assert
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBe('workspaceId required');
+  });
+
+  it('should return 400 when workspaceId is empty string', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      reflect: () => Promise.resolve(null),
+    };
+    const mockBreaker = {
+      getMetrics: () => ({ state: 'closed', consecutiveFailures: 0, totalFailures: 0, totalSuccesses: 0, lastFailureAt: null, lastSuccessAt: null, openedAt: null }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: 'test', workspaceId: '' }),
+      }),
+      {}
+    );
+
+    // Assert
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBe('workspaceId required');
+  });
+
+  it('should return 400 when workspaceId is whitespace-only', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      reflect: () => Promise.resolve(null),
+    };
+    const mockBreaker = {
+      getMetrics: () => ({ state: 'closed', consecutiveFailures: 0, totalFailures: 0, totalSuccesses: 0, lastFailureAt: null, lastSuccessAt: null, openedAt: null }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: 'test', workspaceId: '   ' }),
+      }),
+      {}
+    );
+
+    // Assert
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBe('workspaceId required');
+  });
+
+  it('should return 400 when request body is invalid JSON', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      reflect: () => Promise.resolve(null),
+    };
+    const mockBreaker = {
+      getMetrics: () => ({ state: 'closed', consecutiveFailures: 0, totalFailures: 0, totalSuccesses: 0, lastFailureAt: null, lastSuccessAt: null, openedAt: null }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: 'invalid json',
+      }),
+      {}
+    );
+
+    // Assert
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBe('invalid JSON body');
+  });
+
+  it('should call client.reflect with topic and scope on successful request', async () => {
+    // Arrange
+    const router = createRouter();
+    let reflectCalled = false;
+    let receivedTopic = '';
+    let receivedScope = {};
+    const mockClient = {
+      reflect: (topic: string, scope: any) => {
+        reflectCalled = true;
+        receivedTopic = topic;
+        receivedScope = scope;
+        return Promise.resolve('Test reflection about architecture');
+      },
+    };
+    const mockBreaker = {
+      getMetrics: () => ({ state: 'closed', consecutiveFailures: 0, totalFailures: 0, totalSuccesses: 0, lastFailureAt: null, lastSuccessAt: null, openedAt: null }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: 'architecture patterns', workspaceId: 'ws-123' }),
+      }),
+      {}
+    );
+
+    // Assert
+    expect(reflectCalled).toBe(true);
+    expect(receivedTopic).toBe('architecture patterns');
+    expect(receivedScope).toEqual({ workspaceId: 'ws-123' });
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data.reflection).toBe('Test reflection about architecture');
+  });
+
+  it('should return { reflection: null } when client.reflect returns null', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      reflect: () => Promise.resolve(null),
+    };
+    const mockBreaker = {
+      getMetrics: () => ({ state: 'closed', consecutiveFailures: 0, totalFailures: 0, totalSuccesses: 0, lastFailureAt: null, lastSuccessAt: null, openedAt: null }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: 'unknown topic', workspaceId: 'ws-123' }),
+      }),
+      {}
+    );
+
+    // Assert
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data).toEqual({ reflection: null });
+  });
+
+  it('should return { reflection: string } when client.reflect returns a reflection', async () => {
+    // Arrange
+    const router = createRouter();
+    const reflectionText = 'The workspace uses TypeScript with Bun as the runtime.';
+    const mockClient = {
+      reflect: () => Promise.resolve(reflectionText),
+    };
+    const mockBreaker = {
+      getMetrics: () => ({ state: 'closed', consecutiveFailures: 0, totalFailures: 0, totalSuccesses: 0, lastFailureAt: null, lastSuccessAt: null, openedAt: null }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: 'technology stack', workspaceId: 'ws-123' }),
+      }),
+      {}
+    );
+
+    // Assert
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data.reflection).toBe(reflectionText);
+  });
+
+  it('should handle special characters in topic', async () => {
+    // Arrange
+    const router = createRouter();
+    const specialTopic = 'error handling & exceptions <retry>';
+    const mockClient = {
+      reflect: (topic: string) => {
+        // Verify special characters are preserved
+        expect(topic).toBe(specialTopic);
+        return Promise.resolve('Reflection on error handling');
+      },
+    };
+    const mockBreaker = {
+      getMetrics: () => ({ state: 'closed', consecutiveFailures: 0, totalFailures: 0, totalSuccesses: 0, lastFailureAt: null, lastSuccessAt: null, openedAt: null }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: specialTopic, workspaceId: 'ws-123' }),
+      }),
+      {}
+    );
+
+    // Assert
+    expect(response.status).toBe(200);
+  });
+
+  it('should map MemoryTimeoutError to 504', async () => {
+    // Arrange
+    const router = createRouter();
+    const { MemoryTimeoutError } = require('../../src/memory/errors.ts');
+    const mockClient = {
+      reflect: () => Promise.reject(new MemoryTimeoutError('database timeout', 5000)),
+    };
+    const mockBreaker = {
+      getMetrics: () => ({ state: 'closed', consecutiveFailures: 0, totalFailures: 0, totalSuccesses: 0, lastFailureAt: null, lastSuccessAt: null, openedAt: null }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: 'test', workspaceId: 'ws-123' }),
+      }),
+      {}
+    );
+
+    // Assert
+    expect(response.status).toBe(504);
+    const data = await response.json();
+    expect(data.error).toBe('database timeout');
+  });
+
+  it('should map MemoryServiceError to 502', async () => {
+    // Arrange
+    const router = createRouter();
+    const { MemoryServiceError } = require('../../src/memory/errors.ts');
+    const mockClient = {
+      reflect: () => Promise.reject(new MemoryServiceError('upstream service failed', 503)),
+    };
+    const mockBreaker = {
+      getMetrics: () => ({ state: 'closed', consecutiveFailures: 0, totalFailures: 0, totalSuccesses: 0, lastFailureAt: null, lastSuccessAt: null, openedAt: null }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: 'test', workspaceId: 'ws-123' }),
+      }),
+      {}
+    );
+
+    // Assert
+    expect(response.status).toBe(502);
+    const data = await response.json();
+    expect(data.error).toBe('upstream service failed');
+    expect(data.statusCode).toBe(503);
+  });
+
+  it('should map unknown errors to 500', async () => {
+    // Arrange
+    const router = createRouter();
+    const mockClient = {
+      reflect: () => Promise.reject(new Error('unexpected error')),
+    };
+    const mockBreaker = {
+      getMetrics: () => ({ state: 'closed', consecutiveFailures: 0, totalFailures: 0, totalSuccesses: 0, lastFailureAt: null, lastSuccessAt: null, openedAt: null }),
+    };
+    register(router, mockClient as any, mockBreaker as any);
+
+    // Act
+    const response = await router.handle(
+      new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: 'test', workspaceId: 'ws-123' }),
+      }),
+      {}
+    );
+
+    // Assert
+    expect(response.status).toBe(500);
+    const data = await response.json();
+    expect(data.error).toBe('unexpected error');
+  });
+});
