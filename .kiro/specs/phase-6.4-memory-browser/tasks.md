@@ -136,7 +136,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
 - [x] 5. Checkpoint — Ensure route tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 6. Create memory page dashboard component
+- [x] 6. Create memory page dashboard component
   - [x] 6.1 Implement memory page structure and tab navigation
     - Create `src/dashboard/pages/memory.ts` with `renderMemoryPage(): string`
     - Render header with Timeline/Graph tabs (role="tablist", ARIA attributes)
@@ -150,14 +150,14 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Trigger GET /api/memory/list on filter change
     - _Requirements: 2.2_
   
-  - [~] 6.3 Implement debounced search input
+  - [x] 6.3 Implement debounced search input
     - Render search input with aria-label
     - Implement 300ms debounce on input event
     - Trigger GET /api/memory/search on debounced query
     - Clear search and return to list view when input cleared
     - _Requirements: 2.3_
   
-  - [~] 6.4 Implement memory card rendering
+  - [x] 6.4 Implement memory card rendering
     - Create `renderMemoryCard(memory: Memory): string` helper
     - Render text excerpt (max 200 chars, ellipsised via clampText helper)
     - Render scope pills using memory.scope fields
@@ -168,21 +168,21 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Pass ALL dynamic content through esc() utility
     - _Requirements: 2.5, 2.10_
   
-  - [~] 6.5 Write property test for XSS escaping in memory cards
+  - [x] 6.5 Write property test for XSS escaping in memory cards
     - **Property 5: Memory card text rendering escapes HTML metacharacters**
     - **Validates: Requirements 2.10**
     - Generate strings containing <, >, &, ", ' characters
     - Verify rendered HTML does not contain unescaped metacharacters
     - _Requirements: 2.10_
   
-  - [~] 6.6 Write property test for score badge exhaustiveness
+  - [x] 6.6 Write property test for score badge exhaustiveness
     - **Property 6: Quality score badge colour classification is exhaustive**
     - **Validates: Requirements 2.5**
     - Test scores in [0.0, 1.0] all map to exactly one of high/medium/low
     - _Requirements: 2.5_
 
 - [ ] 7. Implement memory card interactions
-  - [ ] 7.1 Implement edit interaction
+  - [~] 7.1 Implement edit interaction
     - Add click handler on Edit button to replace card body with <textarea>
     - Pre-fill textarea with full memory.text
     - Render Save/Cancel buttons
@@ -190,7 +190,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Cancel restores original card HTML
     - _Requirements: 2.6_
   
-  - [ ] 7.2 Implement delete interaction with confirmation and loading state
+  - [~] 7.2 Implement delete interaction with confirmation and loading state
     - Add click handler on Delete button showing confirmation tooltip
     - Render "Delete this memory?" with Confirm/Cancel buttons
     - On Confirm click, show loading state (spinner, reduced opacity, disabled buttons)
@@ -200,7 +200,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - If retry fails, fall back to location.reload()
     - _Requirements: 2.7, 2.8, 2.9_
   
-  - [ ] 7.3 Write unit tests for card interactions
+  - [~] 7.3 Write unit tests for card interactions
     - Test edit flow replaces card with textarea and restores on cancel
     - Test delete shows loading state before API call
     - Test successful delete removes card from DOM

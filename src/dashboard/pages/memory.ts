@@ -2,9 +2,184 @@
 // Phase 6.4 Memory Browser
 // Requirements: 2.1, 2.2, 2.3, 3.1
 
-import { esc } from '../utils.js';
+import { esc, clampText } from '../utils.js';
 import { setState, getState } from '../state.js';
-import type { MemoryPageState } from '../types.js';
+import type { MemoryPageState, Memory } from '../types.js';
+
+// ---------------------------------------------------------------------------
+// Memory card rendering helpers (Task 6.4)
+// ---------------------------------------------------------------------------
+
+/**
+ * Maps a quality score to a CSS class for colour-coding the badge.
+ * 
+ * Rules (Requirement 2.5):
+ * - score >= 0.85 → 'high'  (green badge)
+ * - score >= 0.65 → 'medium' (amber badge)
+ * - score < 0.65  → 'low'   (red badge)
+ * 
+ * @param score - quality score in range [0.0, 1.0]
+ * @returns CSS modifier class: 'high', 'medium', or 'low'
+ */
+function scoreClass(score: number): 'high' | 'medium' | 'low' {
+  if (score >= 0.85) return 'high';
+  if (score >= 0.65) return 'medium';
+  return 'low';
+}
+
+/**
+ * Formats an ISO 8601 timestamp as a human-readable relative time string.
+ * Examples: "2 minutes ago", "3 hours ago", "5 days ago"
+ * 
+ * @param isoTimestamp - ISO 8601 date string (e.g. "2024-03-15T14:05:09.000Z")
+ * @returns relative time string
+ */
+function relativeTime(isoTimestamp: string): string {
+  const now = Date.now();
+  const then = new Date(isoTimestamp).getTime();
+  const diffMs = now - then;
+
+  if (diffMs < 0) return 'just now'; // Future timestamp (clock skew)
+
+  const seconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
+
+  if (seconds < 60) return `${seconds} second${seconds === 1 ? '' : 's'} ago`;
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
+  if (weeks < 4) return `${weeks} week${weeks === 1 ? '' : 's'} ago`;
+  if (months < 12) return `${months} month${months === 1 ? '' : 's'} ago`;
+  return `${years} year${years === 1 ? '' : 's'} ago`;
+}
+
+/**
+ * Renders scope pills for a Memory's scope fields.
+ * Each present scope field (workspaceId, chainId, agentId, runId, userId)
+ * is rendered as a small pill with label and value.
+ * 
+ * @param scope - MemoryScope object with optional fields
+ * @returns HTML string containing scope pill elements
+ */
+function renderScopePills(scope: Memory['scope']): string {
+  const pills: string[] = [];
+
+  // Always show workspaceId (required field)
+  pills.push(`
+    <span class="memory-card__scope-pill" style="display:inline-block;padding:2px 6px;background:var(--md-surf-high,#313244);color:var(--md-on-surf-var,#a6adc8);border-radius:3px;font-size:10px;font-weight:500;margin-right:4px">
+      <span style="color:var(--md-primary,#89b4fa)">ws:</span> ${esc(scope.workspaceId)}
+    </span>
+  `.trim());
+
+  // Optional fields
+  if (scope.chainId) {
+    pills.push(`
+      <span class="memory-card__scope-pill" style="display:inline-block;padding:2px 6px;background:var(--md-surf-high,#313244);color:var(--md-on-surf-var,#a6adc8);border-radius:3px;font-size:10px;font-weight:500;margin-right:4px">
+        <span style="color:var(--md-primary,#89b4fa)">chain:</span> ${esc(scope.chainId)}
+      </span>
+    `.trim());
+  }
+
+  if (scope.agentId) {
+    pills.push(`
+      <span class="memory-card__scope-pill" style="display:inline-block;padding:2px 6px;background:var(--md-surf-high,#313244);color:var(--md-on-surf-var,#a6adc8);border-radius:3px;font-size:10px;font-weight:500;margin-right:4px">
+        <span style="color:var(--md-primary,#89b4fa)">agent:</span> ${esc(scope.agentId)}
+      </span>
+    `.trim());
+  }
+
+  if (scope.runId) {
+    pills.push(`
+      <span class="memory-card__scope-pill" style="display:inline-block;padding:2px 6px;background:var(--md-surf-high,#313244);color:var(--md-on-surf-var,#a6adc8);border-radius:3px;font-size:10px;font-weight:500;margin-right:4px">
+        <span style="color:var(--md-primary,#89b4fa)">run:</span> ${esc(scope.runId)}
+      </span>
+    `.trim());
+  }
+
+  if (scope.userId) {
+    pills.push(`
+      <span class="memory-card__scope-pill" style="display:inline-block;padding:2px 6px;background:var(--md-surf-high,#313244);color:var(--md-on-surf-var,#a6adc8);border-radius:3px;font-size:10px;font-weight:500;margin-right:4px">
+        <span style="color:var(--md-primary,#89b4fa)">user:</span> ${esc(scope.userId)}
+      </span>
+    `.trim());
+  }
+
+  return pills.join('');
+}
+
+/**
+ * Renders a single memory card with all metadata, scope pills, quality score badge,
+ * and action buttons.
+ * 
+ * Requirements:
+ * - 2.5: Quality score badge with colour-coded class (high/medium/low)
+ * - 2.10: All dynamic content escaped via esc() utility
+ * 
+ * @param memory - Memory object to render
+ * @returns HTML string for the memory card
+ */
+export function renderMemoryCard(memory: Memory): string {
+  const clampedText = clampText(memory.text, 200);
+  const scopePills = renderScopePills(memory.scope);
+  const scoreCls = scoreClass(memory.qualityScore);
+  const relTime = relativeTime(memory.createdAt);
+
+  // Map score class to colour CSS custom property
+  const scoreColourMap: Record<typeof scoreCls, string> = {
+    high: 'var(--cg, #a6e3a1)',     // green
+    medium: 'var(--cy, #f9e2af)',   // amber
+    low: 'var(--cr, #f38ba8)',      // red
+  };
+  const scoreColour = scoreColourMap[scoreCls];
+
+  return `
+<article class="memory-card" data-memory-id="${esc(memory.id)}"
+  style="background:var(--md-surf-low,#202030);border-radius:8px;padding:12px;margin-bottom:12px;border-left:3px solid var(--md-outline,#6c7086)">
+  
+  <div class="memory-card__body">
+    <p class="memory-card__text" style="color:var(--md-on-surf,#cdd6f4);font-size:14px;line-height:1.5;margin:0 0 8px 0">
+      ${esc(clampedText)}
+    </p>
+    
+    <div class="memory-card__meta" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px">
+      ${scopePills}
+      
+      <span class="memory-card__score memory-card__score--${scoreCls}"
+            aria-label="Quality score ${memory.qualityScore.toFixed(2)}"
+            style="display:inline-flex;align-items:center;padding:2px 6px;background:${scoreColour}20;color:${scoreColour};border:1px solid ${scoreColour};border-radius:3px;font-size:10px;font-weight:600">
+        ${memory.qualityScore.toFixed(2)}
+      </span>
+      
+      <time class="memory-card__time"
+            datetime="${esc(memory.createdAt)}"
+            style="color:var(--md-on-surf-var,#a6adc8);font-size:11px">
+        ${esc(relTime)}
+      </time>
+    </div>
+  </div>
+  
+  <div class="memory-card__actions" style="display:flex;gap:8px;margin-top:8px">
+    <button class="memory-card__btn memory-card__btn--edit"
+            aria-label="Edit memory"
+            data-action="edit"
+            style="padding:4px 10px;background:var(--md-surf,#24273a);color:var(--md-on-surf,#cdd6f4);border:1px solid var(--md-outline,#6c7086);border-radius:4px;font-size:12px;cursor:pointer;transition:all 0.15s">
+      Edit
+    </button>
+    <button class="memory-card__btn memory-card__btn--delete"
+            aria-label="Delete memory"
+            data-action="delete"
+            style="padding:4px 10px;background:var(--md-surf,#24273a);color:var(--cr,#f38ba8);border:1px solid var(--cr,#f38ba8);border-radius:4px;font-size:12px;cursor:pointer;transition:all 0.15s">
+      Delete
+    </button>
+  </div>
+</article>
+  `.trim();
+}
 
 // ---------------------------------------------------------------------------
 // Filter handlers and API integration (Requirement 2.2)
