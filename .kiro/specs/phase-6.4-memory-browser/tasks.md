@@ -57,7 +57,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Test all routes return 400 for empty/null/whitespace-only workspaceId
     - _Requirements: 1.9_
 
-- [ ] 2. Implement memory search and list routes
+- [x] 2. Implement memory search and list routes
   - [x] 2.1 Implement GET /api/memory/search route handler
     - Parse query, workspaceId, limit params with resolveLimit (default 20, max 100)
     - Apply shared guards (feature flag, circuit breaker, workspaceId)
