@@ -363,7 +363,7 @@ export function register(
   });
 
   // PATCH /api/memory/:id
-  router.patch('/api/memory/:id', async (req, params) => {
+  router.post('/api/memory/:id', async (req, params) => {
     // Guard: feature flag check
     const disabledResponse = checkMemoryEnabled();
     if (disabledResponse !== null) return disabledResponse;

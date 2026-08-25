@@ -12,6 +12,7 @@ import { renderDashboard } from './pages/dashboard';
 import { renderWork } from './pages/work';
 import { renderActivity } from './pages/activity';
 import { renderAnalyticsPage, loadAnalytics, initAnalyticsPage } from './pages/analytics';
+import { renderMemoryPage, initMemoryPage } from './pages/memory';
 import type { Page, SSEUpdateEvent } from './types';
 import { shouldApplySSEUpdate } from './sse-filter';
 
@@ -26,6 +27,7 @@ const SHORTCUTS: Array<{ keys: string; action: string }> = [
   { keys: 'G → D',        action: 'Navigate to Dashboard' },
   { keys: 'G → W',        action: 'Navigate to Work' },
   { keys: 'G → A',        action: 'Navigate to Activity' },
+  { keys: 'G → M',        action: 'Navigate to Memory' },
   { keys: '?',            action: 'Toggle shortcuts overlay' },
   { keys: 'Cmd/Ctrl + K', action: 'Toggle command palette' },
   { keys: 'Escape',       action: 'Close palette / overlay / drawer' },
@@ -159,6 +161,10 @@ function renderPage(): void {
       root.innerHTML = renderAnalyticsPage();
       initAnalyticsPage();
       break;
+    case 'memory':
+      root.innerHTML = renderMemoryPage();
+      initMemoryPage();
+      break;
     default: {
       // Exhaustiveness guard — TypeScript should prevent this at compile time
       const _exhaustive: never = currentPage;
@@ -176,6 +182,7 @@ const NAV_ITEMS: Array<{ page: Page; icon: string; label: string }> = [
   { page: 'work',      icon: '⚙', label: 'Work' },
   { page: 'activity',  icon: '◷', label: 'Activity' },
   { page: 'analytics', icon: '◈', label: 'Analytics' },
+  { page: 'memory',    icon: '◉', label: 'Memory' },
 ];
 
 /** Rendered once; state updates are applied via class mutations only. */
@@ -325,7 +332,7 @@ function registerKeyboardShortcuts(): void {
       return;
     }
 
-    // G → D / W / A navigation (Requirement 12.2, 12.3)
+    // G → D / W / A / M navigation (Requirement 12.2, 12.3)
     if (key === 'G') {
       _pendingG = Date.now();
       return;
@@ -344,6 +351,11 @@ function registerKeyboardShortcuts(): void {
       }
       if (key === 'A') {
         setState({ currentPage: 'activity' });
+        _pendingG = 0;
+        return;
+      }
+      if (key === 'M') {
+        setState({ currentPage: 'memory' });
         _pendingG = 0;
         return;
       }

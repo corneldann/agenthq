@@ -2618,14 +2618,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic: 'test', workspaceId: 'ws1' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     // If memory is disabled, expect 503
@@ -2655,14 +2659,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic: 'test', workspaceId: 'ws1' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     // If circuit breaker is open, expect 502
@@ -2686,14 +2694,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ workspaceId: 'ws1' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     expect(response.status).toBe(400);
@@ -2713,14 +2725,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic: '', workspaceId: 'ws1' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     expect(response.status).toBe(400);
@@ -2740,14 +2756,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic: '   ', workspaceId: 'ws1' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     expect(response.status).toBe(400);
@@ -2767,14 +2787,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic: 'test' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     expect(response.status).toBe(400);
@@ -2794,14 +2818,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic: 'test', workspaceId: '' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     expect(response.status).toBe(400);
@@ -2821,14 +2849,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic: 'test', workspaceId: '   ' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     expect(response.status).toBe(400);
@@ -2848,14 +2880,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: 'invalid json',
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     expect(response.status).toBe(400);
@@ -2883,14 +2919,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic: 'architecture patterns', workspaceId: 'ws-123' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     expect(reflectCalled).toBe(true);
@@ -2913,14 +2953,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic: 'unknown topic', workspaceId: 'ws-123' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     expect(response.status).toBe(200);
@@ -2941,14 +2985,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic: 'technology stack', workspaceId: 'ws-123' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     expect(response.status).toBe(200);
@@ -2973,14 +3021,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic: specialTopic, workspaceId: 'ws-123' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     expect(response.status).toBe(200);
@@ -2999,14 +3051,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic: 'test', workspaceId: 'ws-123' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     expect(response.status).toBe(504);
@@ -3027,14 +3083,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic: 'test', workspaceId: 'ws-123' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     expect(response.status).toBe(502);
@@ -3055,14 +3115,18 @@ describe('POST /api/memory/reflect route handler', () => {
     register(router, mockClient as any, mockBreaker as any);
 
     // Act
-    const response = await router.handle(
-      new Request('http://localhost/api/memory/reflect', {
+    const req = new Request('http://localhost/api/memory/reflect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ topic: 'test', workspaceId: 'ws-123' }),
-      }),
-      {}
-    );
+      });
+    const matched = router.match(req);
+    
+    if (matched === null) {
+      throw new Error('Route not matched');
+    }
+    
+    const response = await matched.handler(req, matched.params);
 
     // Assert
     expect(response.status).toBe(500);

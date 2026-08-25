@@ -110,6 +110,30 @@
         "chatSessionId": "sess_00206bfe-f9dc-4ffe-962b-466b95bc08bc",
         "timestamp": 1787672699662
       }
+    ],
+    "6.1 Implement memory page structure and tab navigation": [
+      {
+        "executionId": "714bbac2-4f97-4550-8073-e4fda67a2e41",
+        "chatSessionId": "sess_ad7b2728-adbf-46f2-8708-491ffc420b0d",
+        "timestamp": 1787674324926
+      },
+      {
+        "executionId": "714bbac2-4f97-4550-8073-e4fda67a2e41",
+        "chatSessionId": "sess_ad7b2728-adbf-46f2-8708-491ffc420b0d",
+        "timestamp": 1787675159639
+      }
+    ],
+    "6.2 Implement timeline view scope filter bar": [
+      {
+        "executionId": "21fdd466-2b2b-418c-9960-60a29fa916c2",
+        "chatSessionId": "sess_4fe3d719-426d-45d3-92a9-700d123bcd7c",
+        "timestamp": 1787675360045
+      },
+      {
+        "executionId": "21fdd466-2b2b-418c-9960-60a29fa916c2",
+        "chatSessionId": "sess_4fe3d719-426d-45d3-92a9-700d123bcd7c",
+        "timestamp": 1787678090866
+      }
     ]
   }
 }

@@ -117,7 +117,43 @@ export interface GitStatus {
 
 export type CommitState = null | 'running' | 'done' | 'error';
 
-export type Page = 'dashboard' | 'work' | 'activity' | 'analytics';
+export type Page = 'dashboard' | 'work' | 'activity' | 'analytics' | 'memory';
+
+// Memory page state slice (Phase 6.4)
+export interface MemoryPageState {
+  memories: Memory[];           // currently loaded timeline memories
+  cursor: string | null;        // pagination cursor for "Load more"
+  total: number;                // total count from /api/memory/list
+  searchQuery: string;          // current search query ('' = default list view)
+  loading: boolean;
+  error: string | null;
+  // Filter state
+  workspaceId: string;          // selected workspace for filtering
+  chainId: string;              // selected chain for filtering ('' = all)
+  agentId: string;              // selected agent for filtering ('' = all)
+}
+
+// Memory — from Phase 6.1 IMemoryClient interface
+export interface Memory {
+  id: string;
+  text: string;
+  scope: MemoryScope;
+  qualityScore: number;       // 0.0–1.0
+  createdAt: string;          // ISO 8601
+  lastRetrievedAt: string;    // ISO 8601
+  retrievalCount: number;
+  tier: 'hot' | 'warm' | 'cold';
+  embeddingStatus: 'pending' | 'ready' | 'failed';
+}
+
+// MemoryScope — from Phase 6.1
+export interface MemoryScope {
+  workspaceId: string;
+  userId?: string;
+  agentId?: string;
+  runId?: string;
+  chainId?: string;
+}
 
 // BuildQueueRecord — mirrors server-side BuildQueueRecord interface
 // Requirement 3.8 (workspaceId field), Requirement 8.8 (display in dashboard)
@@ -202,4 +238,6 @@ export interface AppState {
   workspaceFilter: WorkspaceFilterState;
   /** Analytics page data — loaded on demand when Analytics page is active */
   analytics: AnalyticsState;
+  /** Memory page data — loaded on demand when Memory page is active (Phase 6.4) */
+  memory?: MemoryPageState;
 }
