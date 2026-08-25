@@ -243,21 +243,88 @@ export function register(
   // Task 1.1 establishes the module structure and helper functions only
 
   // GET /api/memory/search
-  router.get('/api/memory/search', (_req, _params) => {
-    if (!MEMORY_ENABLED) {
-      return jsonResponse({ error: 'memory disabled' }, 503);
+  router.get('/api/memory/search', async (req, _params) => {
+    // Guard: feature flag check
+    const disabledResponse = checkMemoryEnabled();
+    if (disabledResponse !== null) return disabledResponse;
+
+    // Guard: circuit breaker state check
+    const openResponse = checkCircuitBreaker(breaker);
+    if (openResponse !== null) return openResponse;
+
+    // Guard: workspaceId validation
+    const validationError = validateWorkspaceId(req);
+    if (validationError !== null) return validationError;
+
+    // Parse query parameters
+    const url = new URL(req.url);
+    const query = url.searchParams.get('q') ?? '';
+    const workspaceId = url.searchParams.get('workspaceId') ?? ''; // Already validated as non-empty
+    const rawLimit = url.searchParams.get('limit');
+    const limit = resolveLimit(rawLimit, 20, 100);
+
+    try {
+      // Call client.recall with parsed params
+      const memories = await client.recall(
+        query,
+        { workspaceId },
+        limit,
+      );
+
+      return jsonResponse(memories);
+    } catch (err) {
+      // Map errors to HTTP status codes per error mapping table
+      return mapMemoryError(err);
     }
-    // TODO: Implement search handler (Task 1.2)
-    return jsonResponse({ memories: [] });
   });
 
   // GET /api/memory/list
-  router.get('/api/memory/list', (_req, _params) => {
-    if (!MEMORY_ENABLED) {
-      return jsonResponse({ error: 'memory disabled' }, 503);
+  router.get('/api/memory/list', async (req, _params) => {
+    // Guard: feature flag check
+    const disabledResponse = checkMemoryEnabled();
+    if (disabledResponse !== null) return disabledResponse;
+
+    // Guard: circuit breaker state check
+    const openResponse = checkCircuitBreaker(breaker);
+    if (openResponse !== null) return openResponse;
+
+    // Guard: workspaceId validation
+    const validationError = validateWorkspaceId(req);
+    if (validationError !== null) return validationError;
+
+    // Parse query parameters
+    const url = new URL(req.url);
+    const workspaceId = url.searchParams.get('workspaceId') ?? ''; // Already validated as non-empty
+    const cursor = url.searchParams.get('cursor');
+    const rawPageSize = url.searchParams.get('pageSize');
+    const pageSize = resolveLimit(rawPageSize, 50, 100);
+
+    try {
+      // Call client.list with parsed params
+      const result = await client.list(
+        { workspaceId },
+        pageSize,
+        cursor,
+      );
+
+      // Sort memories by createdAt DESC
+      // Requirement 1.2: memories sorted by createdAt DESC
+      const sortedMemories = result.memories.slice().sort((a, b) => {
+        // ISO 8601 strings can be compared lexicographically
+        // For descending order: b.createdAt - a.createdAt
+        return b.createdAt.localeCompare(a.createdAt);
+      });
+
+      // Return response with sorted memories
+      return jsonResponse({
+        memories: sortedMemories,
+        nextCursor: result.nextCursor,
+        total: result.total,
+      });
+    } catch (err) {
+      // Map errors to HTTP status codes per error mapping table
+      return mapMemoryError(err);
     }
-    // TODO: Implement list handler (Task 1.3)
-    return jsonResponse({ memories: [], nextCursor: null, total: 0 });
   });
 
   // GET /api/memory/:id
