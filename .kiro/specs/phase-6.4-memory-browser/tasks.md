@@ -24,41 +24,41 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
 
 ## Tasks
 
-- [ ] 1. Create REST route module with shared guards
-  - [ ] 1.1 Implement route module structure and registration function
+- [x] 1. Create REST route module with shared guards
+  - [x] 1.1 Implement route module structure and registration function
     - Create `src/routes/memory-browser.ts` with `register(router, client, breaker)` function
     - Implement `resolveLimit(raw, defaultVal, max): number` pure helper for query param validation
     - Add JSDoc annotations for all exported functions
     - _Requirements: 1.1, 1.9_
   
-  - [ ]* 1.2 Write property test for resolveLimit clamping
+  - [x] 1.2 Write property test for resolveLimit clamping
     - **Property 1: Limit resolution clamps to valid range**
     - **Validates: Requirements 1.1**
     - Test with fc.option(fc.oneof(fc.integer(), fc.string()), { nil: null })
     - Verify result is always in [1, max] and equals defaultVal when input invalid
     - _Requirements: 1.1_
   
-  - [ ] 1.3 Implement shared guard functions
+  - [x] 1.3 Implement shared guard functions
     - Create `checkMemoryEnabled()` guard returning 503 when MEMORY_ENABLED=false
     - Create `checkCircuitBreaker()` guard returning 502 with metrics when Open
     - Create `validateWorkspaceId()` guard returning 400 for missing/empty workspaceId
     - Implement error mapping helper for MemoryTimeoutError → 504, MemoryServiceError → 502
     - _Requirements: 1.7, 1.8, 1.9_
   
-  - [ ]* 1.4 Write property test for MEMORY_ENABLED guard universality
+  - [x] 1.4 Write property test for MEMORY_ENABLED guard universality
     - **Property 3: MEMORY_ENABLED=false guard applies to all protected routes**
     - **Validates: Requirements 1.7**
     - Test all 6 protected routes return 503 when memory disabled
     - _Requirements: 1.7_
   
-  - [ ]* 1.5 Write property test for workspaceId validation consistency
+  - [x] 1.5 Write property test for workspaceId validation consistency
     - **Property 4: workspaceId validation is consistent across all routes**
     - **Validates: Requirements 1.9**
     - Test all routes return 400 for empty/null/whitespace-only workspaceId
     - _Requirements: 1.9_
 
 - [ ] 2. Implement memory search and list routes
-  - [ ] 2.1 Implement GET /api/memory/search route handler
+  - [-] 2.1 Implement GET /api/memory/search route handler
     - Parse query, workspaceId, limit params with resolveLimit (default 20, max 100)
     - Apply shared guards (feature flag, circuit breaker, workspaceId)
     - Call client.recall with parsed params
@@ -74,14 +74,14 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Return { memories: Memory[], nextCursor: string | null, total: number }
     - _Requirements: 1.2, 1.7, 1.8, 1.9_
   
-  - [ ]* 2.3 Write property test for memory list sort order
+  - [ ] 2.3 Write property test for memory list sort order
     - **Property 2: Memory list is sorted descending by createdAt**
     - **Validates: Requirements 1.2**
     - Generate array of Memory objects with random createdAt timestamps
     - Verify sorted list is monotonically non-increasing
     - _Requirements: 1.2_
   
-  - [ ]* 2.4 Write unit tests for search and list routes
+  - [ ] 2.4 Write unit tests for search and list routes
     - Test MEMORY_ENABLED=false returns 503
     - Test circuit breaker Open returns 502 with metrics
     - Test missing workspaceId returns 400
@@ -111,7 +111,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Return 204 on success, 404 if not found
     - _Requirements: 1.5, 1.7, 1.8, 1.9_
   
-  - [ ]* 3.4 Write unit tests for CRUD routes
+  - [ ] 3.4 Write unit tests for CRUD routes
     - Test GET :id returns Memory or 404
     - Test PATCH :id updates text via client.retain
     - Test DELETE :id calls client.delete and returns 204
@@ -126,7 +126,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Return { reflection: string | null }
     - _Requirements: 1.6, 1.7, 1.8, 1.9_
   
-  - [ ]* 4.2 Write unit tests for reflect route
+  - [ ] 4.2 Write unit tests for reflect route
     - Test successful reflection returns { reflection: string }
     - Test null reflection returns { reflection: null }
     - Test missing topic or workspaceId returns 400
@@ -168,14 +168,14 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Pass ALL dynamic content through esc() utility
     - _Requirements: 2.5, 2.10_
   
-  - [ ]* 6.5 Write property test for XSS escaping in memory cards
+  - [ ] 6.5 Write property test for XSS escaping in memory cards
     - **Property 5: Memory card text rendering escapes HTML metacharacters**
     - **Validates: Requirements 2.10**
     - Generate strings containing <, >, &, ", ' characters
     - Verify rendered HTML does not contain unescaped metacharacters
     - _Requirements: 2.10_
   
-  - [ ]* 6.6 Write property test for score badge exhaustiveness
+  - [ ] 6.6 Write property test for score badge exhaustiveness
     - **Property 6: Quality score badge colour classification is exhaustive**
     - **Validates: Requirements 2.5**
     - Test scores in [0.0, 1.0] all map to exactly one of high/medium/low
@@ -200,7 +200,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - If retry fails, fall back to location.reload()
     - _Requirements: 2.7, 2.8, 2.9_
   
-  - [ ]* 7.3 Write unit tests for card interactions
+  - [ ] 7.3 Write unit tests for card interactions
     - Test edit flow replaces card with textarea and restores on cancel
     - Test delete shows loading state before API call
     - Test successful delete removes card from DOM
@@ -223,7 +223,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Hide button when nextCursor is null (reached end)
     - _Requirements: 2.4_
   
-  - [ ]* 8.3 Write unit tests for timeline loading
+  - [ ] 8.3 Write unit tests for timeline loading
     - Test default view waits for API before rendering cards
     - Test API failure shows error state with retry
     - Test pagination appends cards correctly
@@ -249,7 +249,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Render aria-label with entity count: "Memory knowledge graph with N entities"
     - _Requirements: 3.1, 3.3, 3.7_
   
-  - [ ]* 10.3 Write property test for graph aria-label accuracy
+  - [ ] 10.3 Write property test for graph aria-label accuracy
     - **Property 7: Graph aria-label reflects entity count accurately**
     - **Validates: Requirements 3.3**
     - Generate arrays of GraphEntity with varying lengths
@@ -269,7 +269,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Add aria-hidden="true" to edges (relationships listed in sr-only table)
     - _Requirements: 3.1_
   
-  - [ ]* 11.3 Write unit tests for node rendering
+  - [ ] 11.3 Write unit tests for node rendering
     - Test primary nodes render as circles with --accent fill
     - Test secondary nodes render as diamonds with --text-muted fill
     - Test text labels meet 4.5:1 contrast requirement
@@ -290,7 +290,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - On Escape keydown, collapse active node (aria-expanded="false")
     - _Requirements: 3.2_
   
-  - [ ]* 12.3 Write unit tests for keyboard navigation
+  - [ ] 12.3 Write unit tests for keyboard navigation
     - Test Tab moves focus between nodes
     - Test Enter toggles aria-expanded and shows tooltip
     - Test Escape collapses active node
@@ -307,7 +307,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - SVG has aria-describedby="memory-graph-table"
     - _Requirements: 3.4_
   
-  - [ ]* 13.2 Write property test for sr-only table completeness
+  - [ ] 13.2 Write property test for sr-only table completeness
     - **Property 8: sr-only table contains all entity names and relations**
     - **Validates: Requirements 3.4**
     - Generate arrays of GraphEntity and GraphRelation
@@ -315,7 +315,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Verify all relations involving each entity appear in its row
     - _Requirements: 3.4_
   
-  - [ ]* 13.3 Write unit tests for sr-only table
+  - [ ] 13.3 Write unit tests for sr-only table
     - Test table row count matches entity array length
     - Test all entity names present in table
     - Test sr-only class applied (CSS verification)
@@ -338,7 +338,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Hide spinner, restore button to aria-disabled="false"
     - _Requirements: 4.1, 4.2_
   
-  - [ ]* 14.3 Write unit tests for reflect panel
+  - [ ] 14.3 Write unit tests for reflect panel
     - Test loading state disables button and shows spinner
     - Test successful reflection renders text
     - Test null reflection shows "No reflection available."
@@ -368,7 +368,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Use persistent: false for non-intrusive toast
     - _Requirements: 4.5_
   
-  - [ ]* 15.4 Write unit tests for SSE integration
+  - [ ] 15.4 Write unit tests for SSE integration
     - Test memory-update event triggers refreshMemoryList when on memory page
     - Test memory-update ignored when on different page
     - Test WeakRef registry cleanup removes dead entries
@@ -388,7 +388,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Clear _pendingG counter
     - _Requirements: 2.1_
   
-  - [ ]* 16.3 Write unit tests for state extensions
+  - [ ] 16.3 Write unit tests for state extensions
     - Test G→M shortcut updates currentPage to 'memory'
     - Test MemoryPageState initializes with correct defaults
     - _Requirements: 2.1_
@@ -400,7 +400,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Call registerMemoryRoutes(router, client, circuitBreaker) in monitor.ts
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
   
-  - [ ]* 17.2 Write integration test for route registration
+  - [ ] 17.2 Write integration test for route registration
     - Test all 6 memory routes respond correctly after registration
     - Test MEMORY_ENABLED guard applies to all routes
     - Test circuit breaker guard applies to all routes

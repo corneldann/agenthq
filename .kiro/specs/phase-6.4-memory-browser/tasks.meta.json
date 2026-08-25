@@ -1,0 +1,43 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Implement route module structure and registration function": [
+      {
+        "executionId": "db977417-7cd1-402f-8f66-d4971fa5ad9e",
+        "chatSessionId": "sess_df91d340-5107-4fe7-851c-f7b37d742211",
+        "timestamp": 1787597720310
+      },
+      {
+        "executionId": "db977417-7cd1-402f-8f66-d4971fa5ad9e",
+        "chatSessionId": "sess_df91d340-5107-4fe7-851c-f7b37d742211",
+        "timestamp": 1787597971455
+      }
+    ],
+    "1.2 Write property test for resolveLimit clamping": [
+      {
+        "executionId": "12c475ba-ec76-4f4f-a7ae-1e26598c80e1",
+        "chatSessionId": "sess_76262312-86ce-42e7-add8-7512563703d8",
+        "timestamp": 1787598219818
+      },
+      {
+        "executionId": "12c475ba-ec76-4f4f-a7ae-1e26598c80e1",
+        "chatSessionId": "sess_76262312-86ce-42e7-add8-7512563703d8",
+        "timestamp": 1787598463976
+      }
+    ],
+    "1.4 Write property test for MEMORY_ENABLED guard universality": [
+      {
+        "executionId": "f78265ba-4e02-407f-8bd7-b30342f58b36",
+        "chatSessionId": "sess_ac07a123-3ca7-4073-a220-38115dd106b8",
+        "timestamp": 1787599364796
+      }
+    ],
+    "2.1 Implement GET /api/memory/search route handler": [
+      {
+        "executionId": "c51f890c-2394-40e4-b79a-b27e66ba1c39",
+        "chatSessionId": "sess_9b65d011-8279-49a4-b858-e68b1a71e017",
+        "timestamp": 1787653178577
+      }
+    ]
+  }
+}
