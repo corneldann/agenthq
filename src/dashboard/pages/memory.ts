@@ -3,7 +3,7 @@
 // Requirements: 2.1, 2.2, 2.3, 3.1
 
 import { esc, clampText } from '../utils.js';
-import { setState, getState } from '../state.js';
+import { setState, getState, subscribe } from '../state.js';
 import type { MemoryPageState, Memory } from '../types.js';
 
 // ---------------------------------------------------------------------------
@@ -189,8 +189,10 @@ export function renderMemoryCard(memory: Memory): string {
  * Fetches memory list with current filter parameters.
  * Calls GET /api/memory/list with workspaceId, chainId, agentId filters.
  * Updates AppState memory slice with results.
+ * Triggers re-render of memory cards.
  *
  * Requirement 2.2: Trigger GET /api/memory/list on filter change
+ * Requirement 2.4: Render memory cards ONLY after API success
  */
 async function fetchMemoryList(): Promise<void> {
   const state = getState();
@@ -339,6 +341,7 @@ let _searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
  * Fetches memories matching the given search query.
  * Calls GET /api/memory/search with query and workspaceId.
  * Replaces timeline with search results.
+ * Triggers re-render of memory cards.
  *
  * Requirement 2.3: Trigger GET /api/memory/search on debounced query
  */
@@ -626,7 +629,8 @@ export function renderMemoryPage(): string {
         />
       </div>
 
-      <p style="color:var(--md-on-surf-var,#a6adc8);font-size:13px">Timeline panel — not yet implemented</p>
+      <!-- Memory cards container (populated by renderMemoryCards) -->
+      <!-- Cards are rendered dynamically after API call -->
     </div>
 
     <div
@@ -756,6 +760,551 @@ function handleTabKeydown(e: Event): void {
 }
 
 // ---------------------------------------------------------------------------
+// Edit interaction (Task 7.1, Requirement 2.6)
+// ---------------------------------------------------------------------------
+
+/** Tracks which memory card is currently being edited. */
+let _editingMemoryId: string | null = null;
+
+/** Stores the original card HTML before entering edit mode. */
+let _originalCardHtml: string = '';
+
+/**
+ * Enters edit mode for a memory card.
+ * Replaces the card body with a textarea pre-filled with the full memory text.
+ * Shows Save/Cancel buttons in place of Edit/Delete.
+ *
+ * Requirement 2.6: Edit opens an inline <textarea> pre-filled with the full memory text
+ */
+function startEditMode(memoryId: string, fullText: string, cardElement: HTMLElement): void {
+  // If already editing another card, cancel that first
+  if (_editingMemoryId !== null && _editingMemoryId !== memoryId) {
+    cancelEdit();
+  }
+
+  _editingMemoryId = memoryId;
+  _originalCardHtml = cardElement.outerHTML;
+
+  // Find the card body and actions
+  const cardBody = cardElement.querySelector('.memory-card__body') as HTMLElement | null;
+  const cardActions = cardElement.querySelector('.memory-card__actions') as HTMLElement | null;
+
+  if (!cardBody || !cardActions) return;
+
+  // Replace card body with textarea
+  cardBody.innerHTML = `
+    <textarea
+      id="memory-edit-textarea-${esc(memoryId)}"
+      class="memory-edit__textarea"
+      aria-label="Edit memory text"
+      style="width:100%;min-height:120px;padding:8px;background:var(--md-surf,#24273a);color:var(--md-on-surf,#cdd6f4);border:1px solid var(--md-outline,#6c7086);border-radius:4px;font-family:inherit;font-size:13px;line-height:1.5;resize:vertical;outline:none"
+    >${esc(fullText)}</textarea>
+  `.trim();
+
+  // Replace action buttons with Save/Cancel
+  cardActions.innerHTML = `
+    <button
+      class="memory-card__btn memory-card__btn--save"
+      aria-label="Save changes"
+      data-action="save"
+      style="padding:4px 10px;background:var(--md-primary,#89b4fa);color:var(--md-on-primary-c,#1e1e2e);border:1px solid var(--md-primary,#89b4fa);border-radius:4px;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s">
+      Save
+    </button>
+    <button
+      class="memory-card__btn memory-card__btn--cancel"
+      aria-label="Cancel editing"
+      data-action="cancel"
+      style="padding:4px 10px;background:var(--md-surf,#24273a);color:var(--md-on-surf,#cdd6f4);border:1px solid var(--md-outline,#6c7086);border-radius:4px;font-size:12px;cursor:pointer;transition:all 0.15s">
+      Cancel
+    </button>
+  `.trim();
+
+  // Focus the textarea
+  const textarea = document.getElementById(`memory-edit-textarea-${memoryId}`) as HTMLTextAreaElement | null;
+  if (textarea) {
+    textarea.focus();
+    // Move cursor to end of text
+    textarea.selectionStart = textarea.value.length;
+    textarea.selectionEnd = textarea.value.length;
+  }
+
+  // Wire up Save/Cancel handlers
+  const saveBtn = cardActions.querySelector('[data-action="save"]') as HTMLButtonElement | null;
+  const cancelBtn = cardActions.querySelector('[data-action="cancel"]') as HTMLButtonElement | null;
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => {
+      void handleSaveEdit(memoryId, cardElement);
+    });
+  }
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      cancelEdit();
+    });
+  }
+}
+
+/**
+ * Saves the edited memory text via PATCH /api/memory/:id.
+ * On success, updates the card with the new text.
+ * On error, shows error toast and restores the original card.
+ *
+ * Requirement 2.6: Save calls PATCH /api/memory/:id, updates card on success
+ */
+async function handleSaveEdit(memoryId: string, cardElement: HTMLElement): Promise<void> {
+  const textarea = document.getElementById(`memory-edit-textarea-${memoryId}`) as HTMLTextAreaElement | null;
+  
+  if (!textarea) return;
+
+  const newText = textarea.value.trim();
+  
+  if (newText === '') {
+    // Empty text not allowed - show error toast
+    try {
+      const { enqueueToast } = await import('../toast.js');
+      enqueueToast({
+        id: crypto.randomUUID(),
+        type: 'error',
+        message: 'Memory text cannot be empty',
+        persistent: false,
+      });
+    } catch {
+      console.error('[memory] Empty text error');
+    }
+    return;
+  }
+
+  // Show loading state on Save button
+  const saveBtn = cardElement.querySelector('[data-action="save"]') as HTMLButtonElement | null;
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+  }
+
+  try {
+    // Call PATCH /api/memory/:id
+    const response = await fetch(`/api/memory/${memoryId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text: newText }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const updatedMemory = await response.json() as Memory;
+
+    // Update the memory in AppState
+    const state = getState();
+    const memoryState = state.memory;
+
+    if (memoryState) {
+      const updatedMemories = memoryState.memories.map(m =>
+        m.id === memoryId ? updatedMemory : m
+      );
+
+      setState({
+        memory: {
+          ...memoryState,
+          memories: updatedMemories,
+        },
+      });
+    }
+
+    // Exit edit mode and re-render the card with updated data
+    _editingMemoryId = null;
+    _originalCardHtml = '';
+
+    // Replace the card with the updated version
+    const newCardHtml = renderMemoryCard(updatedMemory);
+    cardElement.outerHTML = newCardHtml;
+
+    // Re-wire event listeners for the new card
+    const newCard = document.querySelector(`[data-memory-id="${memoryId}"]`) as HTMLElement | null;
+    if (newCard) {
+      wireCardEventListeners(newCard);
+    }
+
+    // Show success toast
+    try {
+      const { enqueueToast } = await import('../toast.js');
+      enqueueToast({
+        id: crypto.randomUUID(),
+        type: 'success',
+        message: 'Memory updated',
+        persistent: false,
+      });
+    } catch {
+      console.log('[memory] Memory updated');
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    
+    // Show error toast
+    try {
+      const { enqueueToast } = await import('../toast.js');
+      enqueueToast({
+        id: crypto.randomUUID(),
+        type: 'error',
+        message: `Failed to save: ${message}`,
+        persistent: true,
+      });
+    } catch {
+      console.error('[memory] Save failed:', message);
+    }
+
+    // Restore original card HTML on error
+    cancelEdit();
+  }
+}
+
+/**
+ * Cancels the current edit operation and restores the original card HTML.
+ * 
+ * Requirement 2.6: Cancel restores the card
+ */
+function cancelEdit(): void {
+  if (_editingMemoryId === null) return;
+
+  const cardElement = document.querySelector(`[data-memory-id="${_editingMemoryId}"]`) as HTMLElement | null;
+  
+  if (cardElement && _originalCardHtml) {
+    cardElement.outerHTML = _originalCardHtml;
+
+    // Re-wire event listeners for the restored card
+    const restoredCard = document.querySelector(`[data-memory-id="${_editingMemoryId}"]`) as HTMLElement | null;
+    if (restoredCard) {
+      wireCardEventListeners(restoredCard);
+    }
+  }
+
+  _editingMemoryId = null;
+  _originalCardHtml = '';
+}
+
+// ---------------------------------------------------------------------------
+// Delete interaction (Task 7.2, Requirement 2.7, 2.8, 2.9)
+// ---------------------------------------------------------------------------
+
+/**
+ * Shows a confirmation tooltip for memory deletion.
+ * Replaces the Delete button with "Delete this memory?" text and Confirm/Cancel buttons.
+ * 
+ * Requirement 2.7: Delete shows confirmation tooltip before API call
+ */
+function showDeleteConfirmation(cardElement: HTMLElement): void {
+  const actionsContainer = cardElement.querySelector('.memory-card__actions') as HTMLElement | null;
+  if (!actionsContainer) return;
+
+  // Store original HTML to restore on cancel
+  const originalHTML = actionsContainer.innerHTML;
+
+  // Render confirmation UI
+  actionsContainer.innerHTML = `
+    <div class="memory-delete-confirm" style="display:flex;align-items:center;gap:8px">
+      <span style="color:var(--md-on-surf-var,#a6adc8);font-size:12px">Delete this memory?</span>
+      <button class="memory-card__btn memory-card__btn--confirm"
+              aria-label="Confirm deletion"
+              data-action="confirm-delete"
+              style="padding:4px 10px;background:var(--cr,#f38ba8);color:var(--md-surf,#24273a);border:1px solid var(--cr,#f38ba8);border-radius:4px;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s">
+        Confirm
+      </button>
+      <button class="memory-card__btn memory-card__btn--cancel-delete"
+              aria-label="Cancel deletion"
+              data-action="cancel-delete"
+              style="padding:4px 10px;background:var(--md-surf,#24273a);color:var(--md-on-surf,#cdd6f4);border:1px solid var(--md-outline,#6c7086);border-radius:4px;font-size:12px;cursor:pointer;transition:all 0.15s">
+        Cancel
+      </button>
+    </div>
+  `.trim();
+
+  // Wire Confirm button
+  const confirmBtn = actionsContainer.querySelector('[data-action="confirm-delete"]') as HTMLButtonElement | null;
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', () => {
+      void handleDeleteConfirmed(cardElement);
+    });
+  }
+
+  // Wire Cancel button
+  const cancelBtn = actionsContainer.querySelector('[data-action="cancel-delete"]') as HTMLButtonElement | null;
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      // Restore original buttons
+      actionsContainer.innerHTML = originalHTML;
+      // Re-wire event listeners after restoring
+      wireCardEventListeners(cardElement);
+    });
+  }
+}
+
+/**
+ * Handles confirmed memory deletion with loading state and retry logic.
+ * 
+ * Requirement 2.8: Show loading state (spinner, reduced opacity, disabled buttons) during DELETE call
+ * Requirement 2.9: Remove card from DOM on success, retry once if removal fails, fall back to reload
+ */
+async function handleDeleteConfirmed(cardElement: HTMLElement): Promise<void> {
+  const memoryId = cardElement.dataset.memoryId;
+  if (!memoryId) return;
+
+  // Show loading state (Requirement 2.8)
+  const actionsContainer = cardElement.querySelector('.memory-card__actions') as HTMLElement | null;
+  if (actionsContainer) {
+    actionsContainer.innerHTML = `
+      <div class="memory-delete-loading" style="display:flex;align-items:center;gap:8px;opacity:0.6">
+        <span style="color:var(--md-on-surf-var,#a6adc8);font-size:12px">Deleting...</span>
+        <div class="spinner" style="width:16px;height:16px;border:2px solid var(--md-outline,#6c7086);border-top-color:var(--md-primary,#89b4fa);border-radius:50%;animation:spin 0.8s linear infinite"></div>
+      </div>
+    `.trim();
+  }
+
+  // Apply reduced opacity and disable pointer events on entire card (Requirement 2.8)
+  cardElement.style.opacity = '0.6';
+  cardElement.style.pointerEvents = 'none';
+
+  try {
+    // Call DELETE API
+    const response = await fetch(`/api/memory/${memoryId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    // Success - remove card from DOM (Requirement 2.9)
+    try {
+      cardElement.remove();
+    } catch (err) {
+      // First DOM removal failed - retry once after 50ms (Requirement 2.9)
+      console.warn('[memory] DOM removal failed, retrying...', err);
+      
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      try {
+        cardElement.remove();
+      } catch (retryErr) {
+        // Second attempt failed - fall back to full page reload (Requirement 2.9)
+        console.error('[memory] DOM removal retry failed, reloading page', retryErr);
+        location.reload();
+        return;
+      }
+    }
+
+    // Update AppState - remove the memory from the list
+    const state = getState();
+    const memoryState = state.memory;
+
+    if (memoryState) {
+      const updatedMemories = memoryState.memories.filter(m => m.id !== memoryId);
+      setState({
+        memory: {
+          ...memoryState,
+          memories: updatedMemories,
+          total: Math.max(0, memoryState.total - 1),
+        },
+      });
+    }
+
+    // Show success toast
+    try {
+      const { enqueueToast } = await import('../toast.js');
+      enqueueToast({
+        id: crypto.randomUUID(),
+        type: 'success',
+        message: 'Memory deleted',
+        persistent: false,
+      });
+    } catch {
+      console.log('[memory] Memory deleted');
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    
+    // Restore card state on error
+    cardElement.style.opacity = '1';
+    cardElement.style.pointerEvents = 'auto';
+    
+    // Show error toast
+    try {
+      const { enqueueToast } = await import('../toast.js');
+      enqueueToast({
+        id: crypto.randomUUID(),
+        type: 'error',
+        message: `Failed to delete: ${message}`,
+        persistent: true,
+      });
+    } catch {
+      console.error('[memory] Delete failed:', message);
+    }
+
+    // Restore original card buttons
+    const actionsContainer = cardElement.querySelector('.memory-card__actions') as HTMLElement | null;
+    if (actionsContainer) {
+      // Re-render original Edit/Delete buttons
+      actionsContainer.innerHTML = `
+        <button class="memory-card__btn memory-card__btn--edit"
+                aria-label="Edit memory"
+                data-action="edit"
+                style="padding:4px 10px;background:var(--md-surf,#24273a);color:var(--md-on-surf,#cdd6f4);border:1px solid var(--md-outline,#6c7086);border-radius:4px;font-size:12px;cursor:pointer;transition:all 0.15s">
+          Edit
+        </button>
+        <button class="memory-card__btn memory-card__btn--delete"
+                aria-label="Delete memory"
+                data-action="delete"
+                style="padding:4px 10px;background:var(--md-surf,#24273a);color:var(--cr,#f38ba8);border:1px solid var(--cr,#f38ba8);border-radius:4px;font-size:12px;cursor:pointer;transition:all 0.15s">
+          Delete
+        </button>
+      `.trim();
+      
+      // Re-wire event listeners
+      wireCardEventListeners(cardElement);
+    }
+  }
+}
+
+/**
+ * Click handler for the Delete button - shows confirmation UI.
+ * 
+ * Requirement 2.7: Delete shows confirmation before API call
+ */
+function handleDeleteClick(cardElement: HTMLElement): void {
+  showDeleteConfirmation(cardElement);
+}
+
+/**
+ * Wires Edit and Delete button event listeners for a single memory card.
+ * 
+ * Requirements: 2.6 (edit interaction), 2.7 (delete confirmation)
+ */
+function wireCardEventListeners(cardElement: HTMLElement): void {
+  const editBtn = cardElement.querySelector('[data-action="edit"]') as HTMLButtonElement | null;
+  const deleteBtn = cardElement.querySelector('[data-action="delete"]') as HTMLButtonElement | null;
+
+  if (editBtn) {
+    editBtn.addEventListener('click', () => {
+      const memoryId = cardElement.dataset.memoryId;
+      if (!memoryId) return;
+
+      // Find the memory in AppState to get full text
+      const state = getState();
+      const memoryState = state.memory;
+      
+      if (memoryState) {
+        const memory = memoryState.memories.find(m => m.id === memoryId);
+        if (memory) {
+          startEditMode(memoryId, memory.text, cardElement);
+        }
+      }
+    });
+  }
+
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', () => {
+      void handleDeleteClick(cardElement);
+    });
+  }
+}
+
+/**
+ * Renders all memory cards from AppState and wires their event listeners.
+ * Called after fetchMemoryList() or fetchMemorySearch() updates state.
+ */
+function renderMemoryCards(): void {
+  const timelinePanel = document.getElementById('panel-timeline');
+  if (!timelinePanel) return;
+
+  const state = getState();
+  const memoryState = state.memory;
+
+  if (!memoryState) return;
+
+  // Find or create the memory cards container
+  let cardsContainer = timelinePanel.querySelector('.memory-cards') as HTMLElement | null;
+  
+  if (!cardsContainer) {
+    // Create the container after the search input
+    const searchDiv = timelinePanel.querySelector('.memory-search');
+    
+    cardsContainer = document.createElement('div');
+    cardsContainer.className = 'memory-cards';
+    cardsContainer.style.marginBottom = '16px';
+    
+    if (searchDiv && searchDiv.nextSibling) {
+      timelinePanel.insertBefore(cardsContainer, searchDiv.nextSibling);
+    } else {
+      timelinePanel.appendChild(cardsContainer);
+    }
+  }
+
+  // Clear existing cards
+  cardsContainer.innerHTML = '';
+
+  // Show loading state
+  if (memoryState.loading) {
+    cardsContainer.innerHTML = `
+      <div class="memory-cards__loading" style="padding:40px;text-align:center;color:var(--md-on-surf-var,#a6adc8)">
+        <div style="font-size:14px">Loading memories...</div>
+      </div>
+    `.trim();
+    return;
+  }
+
+  // Show error state
+  if (memoryState.error) {
+    cardsContainer.innerHTML = `
+      <div class="memory-cards__error" style="padding:40px;text-align:center;color:var(--cr,#f38ba8)">
+        <div style="font-size:14px;margin-bottom:12px">${esc(memoryState.error)}</div>
+        <button
+          class="memory-cards__retry-btn"
+          style="padding:8px 16px;background:var(--md-surf,#24273a);color:var(--md-on-surf,#cdd6f4);border:1px solid var(--md-outline,#6c7086);border-radius:4px;font-size:13px;cursor:pointer"
+        >
+          Retry
+        </button>
+      </div>
+    `.trim();
+
+    // Wire retry button
+    const retryBtn = cardsContainer.querySelector('.memory-cards__retry-btn') as HTMLButtonElement | null;
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => {
+        void fetchMemoryList();
+      });
+    }
+    return;
+  }
+
+  // Show empty state
+  if (memoryState.memories.length === 0) {
+    const emptyMessage = memoryState.searchQuery
+      ? `No memories found for "${esc(memoryState.searchQuery)}"`
+      : 'No memories yet';
+
+    cardsContainer.innerHTML = `
+      <div class="memory-cards__empty" style="padding:40px;text-align:center;color:var(--md-on-surf-var,#a6adc8)">
+        <div style="font-size:14px">${emptyMessage}</div>
+      </div>
+    `.trim();
+    return;
+  }
+
+  // Render memory cards
+  const cardsHtml = memoryState.memories.map(memory => renderMemoryCard(memory)).join('');
+  cardsContainer.innerHTML = cardsHtml;
+
+  // Wire event listeners for all cards
+  const cardElements = cardsContainer.querySelectorAll('.memory-card') as NodeListOf<HTMLElement>;
+  for (const cardElement of cardElements) {
+    wireCardEventListeners(cardElement);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // initMemoryPage — wire up event listeners after the shell HTML is mounted
 // Called by main.ts after inserting renderMemoryPage() into the DOM.
 // ---------------------------------------------------------------------------
@@ -765,10 +1314,11 @@ function handleTabKeydown(e: Event): void {
  * - Tab click handlers
  * - Tab keyboard navigation (Arrow keys, Home, End)
  * - Filter change handlers (Requirement 2.2)
+ * - Memory card Edit/Delete handlers (Requirement 2.6)
  *
  * Safe to call multiple times — removes previous listeners before re-adding.
  *
- * Requirements: 2.1, 2.2, 3.1
+ * Requirements: 2.1, 2.2, 2.6, 3.1
  */
 export function initMemoryPage(): void {
   const timelineTab = document.getElementById('tab-timeline');
@@ -847,4 +1397,17 @@ export function initMemoryPage(): void {
       },
     });
   }
+
+  // ── Subscribe to state changes for memory card rendering ─────────────────
+  // Whenever memory state changes, re-render the cards
+  const unsubscribe = subscribe(() => {
+    const currentState = getState();
+    if (currentState.currentPage === 'memory' && currentState.memory) {
+      renderMemoryCards();
+    }
+  });
+
+  // Store unsubscribe function for cleanup (when needed in future)
+  // For now, subscription lives for the lifetime of the page
+  (window as unknown as Record<string, unknown>)._memoryPageUnsubscribe = unsubscribe;
 }

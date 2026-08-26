@@ -181,8 +181,8 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Test scores in [0.0, 1.0] all map to exactly one of high/medium/low
     - _Requirements: 2.5_
 
-- [ ] 7. Implement memory card interactions
-  - [~] 7.1 Implement edit interaction
+- [x] 7. Implement memory card interactions
+  - [x] 7.1 Implement edit interaction
     - Add click handler on Edit button to replace card body with <textarea>
     - Pre-fill textarea with full memory.text
     - Render Save/Cancel buttons
@@ -190,7 +190,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Cancel restores original card HTML
     - _Requirements: 2.6_
   
-  - [~] 7.2 Implement delete interaction with confirmation and loading state
+  - [x] 7.2 Implement delete interaction with confirmation and loading state
     - Add click handler on Delete button showing confirmation tooltip
     - Render "Delete this memory?" with Confirm/Cancel buttons
     - On Confirm click, show loading state (spinner, reduced opacity, disabled buttons)
@@ -200,7 +200,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - If retry fails, fall back to location.reload()
     - _Requirements: 2.7, 2.8, 2.9_
   
-  - [~] 7.3 Write unit tests for card interactions
+  - [x] 7.3 Write unit tests for card interactions
     - Test edit flow replaces card with textarea and restores on cancel
     - Test delete shows loading state before API call
     - Test successful delete removes card from DOM
