@@ -1211,6 +1211,165 @@ function wireCardEventListeners(cardElement: HTMLElement): void {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Pagination (Task 8.2, Requirement 2.4)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetches the next page of memories using the cursor from AppState.
+ * Appends new memories to the existing list.
+ * Called when "Load more" button is clicked.
+ *
+ * Requirement 2.4: Call GET /api/memory/list with cursor from previous response
+ * Requirement 2.4: Append new memory cards to existing list
+ */
+async function fetchNextPage(): Promise<void> {
+  const state = getState();
+  const memoryState = state.memory;
+
+  if (!memoryState || !memoryState.cursor) {
+    // No cursor available - nothing to fetch
+    return;
+  }
+
+  // Set loading state (preserve existing memories)
+  setState({
+    memory: { ...memoryState, loading: true, error: null },
+  });
+
+  try {
+    // Build query params with cursor
+    const params = new URLSearchParams();
+    
+    if (memoryState.workspaceId) {
+      params.set('workspaceId', memoryState.workspaceId);
+    }
+    if (memoryState.chainId) {
+      params.set('chainId', memoryState.chainId);
+    }
+    if (memoryState.agentId) {
+      params.set('agentId', memoryState.agentId);
+    }
+    
+    params.set('cursor', memoryState.cursor);
+    params.set('pageSize', '50');
+
+    const url = `/api/memory/list?${params.toString()}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json() as {
+      memories: Array<unknown>;
+      nextCursor: string | null;
+      total: number;
+    };
+
+    // Append new memories to existing list
+    const updatedMemoryState = getState().memory;
+    if (updatedMemoryState) {
+      setState({
+        memory: {
+          ...updatedMemoryState,
+          memories: [
+            ...updatedMemoryState.memories,
+            ...(data.memories as MemoryPageState['memories']),
+          ],
+          cursor: data.nextCursor,
+          total: data.total,
+          loading: false,
+        },
+      });
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const updatedMemoryState = getState().memory;
+    if (updatedMemoryState) {
+      setState({
+        memory: {
+          ...updatedMemoryState,
+          loading: false,
+          error: message,
+        },
+      });
+    }
+  }
+}
+
+/**
+ * Renders the "Load more" button at the bottom of the timeline.
+ * Button appears only when cursor !== null (more pages available).
+ * Hidden when cursor is null (reached end of pagination).
+ *
+ * Requirement 2.4: Render "Load more" button when nextCursor !== null
+ * Requirement 2.4: Hide button when nextCursor is null (reached end)
+ */
+function renderLoadMoreButton(): void {
+  const timelinePanel = document.getElementById('panel-timeline');
+  if (!timelinePanel) return;
+
+  const state = getState();
+  const memoryState = state.memory;
+
+  if (!memoryState) return;
+
+  // Find or create the load more container
+  let loadMoreContainer = timelinePanel.querySelector('.memory-load-more') as HTMLElement | null;
+  
+  if (!loadMoreContainer) {
+    // Create container at the end of the timeline panel
+    loadMoreContainer = document.createElement('div');
+    loadMoreContainer.className = 'memory-load-more';
+    loadMoreContainer.style.textAlign = 'center';
+    loadMoreContainer.style.marginTop = '16px';
+    timelinePanel.appendChild(loadMoreContainer);
+  }
+
+  // Clear existing content
+  loadMoreContainer.innerHTML = '';
+
+  // Don't show button if:
+  // - Still loading
+  // - Has error
+  // - No memories loaded
+  // - Search is active (search results don't paginate)
+  // - No cursor (reached end)
+  if (
+    memoryState.loading ||
+    memoryState.error ||
+    memoryState.memories.length === 0 ||
+    memoryState.searchQuery !== '' ||
+    !memoryState.cursor
+  ) {
+    return;
+  }
+
+  // Render "Load more" button
+  loadMoreContainer.innerHTML = `
+    <button
+      class="memory-load-more__btn"
+      aria-label="Load more memories"
+      style="padding:10px 20px;background:var(--md-surf,#24273a);color:var(--md-on-surf,#cdd6f4);border:1px solid var(--md-outline,#6c7086);border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s"
+    >
+      Load more
+    </button>
+  `.trim();
+
+  // Wire click handler
+  const loadMoreBtn = loadMoreContainer.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', () => {
+      void fetchNextPage();
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Memory card rendering
+// ---------------------------------------------------------------------------
+
 /**
  * Renders all memory cards from AppState and wires their event listeners.
  * Called after fetchMemoryList() or fetchMemorySearch() updates state.
@@ -1302,6 +1461,9 @@ function renderMemoryCards(): void {
   for (const cardElement of cardElements) {
     wireCardEventListeners(cardElement);
   }
+
+  // Render "Load more" button (Task 8.2, Requirement 2.4)
+  renderLoadMoreButton();
 }
 
 // ---------------------------------------------------------------------------
@@ -1396,6 +1558,16 @@ export function initMemoryPage(): void {
         agentId: '',
       },
     });
+  }
+
+  // ── Initial timeline load (Requirement 2.4) ──────────────────────────────
+  // Trigger initial data fetch if no search is active (default list view)
+  const currentState = getState();
+  const memoryState = currentState.memory;
+  
+  if (memoryState && memoryState.searchQuery === '') {
+    // Default list view - fetch initial memory list
+    void fetchMemoryList();
   }
 
   // ── Subscribe to state changes for memory card rendering ─────────────────

@@ -12,7 +12,7 @@ import type { Memory } from '../../src/memory/types';
 import * as fc from 'fast-check';
 
 // Get KeyboardEvent from window
-const KeyboardEvent = (globalThis as Record<string, unknown>).window.KeyboardEvent;
+const KeyboardEvent = (globalThis as { window: { KeyboardEvent: typeof globalThis.KeyboardEvent } }).window.KeyboardEvent;
 
 describe('renderMemoryPage', () => {
   test('should return HTML string with memory page structure', () => {
@@ -844,6 +844,578 @@ describe('memory card delete flow', () => {
     
     // Arrange — sample confirmation HTML structure
     const confirmationHtml = `
+      <div class="memory-delete-confirm" style="display:inline-block">
+        <span>Delete this memory?</span>
+        <button data-action="confirm-delete">Yes</button>
+        <button data-action="cancel-delete">No</button>
+      </div>
+    `.trim();
+
+    // Assert — verify structure contains expected elements
+    expect(confirmationHtml).toContain('Delete this memory?');
+    expect(confirmationHtml).toContain('data-action="confirm-delete"');
+    expect(confirmationHtml).toContain('data-action="cancel-delete"');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Task 8.3: Timeline loading unit tests
+// Requirements: 2.4
+// ---------------------------------------------------------------------------
+
+describe('timeline loading — initial load', () => {
+  beforeEach(() => {
+    // Arrange — mount memory page HTML into DOM
+    document.body.innerHTML = renderMemoryPage();
+  });
+
+  afterEach(() => {
+    // Cleanup
+    document.body.innerHTML = '';
+  });
+
+  test('should wait for API call before rendering memory cards', async () => {
+    // Arrange
+    let fetchResolved = false;
+    const mockMemories: Memory[] = [
+      {
+        id: 'mem-1',
+        text: 'First memory',
+        scope: { workspaceId: 'ws-1' },
+        qualityScore: 0.8,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+        retrievalCount: 1,
+        tier: 'hot',
+        embeddingStatus: 'ready',
+      },
+    ];
+
+    // Mock fetch to delay response
+    const originalFetch = globalThis.fetch;
+    (globalThis as Record<string, unknown>).fetch = async (url: string | URL | Request) => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      fetchResolved = true;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          memories: mockMemories,
+          nextCursor: null,
+          total: 1,
+        }),
+      } as Response;
+    };
+
+    // Act — initialize page (triggers fetchMemoryList)
+    initMemoryPage();
+
+    // Assert — cards should NOT be rendered immediately (before fetch completes)
+    const timelinePanel = document.getElementById('panel-timeline');
+    let cardsBefore = timelinePanel?.querySelectorAll('.memory-card');
+    expect(cardsBefore?.length ?? 0).toBe(0);
+    expect(fetchResolved).toBe(false);
+
+    // Wait for fetch to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Assert — cards should now be rendered (after fetch succeeds)
+    let cardsAfter = timelinePanel?.querySelectorAll('.memory-card');
+    expect(cardsAfter?.length ?? 0).toBe(1);
+    expect(fetchResolved).toBe(true);
+
+    // Cleanup
+    (globalThis as Record<string, unknown>).fetch = originalFetch;
+  });
+
+  test('should show error state when API call fails', async () => {
+    // Arrange
+    const errorMessage = 'HTTP 500: Internal Server Error';
+
+    // Mock fetch to return error
+    const originalFetch = globalThis.fetch;
+    (globalThis as Record<string, unknown>).fetch = async () => {
+      return {
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+      } as Response;
+    };
+
+    // Act — initialize page (triggers fetchMemoryList which will fail)
+    initMemoryPage();
+
+    // Wait for fetch to complete
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Assert — error state should be displayed
+    const { getState } = await import('../../src/dashboard/state.js');
+    const state = getState();
+    expect(state.memory?.error).toContain(errorMessage);
+    expect(state.memory?.loading).toBe(false);
+
+    // Cleanup
+    (globalThis as Record<string, unknown>).fetch = originalFetch;
+  });
+
+  test('should display "Failed to load memories" message on API error', async () => {
+    // Arrange
+    const originalFetch = globalThis.fetch;
+    (globalThis as Record<string, unknown>).fetch = async () => {
+      return {
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+      } as Response;
+    };
+
+    // Act — initialize page
+    initMemoryPage();
+
+    // Wait for fetch and rendering
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Assert — error message should be displayed in DOM
+    const timelinePanel = document.getElementById('panel-timeline');
+    const errorElement = timelinePanel?.querySelector('.memory-cards__error');
+    expect(errorElement).toBeTruthy();
+    expect(errorElement?.textContent).toContain('HTTP 500');
+
+    // Cleanup
+    (globalThis as Record<string, unknown>).fetch = originalFetch;
+  });
+
+  test('should display Retry button on API error', async () => {
+    // Arrange
+    const originalFetch = globalThis.fetch;
+    (globalThis as Record<string, unknown>).fetch = async () => {
+      return {
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+      } as Response;
+    };
+
+    // Act — initialize page
+    initMemoryPage();
+
+    // Wait for fetch and rendering
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Assert — Retry button should be present
+    const timelinePanel = document.getElementById('panel-timeline');
+    const retryButton = timelinePanel?.querySelector('.memory-cards__retry-btn') as HTMLButtonElement | null;
+    expect(retryButton).toBeTruthy();
+    expect(retryButton?.textContent?.trim()).toBe('Retry');
+
+    // Cleanup
+    (globalThis as Record<string, unknown>).fetch = originalFetch;
+  });
+
+  test('should set loading state to true while fetching', async () => {
+    // Arrange
+    let fetchStarted = false;
+    const originalFetch = globalThis.fetch;
+    (globalThis as Record<string, unknown>).fetch = async () => {
+      fetchStarted = true;
+      await new Promise(resolve => setTimeout(resolve, 50));
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          memories: [],
+          nextCursor: null,
+          total: 0,
+        }),
+      } as Response;
+    };
+
+    // Act — initialize page
+    initMemoryPage();
+
+    // Wait a small tick for state to update
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Assert — loading should be true during fetch
+    const { getState } = await import('../../src/dashboard/state.js');
+    const stateDuringFetch = getState();
+    expect(stateDuringFetch.memory?.loading).toBe(true);
+    expect(fetchStarted).toBe(true);
+
+    // Wait for fetch to complete
+    await new Promise(resolve => setTimeout(resolve, 60));
+
+    // Assert — loading should be false after fetch
+    const stateAfterFetch = getState();
+    expect(stateAfterFetch.memory?.loading).toBe(false);
+
+    // Cleanup
+    (globalThis as Record<string, unknown>).fetch = originalFetch;
+  });
+});
+
+describe('timeline loading — pagination', () => {
+  beforeEach(() => {
+    // Arrange — mount memory page HTML into DOM
+    document.body.innerHTML = renderMemoryPage();
+  });
+
+  afterEach(() => {
+    // Cleanup
+    document.body.innerHTML = '';
+  });
+
+  test('should append new memory cards when Load more button is clicked', async () => {
+    // Arrange — initial fetch returns first page
+    const firstPageMemories: Memory[] = [
+      {
+        id: 'mem-1',
+        text: 'First page memory 1',
+        scope: { workspaceId: 'ws-1' },
+        qualityScore: 0.8,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+        retrievalCount: 1,
+        tier: 'hot',
+        embeddingStatus: 'ready',
+      },
+    ];
+
+    const secondPageMemories: Memory[] = [
+      {
+        id: 'mem-2',
+        text: 'Second page memory 1',
+        scope: { workspaceId: 'ws-1' },
+        qualityScore: 0.75,
+        createdAt: '2024-01-02T00:00:00.000Z',
+        lastRetrievedAt: '2024-01-02T00:00:00.000Z',
+        retrievalCount: 2,
+        tier: 'hot',
+        embeddingStatus: 'ready',
+      },
+    ];
+
+    let callCount = 0;
+    const originalFetch = globalThis.fetch;
+    (globalThis as Record<string, unknown>).fetch = async (url: string | URL | Request) => {
+      callCount++;
+      await new Promise(resolve => setTimeout(resolve, 20));
+      
+      if (callCount === 1) {
+        // First call — return first page with cursor
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            memories: firstPageMemories,
+            nextCursor: 'cursor-page-2',
+            total: 2,
+          }),
+        } as Response;
+      } else {
+        // Second call — return second page
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            memories: secondPageMemories,
+            nextCursor: null,
+            total: 2,
+          }),
+        } as Response;
+      }
+    };
+
+    // Act — initialize page (loads first page)
+    initMemoryPage();
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Assert — first page loaded
+    const timelinePanel = document.getElementById('panel-timeline');
+    let cards = timelinePanel?.querySelectorAll('.memory-card');
+    expect(cards?.length ?? 0).toBe(1);
+    expect(cards?.[0]?.getAttribute('data-memory-id')).toBe('mem-1');
+
+    // Act — click Load more button
+    const loadMoreBtn = timelinePanel?.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+    expect(loadMoreBtn).toBeTruthy();
+    loadMoreBtn?.click();
+
+    // Wait for second page to load
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Assert — both pages are now rendered
+    cards = timelinePanel?.querySelectorAll('.memory-card');
+    expect(cards?.length ?? 0).toBe(2);
+    expect(cards?.[0]?.getAttribute('data-memory-id')).toBe('mem-1');
+    expect(cards?.[1]?.getAttribute('data-memory-id')).toBe('mem-2');
+
+    // Cleanup
+    (globalThis as Record<string, unknown>).fetch = originalFetch;
+  });
+
+  test('should hide Load more button when nextCursor is null', async () => {
+    // Arrange — fetch returns no more pages (nextCursor = null)
+    const mockMemories: Memory[] = [
+      {
+        id: 'mem-last',
+        text: 'Last memory',
+        scope: { workspaceId: 'ws-1' },
+        qualityScore: 0.9,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+        retrievalCount: 5,
+        tier: 'hot',
+        embeddingStatus: 'ready',
+      },
+    ];
+
+    const originalFetch = globalThis.fetch;
+    (globalThis as Record<string, unknown>).fetch = async () => {
+      await new Promise(resolve => setTimeout(resolve, 20));
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          memories: mockMemories,
+          nextCursor: null,  // No more pages
+          total: 1,
+        }),
+      } as Response;
+    };
+
+    // Act — initialize page
+    initMemoryPage();
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Assert — Load more button should not be rendered
+    const timelinePanel = document.getElementById('panel-timeline');
+    const loadMoreBtn = timelinePanel?.querySelector('.memory-load-more__btn');
+    expect(loadMoreBtn).toBeNull();
+
+    // Cleanup
+    (globalThis as Record<string, unknown>).fetch = originalFetch;
+  });
+
+  test('should show Load more button when nextCursor is present', async () => {
+    // Arrange — fetch returns cursor for next page
+    const mockMemories: Memory[] = [
+      {
+        id: 'mem-1',
+        text: 'Memory with more pages',
+        scope: { workspaceId: 'ws-1' },
+        qualityScore: 0.8,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+        retrievalCount: 3,
+        tier: 'hot',
+        embeddingStatus: 'ready',
+      },
+    ];
+
+    const originalFetch = globalThis.fetch;
+    (globalThis as Record<string, unknown>).fetch = async () => {
+      await new Promise(resolve => setTimeout(resolve, 20));
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          memories: mockMemories,
+          nextCursor: 'cursor-next-page',  // More pages available
+          total: 50,
+        }),
+      } as Response;
+    };
+
+    // Act — initialize page
+    initMemoryPage();
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Assert — Load more button should be rendered
+    const timelinePanel = document.getElementById('panel-timeline');
+    const loadMoreBtn = timelinePanel?.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+    expect(loadMoreBtn).toBeTruthy();
+    expect(loadMoreBtn?.textContent?.trim()).toBe('Load more');
+    expect(loadMoreBtn?.getAttribute('aria-label')).toBe('Load more memories');
+
+    // Cleanup
+    (globalThis as Record<string, unknown>).fetch = originalFetch;
+  });
+
+  test('should preserve existing cards when appending new page', async () => {
+    // Arrange
+    const firstPageMemories: Memory[] = [
+      {
+        id: 'mem-1',
+        text: 'First memory',
+        scope: { workspaceId: 'ws-1' },
+        qualityScore: 0.8,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+        retrievalCount: 1,
+        tier: 'hot',
+        embeddingStatus: 'ready',
+      },
+      {
+        id: 'mem-2',
+        text: 'Second memory',
+        scope: { workspaceId: 'ws-1' },
+        qualityScore: 0.75,
+        createdAt: '2024-01-01T01:00:00.000Z',
+        lastRetrievedAt: '2024-01-01T01:00:00.000Z',
+        retrievalCount: 2,
+        tier: 'hot',
+        embeddingStatus: 'ready',
+      },
+    ];
+
+    const secondPageMemories: Memory[] = [
+      {
+        id: 'mem-3',
+        text: 'Third memory',
+        scope: { workspaceId: 'ws-1' },
+        qualityScore: 0.7,
+        createdAt: '2024-01-01T02:00:00.000Z',
+        lastRetrievedAt: '2024-01-01T02:00:00.000Z',
+        retrievalCount: 3,
+        tier: 'hot',
+        embeddingStatus: 'ready',
+      },
+    ];
+
+    let callCount = 0;
+    const originalFetch = globalThis.fetch;
+    (globalThis as Record<string, unknown>).fetch = async () => {
+      callCount++;
+      await new Promise(resolve => setTimeout(resolve, 20));
+      
+      if (callCount === 1) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            memories: firstPageMemories,
+            nextCursor: 'cursor-page-2',
+            total: 3,
+          }),
+        } as Response;
+      } else {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            memories: secondPageMemories,
+            nextCursor: null,
+            total: 3,
+          }),
+        } as Response;
+      }
+    };
+
+    // Act — initialize and load first page
+    initMemoryPage();
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Assert — first page loaded with 2 cards
+    const timelinePanel = document.getElementById('panel-timeline');
+    let cards = timelinePanel?.querySelectorAll('.memory-card');
+    expect(cards?.length ?? 0).toBe(2);
+
+    // Act — click Load more
+    const loadMoreBtn = timelinePanel?.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+    loadMoreBtn?.click();
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Assert — all 3 cards present, in correct order
+    cards = timelinePanel?.querySelectorAll('.memory-card');
+    expect(cards?.length ?? 0).toBe(3);
+    expect(cards?.[0]?.getAttribute('data-memory-id')).toBe('mem-1');
+    expect(cards?.[1]?.getAttribute('data-memory-id')).toBe('mem-2');
+    expect(cards?.[2]?.getAttribute('data-memory-id')).toBe('mem-3');
+
+    // Cleanup
+    (globalThis as Record<string, unknown>).fetch = originalFetch;
+  });
+
+  test('should update cursor state after loading next page', async () => {
+    // Arrange
+    let callCount = 0;
+    const originalFetch = globalThis.fetch;
+    (globalThis as Record<string, unknown>).fetch = async () => {
+      callCount++;
+      await new Promise(resolve => setTimeout(resolve, 20));
+      
+      if (callCount === 1) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            memories: [{ id: 'mem-1', text: 'Memory 1', scope: { workspaceId: 'ws-1' }, qualityScore: 0.8, createdAt: '2024-01-01T00:00:00.000Z', lastRetrievedAt: '2024-01-01T00:00:00.000Z', retrievalCount: 1, tier: 'hot', embeddingStatus: 'ready' }],
+            nextCursor: 'cursor-page-2',
+            total: 3,
+          }),
+        } as Response;
+      } else if (callCount === 2) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            memories: [{ id: 'mem-2', text: 'Memory 2', scope: { workspaceId: 'ws-1' }, qualityScore: 0.75, createdAt: '2024-01-01T01:00:00.000Z', lastRetrievedAt: '2024-01-01T01:00:00.000Z', retrievalCount: 2, tier: 'hot', embeddingStatus: 'ready' }],
+            nextCursor: 'cursor-page-3',
+            total: 3,
+          }),
+        } as Response;
+      } else {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            memories: [{ id: 'mem-3', text: 'Memory 3', scope: { workspaceId: 'ws-1' }, qualityScore: 0.7, createdAt: '2024-01-01T02:00:00.000Z', lastRetrievedAt: '2024-01-01T02:00:00.000Z', retrievalCount: 3, tier: 'hot', embeddingStatus: 'ready' }],
+            nextCursor: null,
+            total: 3,
+          }),
+        } as Response;
+      }
+    };
+
+    // Act — initialize page
+    initMemoryPage();
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Assert — cursor from first page
+    const { getState } = await import('../../src/dashboard/state.js');
+    let state = getState();
+    expect(state.memory?.cursor).toBe('cursor-page-2');
+
+    // Act — load second page
+    const timelinePanel = document.getElementById('panel-timeline');
+    const loadMoreBtn1 = timelinePanel?.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+    loadMoreBtn1?.click();
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Assert — cursor from second page
+    state = getState();
+    expect(state.memory?.cursor).toBe('cursor-page-3');
+
+    // Act — load third page
+    const loadMoreBtn2 = timelinePanel?.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+    loadMoreBtn2?.click();
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Assert — cursor is now null (no more pages)
+    state = getState();
+    expect(state.memory?.cursor).toBeNull();
+
+    // Cleanup
+    (globalThis as Record<string, unknown>).fetch = originalFetch;
+  });
+
+  test('should render delete confirmation prompt in HTML structure', () => {
+    // This test verifies the delete confirmation UI would contain the expected elements
+    // The actual DOM interaction testing requires the full component lifecycle
+    
+    // Arrange — sample confirmation HTML structure
+    const confirmationHtml = `
       <div class="memory-delete-confirm" style="display:flex;align-items:center;gap:8px">
         <span>Delete this memory?</span>
         <button data-action="confirm-delete" aria-label="Confirm deletion">Confirm</button>
@@ -1029,3 +1601,593 @@ describe('memory card delete flow', () => {
     expect(card?.getAttribute('data-memory-id')).toBe('deletion-tracking-test');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Task 8.2: Pagination tests ("Load more" button)
+// Requirements: 2.4
+// ---------------------------------------------------------------------------
+
+describe('memory timeline pagination', () => {
+  beforeEach(() => {
+    // Arrange — mount memory page HTML into DOM
+    document.body.innerHTML = renderMemoryPage();
+    initMemoryPage();
+  });
+
+  afterEach(() => {
+    // Cleanup
+    document.body.innerHTML = '';
+  });
+
+  test('should not render "Load more" button when cursor is null', async () => {
+    // Arrange — create memory state without cursor (end of pagination)
+    const { setState } = await import('../../src/dashboard/state.js');
+    setState({
+      currentPage: 'memory',
+      memory: {
+        memories: [{
+          id: 'memory-1',
+          text: 'First memory',
+          scope: { workspaceId: 'test-workspace' },
+          qualityScore: 0.8,
+          createdAt: '2024-01-01T00:00:00.000Z',
+          lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+          retrievalCount: 5,
+          tier: 'hot',
+          embeddingStatus: 'ready',
+        }],
+        cursor: null, // No more pages available
+        total: 1,
+        searchQuery: '',
+        loading: false,
+        error: null,
+        workspaceId: 'test-workspace',
+        chainId: '',
+        agentId: '',
+      },
+    });
+
+    // Wait for state subscription to trigger render
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Assert — "Load more" button should NOT be present
+    const loadMoreBtn = document.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+    expect(loadMoreBtn).toBeNull();
+  });
+
+  test('should render "Load more" button when cursor is not null', async () => {
+    // Arrange — create memory state with cursor (more pages available)
+    const { setState } = await import('../../src/dashboard/state.js');
+    setState({
+      currentPage: 'memory',
+      memory: {
+        memories: [{
+          id: 'memory-1',
+          text: 'First memory',
+          scope: { workspaceId: 'test-workspace' },
+          qualityScore: 0.8,
+          createdAt: '2024-01-01T00:00:00.000Z',
+          lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+          retrievalCount: 5,
+          tier: 'hot',
+          embeddingStatus: 'ready',
+        }],
+        cursor: 'next-page-cursor-123', // More pages available
+        total: 50,
+        searchQuery: '',
+        loading: false,
+        error: null,
+        workspaceId: 'test-workspace',
+        chainId: '',
+        agentId: '',
+      },
+    });
+
+    // Wait for state subscription to trigger render
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Assert — "Load more" button SHOULD be present
+    const loadMoreBtn = document.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+    expect(loadMoreBtn).toBeTruthy();
+    expect(loadMoreBtn?.textContent?.trim()).toBe('Load more');
+    expect(loadMoreBtn?.getAttribute('aria-label')).toBe('Load more memories');
+  });
+
+  test('should hide "Load more" button when loading', async () => {
+    // Arrange — create memory state with loading=true
+    const { setState } = await import('../../src/dashboard/state.js');
+    setState({
+      currentPage: 'memory',
+      memory: {
+        memories: [{
+          id: 'memory-1',
+          text: 'First memory',
+          scope: { workspaceId: 'test-workspace' },
+          qualityScore: 0.8,
+          createdAt: '2024-01-01T00:00:00.000Z',
+          lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+          retrievalCount: 5,
+          tier: 'hot',
+          embeddingStatus: 'ready',
+        }],
+        cursor: 'next-page-cursor-123',
+        total: 50,
+        searchQuery: '',
+        loading: true, // Loading state - button should be hidden
+        error: null,
+        workspaceId: 'test-workspace',
+        chainId: '',
+        agentId: '',
+      },
+    });
+
+    // Wait for state subscription to trigger render
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Assert — "Load more" button should NOT be present during loading
+    const loadMoreBtn = document.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+    expect(loadMoreBtn).toBeNull();
+  });
+
+  test('should hide "Load more" button when error state', async () => {
+    // Arrange — create memory state with error
+    const { setState } = await import('../../src/dashboard/state.js');
+    setState({
+      currentPage: 'memory',
+      memory: {
+        memories: [],
+        cursor: 'next-page-cursor-123',
+        total: 0,
+        searchQuery: '',
+        loading: false,
+        error: 'Failed to load memories', // Error state - button should be hidden
+        workspaceId: 'test-workspace',
+        chainId: '',
+        agentId: '',
+      },
+    });
+
+    // Wait for state subscription to trigger render
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Assert — "Load more" button should NOT be present when error
+    const loadMoreBtn = document.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+    expect(loadMoreBtn).toBeNull();
+  });
+
+  test('should hide "Load more" button when search is active', async () => {
+    // Arrange — create memory state with search query
+    // Search results don't paginate via cursor
+    const { setState } = await import('../../src/dashboard/state.js');
+    setState({
+      currentPage: 'memory',
+      memory: {
+        memories: [{
+          id: 'memory-1',
+          text: 'Search result memory',
+          scope: { workspaceId: 'test-workspace' },
+          qualityScore: 0.8,
+          createdAt: '2024-01-01T00:00:00.000Z',
+          lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+          retrievalCount: 5,
+          tier: 'hot',
+          embeddingStatus: 'ready',
+        }],
+        cursor: null,
+        total: 1,
+        searchQuery: 'search term', // Search active - pagination not shown
+        loading: false,
+        error: null,
+        workspaceId: 'test-workspace',
+        chainId: '',
+        agentId: '',
+      },
+    });
+
+    // Wait for state subscription to trigger render
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Assert — "Load more" button should NOT be present during search
+    const loadMoreBtn = document.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+    expect(loadMoreBtn).toBeNull();
+  });
+
+  test('should hide "Load more" button when no memories loaded', async () => {
+    // Arrange — create memory state with empty memories
+    const { setState } = await import('../../src/dashboard/state.js');
+    setState({
+      currentPage: 'memory',
+      memory: {
+        memories: [], // Empty list - button should be hidden
+        cursor: 'next-page-cursor-123',
+        total: 0,
+        searchQuery: '',
+        loading: false,
+        error: null,
+        workspaceId: 'test-workspace',
+        chainId: '',
+        agentId: '',
+      },
+    });
+
+    // Wait for state subscription to trigger render
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Assert — "Load more" button should NOT be present when no memories
+    const loadMoreBtn = document.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+    expect(loadMoreBtn).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Task 8.2: Additional pagination interaction tests
+// Requirements: 2.4 (click behavior, appending memories)
+// ---------------------------------------------------------------------------
+
+describe('memory timeline pagination - interaction tests', () => {
+  beforeEach(() => {
+    // Arrange — mount memory page HTML into DOM
+    document.body.innerHTML = renderMemoryPage();
+    initMemoryPage();
+  });
+
+  afterEach(() => {
+    // Cleanup
+    document.body.innerHTML = '';
+  });
+
+  test('should call fetchNextPage and append memories when "Load more" clicked', async () => {
+    // This test verifies Requirement 2.4: clicking "Load more" should:
+    // 1. Call GET /api/memory/list with cursor from previous response
+    // 2. Append new memory cards to existing list
+    // 3. Hide button when nextCursor becomes null
+
+    // Arrange — set up initial state with cursor
+    const { setState, getState } = await import('../../src/dashboard/state.js');
+    
+    const initialMemories: Memory[] = [
+      {
+        id: 'memory-1',
+        text: 'First memory',
+        scope: { workspaceId: 'test-workspace' },
+        qualityScore: 0.8,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+        retrievalCount: 5,
+        tier: 'hot',
+        embeddingStatus: 'ready',
+      },
+      {
+        id: 'memory-2',
+        text: 'Second memory',
+        scope: { workspaceId: 'test-workspace' },
+        qualityScore: 0.75,
+        createdAt: '2024-01-02T00:00:00.000Z',
+        lastRetrievedAt: '2024-01-02T00:00:00.000Z',
+        retrievalCount: 3,
+        tier: 'warm',
+        embeddingStatus: 'ready',
+      },
+    ];
+
+    setState({
+      currentPage: 'memory',
+      memory: {
+        memories: initialMemories,
+        cursor: 'page-2-cursor',
+        total: 4, // More memories available
+        searchQuery: '',
+        loading: false,
+        error: null,
+        workspaceId: 'test-workspace',
+        chainId: '',
+        agentId: '',
+      },
+    });
+
+    // Wait for render
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Verify button is present
+    let loadMoreBtn = document.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+    expect(loadMoreBtn).toBeTruthy();
+
+    // Mock fetch to simulate API response with next page
+    const originalFetch = globalThis.fetch;
+    const nextPageMemories = [
+      {
+        id: 'memory-3',
+        text: 'Third memory from next page',
+        scope: { workspaceId: 'test-workspace' },
+        qualityScore: 0.7,
+        createdAt: '2024-01-03T00:00:00.000Z',
+        lastRetrievedAt: '2024-01-03T00:00:00.000Z',
+        retrievalCount: 2,
+        tier: 'warm',
+        embeddingStatus: 'ready',
+      },
+      {
+        id: 'memory-4',
+        text: 'Fourth memory from next page',
+        scope: { workspaceId: 'test-workspace' },
+        qualityScore: 0.65,
+        createdAt: '2024-01-04T00:00:00.000Z',
+        lastRetrievedAt: '2024-01-04T00:00:00.000Z',
+        retrievalCount: 1,
+        tier: 'cold',
+        embeddingStatus: 'ready',
+      },
+    ];
+
+    globalThis.fetch = async (url: string | URL | Request) => {
+      const urlStr = url.toString();
+      if (urlStr.includes('/api/memory/list') && urlStr.includes('cursor=page-2-cursor')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            memories: nextPageMemories,
+            nextCursor: null, // Last page
+            total: 4,
+          }),
+        } as Response;
+      }
+      return originalFetch(url as RequestInfo);
+    };
+
+    try {
+      // Act — click the "Load more" button
+      loadMoreBtn!.click();
+
+      // Wait for fetch to complete and state to update
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Assert — verify memories were appended
+      const currentState = getState().memory;
+      expect(currentState).toBeTruthy();
+      expect(currentState?.memories.length).toBe(4); // 2 initial + 2 new
+      expect(currentState?.memories[0].id).toBe('memory-1'); // Original first
+      expect(currentState?.memories[1].id).toBe('memory-2'); // Original second
+      expect(currentState?.memories[2].id).toBe('memory-3'); // New third
+      expect(currentState?.memories[3].id).toBe('memory-4'); // New fourth
+
+      // Verify cursor is now null (last page)
+      expect(currentState?.cursor).toBeNull();
+
+      // Wait for DOM to update
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Assert — button should now be hidden since cursor is null
+      loadMoreBtn = document.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+      expect(loadMoreBtn).toBeNull();
+
+      // Verify all 4 memory cards are rendered
+      const cards = document.querySelectorAll('.memory-card');
+      expect(cards.length).toBe(4);
+    } finally {
+      // Cleanup — restore original fetch
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test('should preserve existing memories when appending new page', async () => {
+    // This test verifies that fetchNextPage correctly appends to the existing
+    // memories array without replacing it (Requirement 2.4)
+
+    const { setState, getState } = await import('../../src/dashboard/state.js');
+    
+    const initialMemories: Memory[] = [
+      {
+        id: 'existing-1',
+        text: 'Existing memory 1',
+        scope: { workspaceId: 'test-workspace' },
+        qualityScore: 0.9,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+        retrievalCount: 10,
+        tier: 'hot',
+        embeddingStatus: 'ready',
+      },
+    ];
+
+    setState({
+      currentPage: 'memory',
+      memory: {
+        memories: initialMemories,
+        cursor: 'next-page-cursor',
+        total: 2,
+        searchQuery: '',
+        loading: false,
+        error: null,
+        workspaceId: 'test-workspace',
+        chainId: '',
+        agentId: '',
+      },
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: string | URL | Request) => {
+      const urlStr = url.toString();
+      if (urlStr.includes('/api/memory/list')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            memories: [
+              {
+                id: 'new-1',
+                text: 'New memory from next page',
+                scope: { workspaceId: 'test-workspace' },
+                qualityScore: 0.8,
+                createdAt: '2024-01-02T00:00:00.000Z',
+                lastRetrievedAt: '2024-01-02T00:00:00.000Z',
+                retrievalCount: 5,
+                tier: 'hot',
+                embeddingStatus: 'ready',
+              },
+            ],
+            nextCursor: 'page-3-cursor',
+            total: 2,
+          }),
+        } as Response;
+      }
+      return originalFetch(url as RequestInfo);
+    };
+
+    try {
+      const loadMoreBtn = document.querySelector('.memory-load-more__btn') as HTMLButtonElement;
+      expect(loadMoreBtn).toBeTruthy();
+
+      // Act
+      loadMoreBtn.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Assert — existing memory should still be there
+      const currentState = getState().memory;
+      expect(currentState?.memories.length).toBe(2);
+      expect(currentState?.memories[0].id).toBe('existing-1'); // Original preserved
+      expect(currentState?.memories[1].id).toBe('new-1'); // New appended
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test('should handle multiple "Load more" clicks correctly', async () => {
+    // This test verifies pagination works across multiple pages
+    // Requirement 2.4: each click should append the next page
+
+    const { setState, getState } = await import('../../src/dashboard/state.js');
+    
+    setState({
+      currentPage: 'memory',
+      memory: {
+        memories: [
+          {
+            id: 'page-1-memory-1',
+            text: 'First page memory 1',
+            scope: { workspaceId: 'test-workspace' },
+            qualityScore: 0.9,
+            createdAt: '2024-01-01T00:00:00.000Z',
+            lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+            retrievalCount: 10,
+            tier: 'hot',
+            embeddingStatus: 'ready',
+          },
+        ],
+        cursor: 'page-2-cursor',
+        total: 3,
+        searchQuery: '',
+        loading: false,
+        error: null,
+        workspaceId: 'test-workspace',
+        chainId: '',
+        agentId: '',
+      },
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    let fetchCallCount = 0;
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: string | URL | Request) => {
+      const urlStr = url.toString();
+      
+      if (urlStr.includes('/api/memory/list')) {
+        fetchCallCount++;
+        
+        // First fetch (page 2)
+        if (urlStr.includes('cursor=page-2-cursor')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              memories: [
+                {
+                  id: 'page-2-memory-1',
+                  text: 'Second page memory 1',
+                  scope: { workspaceId: 'test-workspace' },
+                  qualityScore: 0.8,
+                  createdAt: '2024-01-02T00:00:00.000Z',
+                  lastRetrievedAt: '2024-01-02T00:00:00.000Z',
+                  retrievalCount: 5,
+                  tier: 'hot',
+                  embeddingStatus: 'ready',
+                },
+              ],
+              nextCursor: 'page-3-cursor',
+              total: 3,
+            }),
+          } as Response;
+        }
+        
+        // Second fetch (page 3)
+        if (urlStr.includes('cursor=page-3-cursor')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              memories: [
+                {
+                  id: 'page-3-memory-1',
+                  text: 'Third page memory 1',
+                  scope: { workspaceId: 'test-workspace' },
+                  qualityScore: 0.7,
+                  createdAt: '2024-01-03T00:00:00.000Z',
+                  lastRetrievedAt: '2024-01-03T00:00:00.000Z',
+                  retrievalCount: 2,
+                  tier: 'warm',
+                  embeddingStatus: 'ready',
+                },
+              ],
+              nextCursor: null, // Last page
+              total: 3,
+            }),
+          } as Response;
+        }
+      }
+      
+      return originalFetch(url as RequestInfo);
+    };
+
+    try {
+      // Act — first click
+      let loadMoreBtn = document.querySelector('.memory-load-more__btn') as HTMLButtonElement;
+      expect(loadMoreBtn).toBeTruthy();
+      loadMoreBtn.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Assert after first click
+      let currentState = getState().memory;
+      expect(currentState?.memories.length).toBe(2);
+      expect(currentState?.cursor).toBe('page-3-cursor');
+      expect(fetchCallCount).toBe(1);
+
+      // Wait for render
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Act — second click
+      loadMoreBtn = document.querySelector('.memory-load-more__btn') as HTMLButtonElement;
+      expect(loadMoreBtn).toBeTruthy(); // Button still present
+      loadMoreBtn.click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Assert after second click
+      currentState = getState().memory;
+      expect(currentState?.memories.length).toBe(3); // All 3 memories
+      expect(currentState?.cursor).toBeNull(); // No more pages
+      expect(fetchCallCount).toBe(2);
+
+      // Wait for render
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Assert — button should now be hidden
+      loadMoreBtn = document.querySelector('.memory-load-more__btn') as HTMLButtonElement | null;
+      expect(loadMoreBtn).toBeNull();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+

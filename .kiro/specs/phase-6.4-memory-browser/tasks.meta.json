@@ -172,6 +172,32 @@
         "chatSessionId": "sess_df78d44b-1a65-4f17-96cf-b85be7366618",
         "timestamp": 1787764387170
       }
+    ],
+    "8.2 Implement \"Load more\" pagination": [
+      {
+        "executionId": "38ecb79e-42e0-42bb-9ff0-0df99d92dee5",
+        "chatSessionId": "sess_0efb8b43-5778-495b-a28c-d400e433db9d",
+        "timestamp": 1787769233906
+      },
+      {
+        "executionId": "38ecb79e-42e0-42bb-9ff0-0df99d92dee5",
+        "chatSessionId": "sess_0efb8b43-5778-495b-a28c-d400e433db9d",
+        "timestamp": 1787772983651
+      }
+    ],
+    "10.1 Implement graph data derivation": [
+      {
+        "executionId": "aee7555a-30c5-4e3a-a92f-ca8e80d641b9",
+        "chatSessionId": "sess_f01a31aa-5f20-4ba7-bd42-ddec2372a315",
+        "timestamp": 1788205908865
+      }
+    ],
+    "10.2 Implement graph rendering with empty state guard": [
+      {
+        "executionId": "dc69284f-86e8-4aad-ac2b-27edef7d17da",
+        "chatSessionId": "sess_34f1f740-1a9a-4301-81f1-6fea787e5489",
+        "timestamp": 1788205945096
+      }
     ]
   }
 }

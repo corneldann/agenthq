@@ -13,7 +13,7 @@ This plan implements the complete memory export/import infrastructure, lifecycle
   - Update `src/db/schema.ts` or equivalent type definitions to reflect new columns
   - _Requirements: 3.1, 3.2, 5.5_
 
-- [ ]* 1.1 Write property test for migration 005 schema correctness
+- [ ] 1.1 Write property test for migration 005 schema correctness
   - **Property 12: Decay threshold correctness** — verify decay query logic
   - **Validates: Requirements 3.2**
 
@@ -29,7 +29,7 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - Update all INSERT and SELECT queries to include new columns
     - _Requirements: 3.3, 3.4_
   
-  - [ ]* 2.3 Write property tests for stale filtering
+  - [ ] 2.3 Write property tests for stale filtering
     - **Property 13: Default stale exclusion** — verify stale memories excluded without flag
     - **Property 14: Stale inclusion opt-in** — verify includeStale=true includes stale memories
     - **Validates: Requirements 3.3, 3.4**
@@ -47,7 +47,7 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - Include header/footer generation for each format
     - _Requirements: 1.2, 1.3, 1.4_
   
-  - [ ]* 3.3 Write property tests for export formats
+  - [ ] 3.3 Write property tests for export formats
     - **Property 1: JSON export completeness** — verify all fields present
     - **Property 2: Markdown export format compliance** — verify required sections
     - **Property 3: CSV RFC 4180 compliance** — verify escaping and structure
@@ -62,12 +62,12 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - Set `X-Memory-Export-Omitted` header with count
     - _Requirements: 1.1, 1.7, 1.8, 1.9_
   
-  - [ ]* 4.2 Write property tests for export route
+  - [ ] 4.2 Write property tests for export route
     - **Property 5: Content-Disposition header format** — verify filename pattern
     - **Property 6: Export parameter validation** — verify 400 on invalid params
     - **Validates: Requirements 1.7, 1.8**
   
-  - [ ]* 4.3 Write unit tests for export edge cases
+  - [ ] 4.3 Write unit tests for export edge cases
     - Test empty workspace returns 404
     - Test exactly 500 records (batch boundary)
     - Test streaming with network interruption simulation
@@ -91,7 +91,7 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - Track skipped count for duplicate records
     - _Requirements: 2.6_
   
-  - [ ]* 6.3 Write property tests for import validation
+  - [ ] 6.3 Write property tests for import validation
     - **Property 7: Import JSON validation** — verify invalid JSON rejected
     - **Property 8: Import record validation** — verify missing fields counted as invalid
     - **Property 9: Path-traversal rejection** — verify traversal sequences rejected
@@ -113,11 +113,11 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - Return `{ imported, skipped, invalid }` response
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
   
-  - [ ]* 7.3 Write property tests for import route
+  - [ ] 7.3 Write property tests for import route
     - **Property 11: Import response structure** — verify response format
     - **Validates: Requirements 2.7**
   
-  - [ ]* 7.4 Write unit tests for import edge cases
+  - [ ] 7.4 Write unit tests for import edge cases
     - Test no file returns 400
     - Test file > 10 MB returns 413
     - Test MEMORY_ENABLED=false returns 503
@@ -143,12 +143,12 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - Implement error handling with logging (no crash on error)
     - _Requirements: 3.2_
   
-  - [ ]* 9.3 Write property tests for decay worker
+  - [ ] 9.3 Write property tests for decay worker
     - **Property 12: Decay threshold correctness** — verify threshold calculation
     - **Property 15: Revive state transition** — verify revive resets stale flag
     - **Validates: Requirements 3.2, 3.6**
   
-  - [ ]* 9.4 Write unit tests for decay scheduling
+  - [ ] 9.4 Write unit tests for decay scheduling
     - Test scheduling logic with fake timers
     - Test decay cycle logging format
     - Test error handling doesn't crash worker
@@ -167,7 +167,7 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - Wire button to revive endpoint
     - _Requirements: 3.4, 3.5_
   
-  - [ ]* 10.3 Write unit tests for revive functionality
+  - [ ] 10.3 Write unit tests for revive functionality
     - Test revive updates correct fields
     - Test revive on non-stale memory (should succeed with no-op or return current state)
     - Test revive on non-existent memory returns 404
@@ -187,7 +187,7 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - Include ISO date, chain ID (or "unknown"), quality score, and memory text
     - _Requirements: 4.3_
   
-  - [ ]* 11.3 Write property tests for graduation service
+  - [ ] 11.3 Write property tests for graduation service
     - **Property 16: Graduation format compliance** — verify entry structure
     - **Property 17: Graduation response structure** — verify response format
     - **Property 18: Graduation authorization** — verify 404 for wrong workspace
@@ -203,7 +203,7 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - Return `{ graduated: true, steeringFile: string }` on success
     - _Requirements: 4.1, 4.4, 4.5, 4.6, 4.7_
   
-  - [ ]* 12.2 Write unit tests for graduation error cases
+  - [ ] 12.2 Write unit tests for graduation error cases
     - Test memory not found returns 404
     - Test wrong workspace returns 404
     - Test duplicate text returns 409
@@ -225,12 +225,12 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - Calculate extraction success rate from embedding status
     - _Requirements: 5.1, 5.5_
   
-  - [ ]* 14.2 Write property tests for analytics
+  - [ ] 14.2 Write property tests for analytics
     - **Property 21: Analytics calculation correctness** — verify total count accuracy
     - **Property 23: SQL parameterization** — verify no string interpolation
     - **Validates: Requirements 5.1, 5.5**
   
-  - [ ]* 14.3 Write unit tests for analytics edge cases
+  - [ ] 14.3 Write unit tests for analytics edge cases
     - Test empty workspace returns zeros/empty arrays
     - Test histogram bucketing accuracy
     - Test success rate calculation with various embedding status distributions
@@ -243,7 +243,7 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - Call analytics service and return result
     - _Requirements: 5.1, 5.4_
   
-  - [ ]* 15.2 Write unit tests for analytics route
+  - [ ] 15.2 Write unit tests for analytics route
     - Test MEMORY_ENABLED=false returns 503
     - Test missing workspaceId returns 400
     - Test analytics response structure matches type
@@ -276,11 +276,11 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - Return `{ merged, superseded, flaggedStale }` response
     - _Requirements: 5.3_
   
-  - [ ]* 16.5 Write property tests for consolidation
+  - [ ] 16.5 Write property tests for consolidation
     - **Property 22: Consolidation target enforcement** — verify ≤50 active memories
     - **Validates: Requirements 5.3**
   
-  - [ ]* 16.6 Write unit tests for consolidation
+  - [ ] 16.6 Write unit tests for consolidation
     - Test with < 50 memories (no stale marking)
     - Test with exactly 50 memories (no stale marking)
     - Test with > 50 memories (verify lowest quality marked stale)
@@ -295,7 +295,7 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - Return consolidation result counts
     - _Requirements: 5.2, 5.4_
   
-  - [ ]* 17.2 Write unit tests for consolidation route
+  - [ ] 17.2 Write unit tests for consolidation route
     - Test MEMORY_ENABLED=false returns 503
     - Test response structure matches `ConsolidationResult` type
     - Test consolidation with mock LLM reflect call
@@ -319,28 +319,28 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - _Requirements: 3.2_
 
 - [ ] 20. Integration testing
-  - [ ]* 20.1 Write end-to-end export-import test
+  - [ ] 20.1 Write end-to-end export-import test
     - Export 1000 memories in JSON format
     - Import exported file to new workspace
     - Verify imported count matches original
     - Verify workspace scope correctly overwritten
     - _Requirements: 1.1, 2.1, 2.5_
   
-  - [ ]* 20.2 Write end-to-end decay test
+  - [ ] 20.2 Write end-to-end decay test
     - Create 100 memories with various `lastRetrievedAt` values
     - Run decay cycle
     - Verify stale count matches threshold
     - Query with and without `includeStale` flag
     - _Requirements: 3.2, 3.3, 3.4_
   
-  - [ ]* 20.3 Write end-to-end graduation test
+  - [ ] 20.3 Write end-to-end graduation test
     - Graduate high-quality memory
     - Verify steering file content matches format
     - Attempt duplicate graduation
     - Verify 409 response
     - _Requirements: 4.2, 4.3, 4.6_
   
-  - [ ]* 20.4 Write end-to-end consolidation test
+  - [ ] 20.4 Write end-to-end consolidation test
     - Create 75 memories with some duplicates
     - Run consolidation
     - Verify ≤50 active memories remain

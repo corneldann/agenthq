@@ -3,31 +3,26 @@
 // Requirement 2.3: Debounced search input with 300ms delay
 
 import { describe, it, expect, beforeEach, mock, afterEach } from 'bun:test';
-import { JSDOM } from 'jsdom';
+import { Window } from 'happy-dom';
 import { renderMemoryPage, initMemoryPage } from '../../src/dashboard/pages/memory.js';
-import { setState, getState, resetState } from '../../src/dashboard/state.js';
+import { setState, getState } from '../../src/dashboard/state.js';
 import type { Memory, MemoryScope } from '../../src/dashboard/types.js';
 
 describe('Memory page — debounced search', () => {
-  let dom: JSDOM;
+  let window: Window;
   let container: HTMLElement;
 
   beforeEach(() => {
-    // Reset state before each test
-    resetState();
-
     // Create a minimal DOM environment
-    dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
-      url: 'http://localhost:3333',
-    });
-    global.document = dom.window.document as unknown as Document;
-    global.window = dom.window as unknown as Window & typeof globalThis;
-    global.HTMLElement = dom.window.HTMLElement;
-    global.Element = dom.window.Element;
-    global.Node = dom.window.Node;
+    window = new Window();
+    global.document = window.document as unknown as Document;
+    global.window = window as unknown as Window & typeof globalThis;
+    global.HTMLElement = window.HTMLElement;
+    global.Element = window.Element;
+    global.Node = window.Node;
 
     // Mount the page
-    container = dom.window.document.body;
+    container = window.document.body;
     container.innerHTML = renderMemoryPage();
 
     // Mock fetch
@@ -55,7 +50,7 @@ describe('Memory page — debounced search', () => {
   });
 
   it('should render search input with correct ARIA attributes', () => {
-    const searchInput = dom.window.document.getElementById('memory-search-input') as HTMLInputElement | null;
+    const searchInput = window.document.getElementById('memory-search-input') as HTMLInputElement | null;
 
     expect(searchInput).toBeTruthy();
     expect(searchInput?.getAttribute('type')).toBe('text');
@@ -64,7 +59,7 @@ describe('Memory page — debounced search', () => {
   });
 
   it('should trigger search after 300ms debounce delay', async () => {
-    const searchInput = dom.window.document.getElementById('memory-search-input') as HTMLInputElement | null;
+    const searchInput = window.document.getElementById('memory-search-input') as HTMLInputElement | null;
     expect(searchInput).toBeTruthy();
 
     if (!searchInput) return;
@@ -74,7 +69,7 @@ describe('Memory page — debounced search', () => {
 
     // Type in the search input
     searchInput.value = 'test query';
-    searchInput.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
 
     // Check that fetch is NOT called immediately
     expect((global.fetch as ReturnType<typeof mock>).mock.calls.length).toBe(0);
@@ -96,7 +91,7 @@ describe('Memory page — debounced search', () => {
   });
 
   it('should cancel previous debounce timer when typing continues', async () => {
-    const searchInput = dom.window.document.getElementById('memory-search-input') as HTMLInputElement | null;
+    const searchInput = window.document.getElementById('memory-search-input') as HTMLInputElement | null;
     expect(searchInput).toBeTruthy();
 
     if (!searchInput) return;
@@ -106,14 +101,14 @@ describe('Memory page — debounced search', () => {
 
     // Type first query
     searchInput.value = 'first';
-    searchInput.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
 
     // Wait 150ms
     await new Promise((resolve) => setTimeout(resolve, 150));
 
     // Type second query (should cancel first debounce)
     searchInput.value = 'second';
-    searchInput.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
 
     // Wait another 150ms
     await new Promise((resolve) => setTimeout(resolve, 150));
@@ -131,7 +126,7 @@ describe('Memory page — debounced search', () => {
   });
 
   it('should clear search and return to list view when input is emptied', async () => {
-    const searchInput = dom.window.document.getElementById('memory-search-input') as HTMLInputElement | null;
+    const searchInput = window.document.getElementById('memory-search-input') as HTMLInputElement | null;
     expect(searchInput).toBeTruthy();
 
     if (!searchInput) return;
@@ -179,7 +174,7 @@ describe('Memory page — debounced search', () => {
 
     // Clear the search input
     searchInput.value = '';
-    searchInput.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
 
     // Should call list endpoint immediately (no debounce for clearing)
     await new Promise((resolve) => setTimeout(resolve, 50));
@@ -194,7 +189,7 @@ describe('Memory page — debounced search', () => {
   });
 
   it('should include workspaceId filter in search request', async () => {
-    const searchInput = dom.window.document.getElementById('memory-search-input') as HTMLInputElement | null;
+    const searchInput = window.document.getElementById('memory-search-input') as HTMLInputElement | null;
     expect(searchInput).toBeTruthy();
 
     if (!searchInput) return;
@@ -219,7 +214,7 @@ describe('Memory page — debounced search', () => {
 
     // Type in the search input
     searchInput.value = 'test query';
-    searchInput.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
 
     // Wait for debounce
     await new Promise((resolve) => setTimeout(resolve, 350));
@@ -231,7 +226,7 @@ describe('Memory page — debounced search', () => {
   });
 
   it('should handle search API errors gracefully', async () => {
-    const searchInput = dom.window.document.getElementById('memory-search-input') as HTMLInputElement | null;
+    const searchInput = window.document.getElementById('memory-search-input') as HTMLInputElement | null;
     expect(searchInput).toBeTruthy();
 
     if (!searchInput) return;
@@ -248,7 +243,7 @@ describe('Memory page — debounced search', () => {
 
     // Type in the search input
     searchInput.value = 'test';
-    searchInput.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
 
     // Wait for debounce
     await new Promise((resolve) => setTimeout(resolve, 350));
@@ -260,7 +255,7 @@ describe('Memory page — debounced search', () => {
   });
 
   it('should set loading state while search is in progress', async () => {
-    const searchInput = dom.window.document.getElementById('memory-search-input') as HTMLInputElement | null;
+    const searchInput = window.document.getElementById('memory-search-input') as HTMLInputElement | null;
     expect(searchInput).toBeTruthy();
 
     if (!searchInput) return;
@@ -277,7 +272,7 @@ describe('Memory page — debounced search', () => {
 
     // Type in the search input
     searchInput.value = 'test';
-    searchInput.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
 
     // Wait for debounce
     await new Promise((resolve) => setTimeout(resolve, 350));

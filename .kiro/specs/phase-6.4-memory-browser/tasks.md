@@ -209,39 +209,39 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - _Requirements: 2.6, 2.7, 2.8, 2.9_
 
 - [ ] 8. Implement timeline list loading and pagination
-  - [ ] 8.1 Implement initial timeline load
+  - [x] 8.1 Implement initial timeline load
     - On page mount, check if search active or default list view
     - Default view: call GET /api/memory/list with current filters
     - Render memory cards ONLY after API success
     - On API failure, show error state with "Failed to load memories" and Retry button
     - _Requirements: 2.4_
   
-  - [ ] 8.2 Implement "Load more" pagination
+  - [x] 8.2 Implement "Load more" pagination
     - Render "Load more" button at bottom of timeline when nextCursor !== null
     - On click, call GET /api/memory/list with cursor from previous response
     - Append new memory cards to existing list
     - Hide button when nextCursor is null (reached end)
     - _Requirements: 2.4_
   
-  - [ ] 8.3 Write unit tests for timeline loading
+  - [x] 8.3 Write unit tests for timeline loading
     - Test default view waits for API before rendering cards
     - Test API failure shows error state with retry
     - Test pagination appends cards correctly
     - Test Load more button hides when no more pages
     - _Requirements: 2.4_
 
-- [ ] 9. Checkpoint — Ensure memory page tests pass
+- [x] 9. Checkpoint — Ensure memory page tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 10. Create memory graph component
-  - [ ] 10.1 Implement graph data derivation
+  - [x] 10.1 Implement graph data derivation
     - Create `buildGraphData(memories: Memory[]): { entities: GraphEntity[], relations: GraphRelation[] }`
     - Parse memory.text to extract entity names mentioned
     - Build unique entity list with type classification (primary/secondary)
     - Build relation list from entity co-occurrences
     - _Requirements: 3.1_
   
-  - [ ] 10.2 Implement graph rendering with empty state guard
+  - [-] 10.2 Implement graph rendering with empty state guard
     - Create `src/dashboard/pages/memory-graph.ts` with `renderMemoryGraph(entities, relations): string`
     - Check if entities.length < 3, render empty state: "Not enough data to display graph"
     - Empty state container has role="application", tabindex="0", correct aria-label
@@ -249,7 +249,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Render aria-label with entity count: "Memory knowledge graph with N entities"
     - _Requirements: 3.1, 3.3, 3.7_
   
-  - [ ] 10.3 Write property test for graph aria-label accuracy
+  - [~] 10.3 Write property test for graph aria-label accuracy
     - **Property 7: Graph aria-label reflects entity count accurately**
     - **Validates: Requirements 3.3**
     - Generate arrays of GraphEntity with varying lengths
