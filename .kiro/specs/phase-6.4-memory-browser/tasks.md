@@ -233,7 +233,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
 - [x] 9. Checkpoint — Ensure memory page tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 10. Create memory graph component
+- [x] 10. Create memory graph component
   - [x] 10.1 Implement graph data derivation
     - Create `buildGraphData(memories: Memory[]): { entities: GraphEntity[], relations: GraphRelation[] }`
     - Parse memory.text to extract entity names mentioned
@@ -241,7 +241,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Build relation list from entity co-occurrences
     - _Requirements: 3.1_
   
-  - [-] 10.2 Implement graph rendering with empty state guard
+  - [x] 10.2 Implement graph rendering with empty state guard
     - Create `src/dashboard/pages/memory-graph.ts` with `renderMemoryGraph(entities, relations): string`
     - Check if entities.length < 3, render empty state: "Not enough data to display graph"
     - Empty state container has role="application", tabindex="0", correct aria-label
@@ -249,7 +249,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Render aria-label with entity count: "Memory knowledge graph with N entities"
     - _Requirements: 3.1, 3.3, 3.7_
   
-  - [~] 10.3 Write property test for graph aria-label accuracy
+  - [x] 10.3 Write property test for graph aria-label accuracy
     - **Property 7: Graph aria-label reflects entity count accurately**
     - **Validates: Requirements 3.3**
     - Generate arrays of GraphEntity with varying lengths
