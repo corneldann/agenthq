@@ -1048,3 +1048,57 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+/* ── Memory Graph ───────────────────────────────────────────────────────── */
+.memory-graph {
+  width: 100%;
+  height: 400px;
+  position: relative;
+}
+
+.memory-graph__svg {
+  width: 100%;
+  height: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.memory-graph__empty {
+  width: 100%;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Node focus indicator (keyboard navigation) */
+.memory-graph__svg g[role="button"]:focus {
+  outline: none;
+}
+
+.memory-graph__svg g[role="button"]:focus-visible circle,
+.memory-graph__svg g[role="button"]:focus-visible polygon {
+  stroke: var(--accent);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 4px var(--accent));
+}
+
+/* Visually hidden table for screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

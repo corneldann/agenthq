@@ -256,49 +256,49 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Verify aria-label contains exact entity count
     - _Requirements: 3.3_
 
-- [ ] 11. Implement graph nodes and edges with dual encoding
-  - [ ] 11.1 Render entity nodes with shape and colour dual encoding
+- [x] 11. Implement graph nodes and edges with dual encoding
+  - [x] 11.1 Render entity nodes with shape and colour dual encoding
     - Render primary nodes as <circle r="12"> with fill="var(--accent)"
     - Render secondary nodes as <polygon points="..."> (diamond) with fill="var(--text-muted)"
     - Add <text> labels with minimum 4.5:1 contrast ratio against SVG background
     - Each node <g> has data-node-id, role="button", aria-label="Entity: <name>"
     - _Requirements: 3.5, 3.6_
   
-  - [ ] 11.2 Render relation edges
+  - [x] 11.2 Render relation edges
     - Render <line> or <path> elements between related entity nodes
     - Add aria-hidden="true" to edges (relationships listed in sr-only table)
     - _Requirements: 3.1_
   
-  - [ ] 11.3 Write unit tests for node rendering
+  - [x] 11.3 Write unit tests for node rendering
     - Test primary nodes render as circles with --accent fill
     - Test secondary nodes render as diamonds with --text-muted fill
     - Test text labels meet 4.5:1 contrast requirement
     - _Requirements: 3.5, 3.6_
 
-- [ ] 12. Implement graph keyboard navigation
-  - [ ] 12.1 Implement Tab navigation and focus management
+- [x] 12. Implement graph keyboard navigation
+  - [x] 12.1 Implement Tab navigation and focus management
     - Add tabindex="0" to each node <g> element
     - Implement Tab/Shift+Tab navigation moving between nodes
     - Track focused node in closure state
     - Add visual focus indicator (outline) on node <g>:focus
     - _Requirements: 3.2_
   
-  - [ ] 12.2 Implement Enter/Escape expand/collapse
+  - [x] 12.2 Implement Enter/Escape expand/collapse
     - Add aria-expanded="false" initial state to each node
     - On Enter keydown, toggle aria-expanded, render inline relation tooltip
     - Tooltip lists related entity names and relation labels
     - On Escape keydown, collapse active node (aria-expanded="false")
     - _Requirements: 3.2_
   
-  - [ ] 12.3 Write unit tests for keyboard navigation
+  - [x] 12.3 Write unit tests for keyboard navigation
     - Test Tab moves focus between nodes
     - Test Enter toggles aria-expanded and shows tooltip
     - Test Escape collapses active node
     - Test focus indicator applied correctly
     - _Requirements: 3.2_
 
-- [ ] 13. Implement sr-only accessibility table
-  - [ ] 13.1 Render sr-only table alongside SVG
+- [x] 13. Implement sr-only accessibility table
+  - [x] 13.1 Render sr-only table alongside SVG
     - Create <table class="sr-only" id="memory-graph-table">
     - Add <caption>Memory knowledge graph entities and relationships</caption>
     - Render <thead> with "Entity" and "Relations" columns
@@ -307,7 +307,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - SVG has aria-describedby="memory-graph-table"
     - _Requirements: 3.4_
   
-  - [ ] 13.2 Write property test for sr-only table completeness
+  - [x] 13.2 Write property test for sr-only table completeness
     - **Property 8: sr-only table contains all entity names and relations**
     - **Validates: Requirements 3.4**
     - Generate arrays of GraphEntity and GraphRelation
@@ -315,21 +315,21 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Verify all relations involving each entity appear in its row
     - _Requirements: 3.4_
   
-  - [ ] 13.3 Write unit tests for sr-only table
+  - [x] 13.3 Write unit tests for sr-only table
     - Test table row count matches entity array length
     - Test all entity names present in table
     - Test sr-only class applied (CSS verification)
     - _Requirements: 3.4_
 
-- [ ] 14. Implement reflect panel
-  - [ ] 14.1 Create reflect panel UI in sidebar
+- [x] 14. Implement reflect panel
+  - [x] 14.1 Create reflect panel UI in sidebar
     - Render <aside class="memory-page__sidebar" aria-label="Memory reflection panel">
     - Render <input type="text" placeholder="Enter topic..."> with aria-label
     - Render "Reflect" <button> with aria-label
     - Render result container for reflection text or "No reflection available."
     - _Requirements: 4.1_
   
-  - [ ] 14.2 Implement reflect API call with loading state
+  - [x] 14.2 Implement reflect API call with loading state
     - Add click handler on Reflect button
     - Show loading spinner, set button aria-disabled="true"
     - Call POST /api/memory/reflect with topic and workspaceId
@@ -338,7 +338,7 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Hide spinner, restore button to aria-disabled="false"
     - _Requirements: 4.1, 4.2_
   
-  - [ ] 14.3 Write unit tests for reflect panel
+  - [x] 14.3 Write unit tests for reflect panel
     - Test loading state disables button and shows spinner
     - Test successful reflection renders text
     - Test null reflection shows "No reflection available."
@@ -346,15 +346,15 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Test XSS escaping on reflection text
     - _Requirements: 4.1, 4.2_
 
-- [ ] 15. Implement real-time memory updates via SSE
-  - [ ] 15.1 Extend dashboard SSE handler for memory-update events
+- [x] 15. Implement real-time memory updates via SSE
+  - [x] 15.1 Extend dashboard SSE handler for memory-update events
     - In `src/dashboard/main.ts`, add memory-update case to existing onmessage handler
     - Check if currentPage === 'memory'
     - If yes, call refreshMemoryList() to silently re-fetch GET /api/memory/list
     - Replace timeline cards without full page reload
     - _Requirements: 4.3_
   
-  - [ ] 15.2 Implement WeakRef-based listener registry
+  - [x] 15.2 Implement WeakRef-based listener registry
     - Create _listenerRegistry: Map<string, WeakRef<() => void>>
     - Implement registerMemoryUpdateListener(id, fn) and deregisterMemoryUpdateListener(id)
     - Add 30-second setInterval sweep to remove dead WeakRef entries
@@ -362,51 +362,51 @@ This implementation plan converts the Phase 6.4 design into actionable coding ta
     - Call deregisterMemoryUpdateListener on memory page unmount
     - _Requirements: 4.4_
   
-  - [ ] 15.3 Implement background refresh error handling
+  - [x] 15.3 Implement background refresh error handling
     - Wrap refreshMemoryList() in try/catch
     - On error, call enqueueToast with type: 'error', message: 'Memory refresh failed — retrying'
     - Use persistent: false for non-intrusive toast
     - _Requirements: 4.5_
   
-  - [ ] 15.4 Write unit tests for SSE integration
+  - [x] 15.4 Write unit tests for SSE integration
     - Test memory-update event triggers refreshMemoryList when on memory page
     - Test memory-update ignored when on different page
     - Test WeakRef registry cleanup removes dead entries
     - Test background refresh error shows toast
     - _Requirements: 4.3, 4.4, 4.5_
 
-- [ ] 16. Extend dashboard types and state
-  - [ ] 16.1 Extend Page type and AppState interface
+- [x] 16. Extend dashboard types and state
+  - [x] 16.1 Extend Page type and AppState interface
     - In `src/dashboard/types.ts`, add 'memory' to Page union
     - Add MemoryPageState interface with memories, cursor, total, searchQuery, loading, error
     - Add optional memory?: MemoryPageState to AppState
     - _Requirements: 2.1_
   
-  - [ ] 16.2 Add G→M keyboard shortcut to main.ts
+  - [x] 16.2 Add G→M keyboard shortcut to main.ts
     - In existing keyboard handler, add case for 'M' after 'G' prefix
     - Set currentPage: 'memory' in state
     - Clear _pendingG counter
     - _Requirements: 2.1_
   
-  - [ ] 16.3 Write unit tests for state extensions
+  - [x] 16.3 Write unit tests for state extensions
     - Test G→M shortcut updates currentPage to 'memory'
     - Test MemoryPageState initializes with correct defaults
     - _Requirements: 2.1_
 
-- [ ] 17. Register memory-browser routes in monitor.ts
-  - [ ] 17.1 Wire memory-browser routes into main router
+- [x] 17. Register memory-browser routes in monitor.ts
+  - [x] 17.1 Wire memory-browser routes into main router
     - Import { register as registerMemoryRoutes } from './routes/memory-browser.ts'
     - Get IMemoryClient and MemoryCircuitBreaker instances from existing infrastructure
     - Call registerMemoryRoutes(router, client, circuitBreaker) in monitor.ts
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
   
-  - [ ] 17.2 Write integration test for route registration
+  - [x] 17.2 Write integration test for route registration
     - Test all 6 memory routes respond correctly after registration
     - Test MEMORY_ENABLED guard applies to all routes
     - Test circuit breaker guard applies to all routes
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8_
 
-- [ ] 18. Final checkpoint — Ensure all tests pass and build dashboard
+- [x] 18. Final checkpoint — Ensure all tests pass and build dashboard
   - Run `tsc --noEmit` to verify no type errors
   - Run `bun test test/routes/memory-browser.test.ts` to verify route tests pass
   - Run `bun test test/dashboard/memory-page.test.ts` to verify dashboard tests pass

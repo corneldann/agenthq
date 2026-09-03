@@ -12,7 +12,7 @@ import { renderDashboard } from './pages/dashboard';
 import { renderWork } from './pages/work';
 import { renderActivity } from './pages/activity';
 import { renderAnalyticsPage, loadAnalytics, initAnalyticsPage } from './pages/analytics';
-import { renderMemoryPage, initMemoryPage } from './pages/memory';
+import { renderMemoryPage, initMemoryPage, refreshMemoryList } from './pages/memory';
 import type { Page, SSEUpdateEvent } from './types';
 import { shouldApplySSEUpdate } from './sse-filter';
 
@@ -369,6 +369,79 @@ function registerKeyboardShortcuts(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Memory update listener registry (Phase 6.4, Requirement 4.4)
+// ---------------------------------------------------------------------------
+
+/**
+ * WeakRef-based registry for memory update listeners.
+ * Allows listeners to be garbage collected if unmount fails.
+ * Periodic sweep (30s interval) removes dead WeakRef entries as failsafe.
+ */
+const _listenerRegistry: Map<string, WeakRef<() => void>> = new Map();
+
+/**
+ * Registers a listener for memory update events.
+ * Listener will be invoked when memory-update SSE events are received.
+ * 
+ * @param id - Unique identifier for the listener (e.g., 'memory-page')
+ * @param fn - Callback function to invoke on memory update
+ */
+export function registerMemoryUpdateListener(id: string, fn: () => void): void {
+  _listenerRegistry.set(id, new WeakRef(fn));
+}
+
+/**
+ * Deregisters a memory update listener by ID.
+ * 
+ * @param id - Unique identifier of the listener to remove
+ */
+export function deregisterMemoryUpdateListener(id: string): void {
+  _listenerRegistry.delete(id);
+}
+
+/**
+ * Invokes all registered memory update listeners.
+ * Called by the memory-update SSE handler in attach().
+ * Automatically skips dead WeakRef entries.
+ * 
+ * Exported for testing purposes.
+ */
+export function notifyMemoryUpdateListeners(): void {
+  for (const [id, weakRef] of _listenerRegistry) {
+    const fn = weakRef.deref();
+    if (fn) {
+      try {
+        fn();
+      } catch (err) {
+        console.error(`[memory-listener] Listener "${id}" failed:`, err);
+      }
+    }
+  }
+}
+
+/**
+ * Periodic cleanup: removes dead WeakRef entries from the registry.
+ * Runs every 30 seconds as failsafe (normal cleanup via explicit deregister).
+ */
+setInterval(() => {
+  const deadIds: string[] = [];
+  
+  for (const [id, weakRef] of _listenerRegistry) {
+    if (!weakRef.deref()) {
+      deadIds.push(id);
+    }
+  }
+  
+  for (const id of deadIds) {
+    _listenerRegistry.delete(id);
+  }
+  
+  if (deadIds.length > 0) {
+    console.log(`[memory-listener] Swept ${deadIds.length} dead listener(s):`, deadIds);
+  }
+}, 30_000);
+
+// ---------------------------------------------------------------------------
 // SSE client with reconnect logic (Requirements 9.1–9.5)
 // ---------------------------------------------------------------------------
 
@@ -409,10 +482,13 @@ function attach(es: EventSource): void {
     // Plain "update" strings are treated as unfiltered and always applied
     // (they trigger a full data refresh and carry no workspace context).
     let applyUpdate = true;
+    let parsedEvent: SSEUpdateEvent | null = null;
+    
     try {
       const parsed = JSON.parse(_ev.data) as SSEUpdateEvent;
       // Only filter if this looks like a structured SSEUpdateEvent
       if (parsed && typeof parsed === 'object' && 'type' in parsed) {
+        parsedEvent = parsed;
         const selectedWorkspace = getSelectedWorkspaceId();
         applyUpdate = shouldApplySSEUpdate(parsed, selectedWorkspace);
       }
@@ -422,6 +498,19 @@ function attach(es: EventSource): void {
     }
 
     if (!applyUpdate) return;
+
+    // Handle memory-update events (Phase 6.4, Requirement 4.3)
+    // If we're on the memory page and receive a memory-update event,
+    // notify all registered listeners (memory page listener will refresh silently)
+    if (parsedEvent?.type === 'memory-update') {
+      const { currentPage } = getState();
+      if (currentPage === 'memory') {
+        // Notify all registered listeners
+        notifyMemoryUpdateListeners();
+      }
+      // Memory updates don't require a full fetchAll() — early return
+      return;
+    }
 
     // Snapshot jobs BEFORE the fetch so we can diff afterwards (Req 9.3, 9.4)
     const prevJobs = getState().jobs;

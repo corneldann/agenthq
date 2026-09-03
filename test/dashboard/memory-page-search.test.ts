@@ -15,14 +15,15 @@ describe('Memory page — debounced search', () => {
   beforeEach(() => {
     // Create a minimal DOM environment
     window = new Window();
-    global.document = window.document as unknown as Document;
-    global.window = window as unknown as Window & typeof globalThis;
-    global.HTMLElement = window.HTMLElement;
-    global.Element = window.Element;
-    global.Node = window.Node;
+    global.document = window.document as any as Document;
+    // @ts-ignore - Happy-dom Window type is not fully compatible with DOM Window
+    global.window = window;
+    global.HTMLElement = window.HTMLElement as unknown as typeof HTMLElement;
+    global.Element = window.Element as unknown as typeof Element;
+    global.Node = window.Node as unknown as typeof Node;
 
     // Mount the page
-    container = window.document.body;
+    container = window.document.body as unknown as HTMLElement;
     container.innerHTML = renderMemoryPage();
 
     // Mock fetch
@@ -36,7 +37,7 @@ describe('Memory page — debounced search', () => {
             total: 0,
           }),
       } as Response)
-    );
+    ) as unknown as typeof fetch;
 
     // Initialize the page
     initMemoryPage();
@@ -65,27 +66,27 @@ describe('Memory page — debounced search', () => {
     if (!searchInput) return;
 
     // Clear the initial fetch call from initMemoryPage
-    (global.fetch as ReturnType<typeof mock>).mockClear();
+    (global.fetch as unknown as ReturnType<typeof mock>).mockClear();
 
     // Type in the search input
     searchInput.value = 'test query';
-    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }) as unknown as Event);
 
     // Check that fetch is NOT called immediately
-    expect((global.fetch as ReturnType<typeof mock>).mock.calls.length).toBe(0);
+    expect((global.fetch as unknown as ReturnType<typeof mock>).mock.calls.length).toBe(0);
 
     // Wait 150ms (half of debounce delay)
     await new Promise((resolve) => setTimeout(resolve, 150));
-    expect((global.fetch as ReturnType<typeof mock>).mock.calls.length).toBe(0);
+    expect((global.fetch as unknown as ReturnType<typeof mock>).mock.calls.length).toBe(0);
 
     // Wait another 200ms (total 350ms, past debounce delay)
     await new Promise((resolve) => setTimeout(resolve, 200));
 
     // Now fetch should have been called
-    expect((global.fetch as ReturnType<typeof mock>).mock.calls.length).toBe(1);
+    expect((global.fetch as unknown as ReturnType<typeof mock>).mock.calls.length).toBe(1);
 
     // Verify the API call was made with correct parameters
-    const callUrl = (global.fetch as ReturnType<typeof mock>).mock.calls[0][0] as string;
+    const callUrl = (global.fetch as unknown as ReturnType<typeof mock>).mock.calls[0][0] as string;
     expect(callUrl).toContain('/api/memory/search');
     expect(callUrl).toContain('q=test+query');
   });
@@ -97,31 +98,31 @@ describe('Memory page — debounced search', () => {
     if (!searchInput) return;
 
     // Clear the initial fetch call
-    (global.fetch as ReturnType<typeof mock>).mockClear();
+    (global.fetch as unknown as ReturnType<typeof mock>).mockClear();
 
     // Type first query
     searchInput.value = 'first';
-    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }) as unknown as Event);
 
     // Wait 150ms
     await new Promise((resolve) => setTimeout(resolve, 150));
 
     // Type second query (should cancel first debounce)
     searchInput.value = 'second';
-    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }) as unknown as Event);
 
     // Wait another 150ms
     await new Promise((resolve) => setTimeout(resolve, 150));
 
     // No fetch call yet (only 300ms total, but timer was reset)
-    expect((global.fetch as ReturnType<typeof mock>).mock.calls.length).toBe(0);
+    expect((global.fetch as unknown as ReturnType<typeof mock>).mock.calls.length).toBe(0);
 
     // Wait another 200ms (now 350ms from second input)
     await new Promise((resolve) => setTimeout(resolve, 200));
 
     // Should have only ONE fetch call (for "second" query)
-    expect((global.fetch as ReturnType<typeof mock>).mock.calls.length).toBe(1);
-    const callUrl = (global.fetch as ReturnType<typeof mock>).mock.calls[0][0] as string;
+    expect((global.fetch as unknown as ReturnType<typeof mock>).mock.calls.length).toBe(1);
+    const callUrl = (global.fetch as unknown as ReturnType<typeof mock>).mock.calls[0][0] as string;
     expect(callUrl).toContain('q=second');
   });
 
@@ -159,10 +160,10 @@ describe('Memory page — debounced search', () => {
     });
 
     // Clear the initial fetch calls
-    (global.fetch as ReturnType<typeof mock>).mockClear();
+    (global.fetch as unknown as ReturnType<typeof mock>).mockClear();
 
     // Mock the list endpoint response
-    (global.fetch as ReturnType<typeof mock>).mockResolvedValueOnce({
+    (global.fetch as unknown as ReturnType<typeof mock>).mockResolvedValueOnce({
       ok: true,
       json: () =>
         Promise.resolve({
@@ -174,13 +175,13 @@ describe('Memory page — debounced search', () => {
 
     // Clear the search input
     searchInput.value = '';
-    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }) as unknown as Event);
 
     // Should call list endpoint immediately (no debounce for clearing)
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    expect((global.fetch as ReturnType<typeof mock>).mock.calls.length).toBe(1);
-    const callUrl = (global.fetch as ReturnType<typeof mock>).mock.calls[0][0] as string;
+    expect((global.fetch as unknown as ReturnType<typeof mock>).mock.calls.length).toBe(1);
+    const callUrl = (global.fetch as unknown as ReturnType<typeof mock>).mock.calls[0][0] as string;
     expect(callUrl).toContain('/api/memory/list');
 
     // Check that state was updated
@@ -210,17 +211,17 @@ describe('Memory page — debounced search', () => {
     });
 
     // Clear the initial fetch calls
-    (global.fetch as ReturnType<typeof mock>).mockClear();
+    (global.fetch as unknown as ReturnType<typeof mock>).mockClear();
 
     // Type in the search input
     searchInput.value = 'test query';
-    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }) as unknown as Event);
 
     // Wait for debounce
     await new Promise((resolve) => setTimeout(resolve, 350));
 
-    expect((global.fetch as ReturnType<typeof mock>).mock.calls.length).toBe(1);
-    const callUrl = (global.fetch as ReturnType<typeof mock>).mock.calls[0][0] as string;
+    expect((global.fetch as unknown as ReturnType<typeof mock>).mock.calls.length).toBe(1);
+    const callUrl = (global.fetch as unknown as ReturnType<typeof mock>).mock.calls[0][0] as string;
     expect(callUrl).toContain('/api/memory/search');
     expect(callUrl).toContain('workspaceId=test-workspace');
   });
@@ -232,10 +233,10 @@ describe('Memory page — debounced search', () => {
     if (!searchInput) return;
 
     // Clear the initial fetch calls
-    (global.fetch as ReturnType<typeof mock>).mockClear();
+    (global.fetch as unknown as ReturnType<typeof mock>).mockClear();
 
     // Mock fetch to return error
-    (global.fetch as ReturnType<typeof mock>).mockResolvedValueOnce({
+    (global.fetch as unknown as ReturnType<typeof mock>).mockResolvedValueOnce({
       ok: false,
       status: 500,
       statusText: 'Internal Server Error',
@@ -243,7 +244,7 @@ describe('Memory page — debounced search', () => {
 
     // Type in the search input
     searchInput.value = 'test';
-    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }) as unknown as Event);
 
     // Wait for debounce
     await new Promise((resolve) => setTimeout(resolve, 350));
@@ -261,18 +262,18 @@ describe('Memory page — debounced search', () => {
     if (!searchInput) return;
 
     // Clear the initial fetch calls
-    (global.fetch as ReturnType<typeof mock>).mockClear();
+    (global.fetch as unknown as ReturnType<typeof mock>).mockClear();
 
     // Mock slow fetch
     let resolveSearch: (value: Response) => void;
     const searchPromise = new Promise<Response>((resolve) => {
       resolveSearch = resolve;
     });
-    (global.fetch as ReturnType<typeof mock>).mockReturnValueOnce(searchPromise);
+    (global.fetch as unknown as ReturnType<typeof mock>).mockReturnValueOnce(searchPromise);
 
     // Type in the search input
     searchInput.value = 'test';
-    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new window.Event('input', { bubbles: true }) as unknown as Event);
 
     // Wait for debounce
     await new Promise((resolve) => setTimeout(resolve, 350));

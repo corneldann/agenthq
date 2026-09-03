@@ -16,7 +16,7 @@ describe('Memory Page Initial Timeline Load (Task 8.1)', () => {
   beforeEach(() => {
     // Mock fetch FIRST before any state initialization
     originalFetch = global.fetch;
-    global.fetch = mock();
+    global.fetch = (mock() as unknown as typeof global.fetch) as unknown as typeof global.fetch;
     
     // Clear localStorage
     localStorageMock.clear();
@@ -66,7 +66,7 @@ describe('Memory Page Initial Timeline Load (Task 8.1)', () => {
   describe('Requirement 2.4 — Initial timeline load on page mount', () => {
     it('should trigger GET /api/memory/list when page initializes in default view', async () => {
       // Mock successful API response
-      (global.fetch as ReturnType<typeof mock>).mockResolvedValueOnce({
+      (global.fetch as unknown as ReturnType<typeof mock>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ memories: [], nextCursor: null, total: 0 }),
       } as Response);
@@ -101,7 +101,7 @@ describe('Memory Page Initial Timeline Load (Task 8.1)', () => {
       });
 
       // Mock fetch (should not be called)
-      (global.fetch as ReturnType<typeof mock>).mockResolvedValueOnce({
+      (global.fetch as unknown as ReturnType<typeof mock>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ memories: [], nextCursor: null, total: 0 }),
       } as Response);
@@ -118,7 +118,7 @@ describe('Memory Page Initial Timeline Load (Task 8.1)', () => {
 
     it('should complete loading after API call finishes', async () => {
       // Mock API response
-      (global.fetch as ReturnType<typeof mock>).mockResolvedValueOnce({
+      (global.fetch as unknown as ReturnType<typeof mock>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ memories: [], nextCursor: null, total: 0 }),
       } as Response);
@@ -152,7 +152,7 @@ describe('Memory Page Initial Timeline Load (Task 8.1)', () => {
       });
 
       // Mock successful API response
-      (global.fetch as ReturnType<typeof mock>).mockResolvedValueOnce({
+      (global.fetch as unknown as ReturnType<typeof mock>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ memories: [], nextCursor: null, total: 0 }),
       } as Response);
@@ -165,7 +165,7 @@ describe('Memory Page Initial Timeline Load (Task 8.1)', () => {
 
       // Verify fetch was called with all filters
       expect(global.fetch).toHaveBeenCalled();
-      const mockFn = global.fetch as ReturnType<typeof mock>;
+      const mockFn = global.fetch as unknown as ReturnType<typeof mock>;
       const callUrl = mockFn.mock.calls[0][0] as string;
       
       expect(callUrl).toContain('workspaceId=workspace-123');

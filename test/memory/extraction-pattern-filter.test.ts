@@ -78,6 +78,12 @@ function makeTrackingClient(): IMemoryClient & { retainedTexts: string[] } {
     recall: async (_query: string, _scope: MemoryScope, _limit: number): Promise<Memory[]> => [],
     reflect: async (_topic: string, _scope: MemoryScope): Promise<string | null> => null,
     delete: async (_id: string): Promise<void> => {},
+    list: async (_scope: MemoryScope, _pageSize: number, _cursor: string | null) => ({
+      memories: [],
+      nextCursor: null,
+      total: 0,
+    }),
+    get: async (_id: string) => null,
   };
 }
 
@@ -412,6 +418,12 @@ describe('_doExtract — generic pattern rejection (sub-task 3.7)', () => {
       },
       reflect: async (_topic: string, _scope: MemoryScope): Promise<string | null> => null,
       delete: async (_id: string): Promise<void> => {},
+      list: async (_scope: MemoryScope, _pageSize: number, _cursor: string | null) => ({
+        memories: [],
+        nextCursor: null,
+        total: 0,
+      }),
+      get: async (_id: string) => null,
     };
 
     const validFact1 = 'SQLite WAL mode is enabled on every new database connection.';
@@ -467,6 +479,12 @@ describe('_doExtract — generic pattern rejection (sub-task 3.7)', () => {
       },
       reflect: async (_topic: string, _scope: MemoryScope): Promise<string | null> => null,
       delete: async (_id: string): Promise<void> => {},
+      list: async (_scope: MemoryScope, _pageSize: number, _cursor: string | null) => ({
+        memories: [],
+        nextCursor: null,
+        total: 0,
+      }),
+      get: async (_id: string) => null,
     };
     const facts = [
       { text: 'Build is currently failing — missing dist artifact in output directory.' },

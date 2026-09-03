@@ -4,6 +4,7 @@
 
 import { esc, clampText } from '../utils.js';
 import { setState, getState, subscribe } from '../state.js';
+import { registerMemoryUpdateListener, deregisterMemoryUpdateListener } from '../main.js';
 import type { MemoryPageState, Memory } from '../types.js';
 
 // ---------------------------------------------------------------------------
@@ -191,10 +192,15 @@ export function renderMemoryCard(memory: Memory): string {
  * Updates AppState memory slice with results.
  * Triggers re-render of memory cards.
  *
+ * Exported for use by SSE memory-update handler (Requirement 4.3).
+ * 
  * Requirement 2.2: Trigger GET /api/memory/list on filter change
  * Requirement 2.4: Render memory cards ONLY after API success
+ * Requirement 4.3: Silent refresh via SSE memory-update event
+ * 
+ * @param rethrowError - If true, rethrows errors after updating state (for SSE callbacks). Default: false.
  */
-async function fetchMemoryList(): Promise<void> {
+export async function refreshMemoryList(rethrowError = false): Promise<void> {
   const state = getState();
   const memoryState = state.memory;
 
@@ -273,6 +279,10 @@ async function fetchMemoryList(): Promise<void> {
         },
       });
     }
+    // Rethrow error if requested (for SSE callback to handle with toast)
+    if (rethrowError) {
+      throw err;
+    }
   }
 }
 
@@ -290,7 +300,7 @@ function handleWorkspaceFilterChange(workspaceId: string): void {
     setState({
       memory: { ...memoryState, workspaceId },
     });
-    void fetchMemoryList();
+    void refreshMemoryList();
   }
 }
 
@@ -308,7 +318,7 @@ function handleChainFilterChange(chainId: string): void {
     setState({
       memory: { ...memoryState, chainId },
     });
-    void fetchMemoryList();
+    void refreshMemoryList();
   }
 }
 
@@ -326,7 +336,7 @@ function handleAgentFilterChange(agentId: string): void {
     setState({
       memory: { ...memoryState, agentId },
     });
-    void fetchMemoryList();
+    void refreshMemoryList();
   }
 }
 
@@ -427,7 +437,7 @@ function handleSearchInput(value: string): void {
       setState({
         memory: { ...memoryState, searchQuery: '' },
       });
-      void fetchMemoryList();
+      void refreshMemoryList();
     }
     return;
   }
@@ -645,7 +655,48 @@ export function renderMemoryPage(): string {
   </div>
 
   <aside class="memory-page__sidebar" aria-label="Memory reflection panel" style="margin-top:20px">
-    <p style="color:var(--md-on-surf-var,#a6adc8);font-size:13px">Reflect panel — not yet implemented</p>
+    <div class="reflect-panel" style="background:var(--md-surf-low,#202030);border-radius:8px;padding:16px;border:1px solid var(--md-outline,#6c7086)">
+      
+      <!-- Panel header -->
+      <h3 style="margin:0 0 12px 0;font-size:14px;font-weight:600;color:var(--md-on-surf,#cdd6f4)">
+        Reflect
+      </h3>
+      
+      <!-- Topic input -->
+      <div class="reflect-panel__input-group" style="margin-bottom:12px">
+        <label for="reflect-topic-input" class="sr-only">Enter topic for reflection</label>
+        <input
+          type="text"
+          id="reflect-topic-input"
+          class="reflect-panel__input"
+          placeholder="Enter topic..."
+          aria-label="Topic for reflection"
+          style="width:100%;padding:8px 10px;background:var(--md-surf,#24273a);color:var(--md-on-surf,#cdd6f4);border:1px solid var(--md-outline,#6c7086);border-radius:4px;font-size:13px;outline:none;transition:border-color 0.15s"
+        />
+      </div>
+      
+      <!-- Reflect button -->
+      <button
+        id="reflect-submit-btn"
+        class="reflect-panel__btn"
+        aria-label="Generate reflection for topic"
+        style="width:100%;padding:8px 12px;background:var(--md-primary,#89b4fa);color:var(--md-on-primary-c,#1e1e2e);border:none;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;margin-bottom:16px"
+      >
+        Reflect
+      </button>
+      
+      <!-- Result container -->
+      <div
+        id="reflect-result-container"
+        class="reflect-panel__result"
+        role="region"
+        aria-live="polite"
+        aria-label="Reflection result"
+        style="min-height:60px;padding:12px;background:var(--md-surf,#24273a);border:1px solid var(--md-outline,#6c7086);border-radius:4px;color:var(--md-on-surf-var,#a6adc8);font-size:12px;line-height:1.6;white-space:pre-wrap;word-wrap:break-word"
+      >
+        <span style="font-style:italic">No reflection yet. Enter a topic and click Reflect.</span>
+      </div>
+    </div>
   </aside>
 </div>
 `.trim();
@@ -1432,7 +1483,7 @@ function renderMemoryCards(): void {
     const retryBtn = cardsContainer.querySelector('.memory-cards__retry-btn') as HTMLButtonElement | null;
     if (retryBtn) {
       retryBtn.addEventListener('click', () => {
-        void fetchMemoryList();
+        void refreshMemoryList();
       });
     }
     return;
@@ -1471,16 +1522,115 @@ function renderMemoryCards(): void {
 // Called by main.ts after inserting renderMemoryPage() into the DOM.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Reflect panel handlers (Task 14.2, Requirement 4.1, 4.2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Handles the Reflect button click.
+ * Shows loading spinner, calls POST /api/memory/reflect, and renders result.
+ *
+ * Requirement 4.1: Call POST /api/memory/reflect with topic and workspaceId
+ * Requirement 4.2: Show loading spinner while in-flight, disable button
+ * Requirement 4.1: Render reflection text (escaped) or "No reflection available." if null
+ * Requirement 4.2: On error, show error message in result container
+ * Requirement 4.2: Hide spinner, restore button to aria-disabled="false"
+ */
+async function handleReflectClick(): Promise<void> {
+  const topicInput = document.getElementById('reflect-topic-input') as HTMLInputElement | null;
+  const reflectBtn = document.getElementById('reflect-submit-btn') as HTMLButtonElement | null;
+  const resultContainer = document.getElementById('reflect-result-container') as HTMLElement | null;
+
+  if (!topicInput || !reflectBtn || !resultContainer) return;
+
+  const topic = topicInput.value.trim();
+
+  // Validate topic input
+  if (topic === '') {
+    resultContainer.innerHTML = `
+      <span style="color:var(--cr,#f38ba8);font-style:italic">Please enter a topic to reflect on.</span>
+    `.trim();
+    return;
+  }
+
+  // Get workspaceId from memory state
+  const state = getState();
+  const memoryState = state.memory;
+  const workspaceId = memoryState?.workspaceId || '';
+
+  if (workspaceId === '') {
+    resultContainer.innerHTML = `
+      <span style="color:var(--cr,#f38ba8);font-style:italic">Please select a workspace first.</span>
+    `.trim();
+    return;
+  }
+
+  // Show loading state (Requirement 4.2)
+  reflectBtn.setAttribute('aria-disabled', 'true');
+  reflectBtn.style.opacity = '0.6';
+  reflectBtn.style.cursor = 'not-allowed';
+
+  // Show spinner in result container
+  resultContainer.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="spinner" style="width:16px;height:16px;border:2px solid var(--md-outline,#6c7086);border-top-color:var(--md-primary,#89b4fa);border-radius:50%;animation:spin 0.8s linear infinite"></div>
+      <span style="color:var(--md-on-surf-var,#a6adc8);font-style:italic">Reflecting on "${esc(topic)}"...</span>
+    </div>
+  `.trim();
+
+  try {
+    // Call POST /api/memory/reflect (Requirement 4.1)
+    const response = await fetch('/api/memory/reflect', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ topic, workspaceId }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json() as { reflection: string | null };
+
+    // Render result (Requirement 4.1)
+    if (data.reflection === null || data.reflection.trim() === '') {
+      // No reflection available
+      resultContainer.innerHTML = `
+        <span style="color:var(--md-on-surf-var,#a6adc8);font-style:italic">No reflection available.</span>
+      `.trim();
+    } else {
+      // Render reflection text (escaped for XSS prevention)
+      resultContainer.textContent = data.reflection;
+      resultContainer.style.fontStyle = 'normal';
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+
+    // Show error message (Requirement 4.2)
+    resultContainer.innerHTML = `
+      <span style="color:var(--cr,#f38ba8);font-style:italic">Error: ${esc(message)}</span>
+    `.trim();
+  } finally {
+    // Restore button state (Requirement 4.2)
+    reflectBtn.setAttribute('aria-disabled', 'false');
+    reflectBtn.style.opacity = '1';
+    reflectBtn.style.cursor = 'pointer';
+  }
+}
+
 /**
  * Wires all event listeners for the memory page:
  * - Tab click handlers
  * - Tab keyboard navigation (Arrow keys, Home, End)
  * - Filter change handlers (Requirement 2.2)
  * - Memory card Edit/Delete handlers (Requirement 2.6)
+ * - Reflect panel handlers (Requirement 4.1, 4.2)
  *
  * Safe to call multiple times — removes previous listeners before re-adding.
  *
- * Requirements: 2.1, 2.2, 2.6, 3.1
+ * Requirements: 2.1, 2.2, 2.6, 3.1, 4.1, 4.2
  */
 export function initMemoryPage(): void {
   const timelineTab = document.getElementById('tab-timeline');
@@ -1535,6 +1685,15 @@ export function initMemoryPage(): void {
     });
   }
 
+  // ── Reflect button handler (Requirement 4.1, 4.2) ────────────────────────
+  const reflectBtn = document.getElementById('reflect-submit-btn') as HTMLButtonElement | null;
+  
+  if (reflectBtn) {
+    reflectBtn.addEventListener('click', () => {
+      void handleReflectClick();
+    });
+  }
+
   // ── Populate filter dropdowns ────────────────────────────────────────────
   populateFilters();
 
@@ -1567,7 +1726,7 @@ export function initMemoryPage(): void {
   
   if (memoryState && memoryState.searchQuery === '') {
     // Default list view - fetch initial memory list
-    void fetchMemoryList();
+    void refreshMemoryList();
   }
 
   // ── Subscribe to state changes for memory card rendering ─────────────────
@@ -1582,4 +1741,37 @@ export function initMemoryPage(): void {
   // Store unsubscribe function for cleanup (when needed in future)
   // For now, subscription lives for the lifetime of the page
   (window as unknown as Record<string, unknown>)._memoryPageUnsubscribe = unsubscribe;
+
+  // ── Register memory update listener (Phase 6.4, Requirement 4.4) ─────────
+  // Listen for memory-update SSE events and refresh silently
+  const memoryUpdateCallback = (): void => {
+    void refreshMemoryList(true).catch(async (err) => {
+      // Log the error first for debugging (always execute)
+      console.error('[memory-listener] memory refresh failed:', err);
+      
+      // Show non-intrusive error toast on background refresh failure (Req 4.5)
+      try {
+        const { enqueueToast } = await import('../toast.js');
+        enqueueToast({
+          id: crypto.randomUUID(),
+          type: 'error',
+          message: 'Memory refresh failed — retrying',
+          persistent: false,
+        });
+      } catch (toastErr) {
+        // If toast import/call fails, log that too
+        console.error('[memory-listener] toast notification also failed:', toastErr);
+      }
+    });
+  };
+
+  registerMemoryUpdateListener('memory-page', memoryUpdateCallback);
+
+  // Store deregister function for page unmount cleanup
+  // WeakRef in registry allows GC if unmount fails
+  const deregisterMemoryListener = (): void => {
+    deregisterMemoryUpdateListener('memory-page');
+  };
+  
+  (window as unknown as Record<string, unknown>)._memoryPageDeregister = deregisterMemoryListener;
 }

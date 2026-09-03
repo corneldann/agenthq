@@ -222,6 +222,162 @@
         "chatSessionId": "sess_3bb8c7a1-332a-4145-9c7b-45c8732d0334",
         "timestamp": 1788207426796
       }
+    ],
+    "11.3 Write unit tests for node rendering": [
+      {
+        "executionId": "196bbb78-9ac5-476e-8609-811dca3cd189",
+        "chatSessionId": "sess_4b00b9ed-f1b3-4cdd-8b04-8936f261bc99",
+        "timestamp": 1788258113348
+      },
+      {
+        "executionId": "196bbb78-9ac5-476e-8609-811dca3cd189",
+        "chatSessionId": "sess_4b00b9ed-f1b3-4cdd-8b04-8936f261bc99",
+        "timestamp": 1788258220795
+      }
+    ],
+    "11. Implement graph nodes and edges with dual encoding": [
+      {
+        "executionId": "196bbb78-9ac5-476e-8609-811dca3cd189",
+        "chatSessionId": "sess_4b00b9ed-f1b3-4cdd-8b04-8936f261bc99",
+        "timestamp": 1788258220959
+      }
+    ],
+    "12.1 Implement Tab navigation and focus management": [
+      {
+        "executionId": "7231925a-6026-4c5a-b8b3-b08f328ecb27",
+        "chatSessionId": "sess_125e2ced-438c-49e5-a483-c1dfcd6e18c0",
+        "timestamp": 1788289409371
+      },
+      {
+        "executionId": "7231925a-6026-4c5a-b8b3-b08f328ecb27",
+        "chatSessionId": "sess_125e2ced-438c-49e5-a483-c1dfcd6e18c0",
+        "timestamp": 1788290248555
+      }
+    ],
+    "12.2 Implement Enter/Escape expand/collapse": [
+      {
+        "executionId": "5913da4a-c508-4f6e-8ab7-49d4ec847999",
+        "chatSessionId": "sess_5681a566-4629-46fd-8d31-44bf727684ab",
+        "timestamp": 1788290912141
+      }
+    ],
+    "13.1 Render sr-only table alongside SVG": [
+      {
+        "executionId": "a8099e0b-d457-41ce-8ed6-b92f8957f1ca",
+        "chatSessionId": "sess_ff558605-1470-4703-ab11-2ceb9efc3c7e",
+        "timestamp": 1788293560533
+      }
+    ],
+    "13.3 Write unit tests for sr-only table": [
+      {
+        "executionId": "7f5f6f16-816a-4a94-ba5f-8d133f6cc17a",
+        "chatSessionId": "sess_fbca68fe-2297-48ec-a4cb-925b12a456e0",
+        "timestamp": 1788294370119
+      },
+      {
+        "executionId": "7f5f6f16-816a-4a94-ba5f-8d133f6cc17a",
+        "chatSessionId": "sess_fbca68fe-2297-48ec-a4cb-925b12a456e0",
+        "timestamp": 1788295587032
+      }
+    ],
+    "13. Implement sr-only accessibility table": [
+      {
+        "executionId": "7f5f6f16-816a-4a94-ba5f-8d133f6cc17a",
+        "chatSessionId": "sess_fbca68fe-2297-48ec-a4cb-925b12a456e0",
+        "timestamp": 1788295587132
+      }
+    ],
+    "14.1 Create reflect panel UI in sidebar": [
+      {
+        "executionId": "a3d71222-fb03-4e17-a21c-41600e0fca02",
+        "chatSessionId": "sess_7ff2a5ab-35b5-4c9a-b7ef-b8d7c876f255",
+        "timestamp": 1788296465553
+      },
+      {
+        "executionId": "a3d71222-fb03-4e17-a21c-41600e0fca02",
+        "chatSessionId": "sess_7ff2a5ab-35b5-4c9a-b7ef-b8d7c876f255",
+        "timestamp": 1788296476549
+      }
+    ],
+    "14.2 Implement reflect API call with loading state": [
+      {
+        "executionId": "3defd811-bd7e-4c5a-a31e-68bb83c78f7b",
+        "chatSessionId": "sess_11ede451-78d0-414a-967d-a07106120086",
+        "timestamp": 1788296950224
+      }
+    ],
+    "14.3 Write unit tests for reflect panel": [
+      {
+        "executionId": "232bb039-d55f-4412-8189-bec4720404c1",
+        "chatSessionId": "sess_6184cd54-f1d8-4771-8186-f5f02999a725",
+        "timestamp": 1788369980035
+      }
+    ],
+    "14. Implement reflect panel": [
+      {
+        "executionId": "232bb039-d55f-4412-8189-bec4720404c1",
+        "chatSessionId": "sess_6184cd54-f1d8-4771-8186-f5f02999a725",
+        "timestamp": 1788369980130
+      }
+    ],
+    "15.4 Write unit tests for SSE integration": [
+      {
+        "executionId": "f0a017ec-0636-43c1-ba5f-ce68c4337f8e",
+        "chatSessionId": "sess_fbe976d6-be9b-4399-96a9-7e988dfd87a0",
+        "timestamp": 1788379111072
+      }
+    ],
+    "15. Implement real-time memory updates via SSE": [
+      {
+        "executionId": "f0a017ec-0636-43c1-ba5f-ce68c4337f8e",
+        "chatSessionId": "sess_fbe976d6-be9b-4399-96a9-7e988dfd87a0",
+        "timestamp": 1788379111140
+      }
+    ],
+    "16.1 Extend Page type and AppState interface": [
+      {
+        "executionId": "3ac30cde-64e0-4b64-86fa-d1102f3201d4",
+        "chatSessionId": "sess_7741ce8c-e9a3-414d-9b72-7b5997fd6e78",
+        "timestamp": 1788379277706
+      },
+      {
+        "executionId": "3ac30cde-64e0-4b64-86fa-d1102f3201d4",
+        "chatSessionId": "sess_7741ce8c-e9a3-414d-9b72-7b5997fd6e78",
+        "timestamp": 1788379290676
+      }
+    ],
+    "16.2 Add G→M keyboard shortcut to main.ts": [
+      {
+        "executionId": "d859ffbb-181b-4228-b87c-3faca1b86e7c",
+        "chatSessionId": "sess_134f376e-7cc4-44a7-a75b-2418ee0c8682",
+        "timestamp": 1788379360805
+      }
+    ],
+    "16.3 Write unit tests for state extensions": [
+      {
+        "executionId": "a62fbec4-7c57-4bb0-8d68-f18ac9e60872",
+        "chatSessionId": "sess_a68f2f2d-3979-40ed-9135-7f519a5b0084",
+        "timestamp": 1788379406344
+      },
+      {
+        "executionId": "a62fbec4-7c57-4bb0-8d68-f18ac9e60872",
+        "chatSessionId": "sess_a68f2f2d-3979-40ed-9135-7f519a5b0084",
+        "timestamp": 1788380003360
+      }
+    ],
+    "16. Extend dashboard types and state": [
+      {
+        "executionId": "a62fbec4-7c57-4bb0-8d68-f18ac9e60872",
+        "chatSessionId": "sess_a68f2f2d-3979-40ed-9135-7f519a5b0084",
+        "timestamp": 1788380003432
+      }
+    ],
+    "17.1 Wire memory-browser routes into main router": [
+      {
+        "executionId": "84bb69e2-64dc-43aa-bcbe-749fd0966ed0",
+        "chatSessionId": "sess_2c48574c-098f-4199-9d83-0acacc1a1955",
+        "timestamp": 1788380663344
+      }
     ]
   }
 }

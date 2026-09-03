@@ -176,7 +176,7 @@ export interface WorkspaceFilterState {
 // SSEUpdateEvent — structured SSE event payload with workspace identification
 // Requirements: 11.2, 11.3, 11.4, 11.5
 export interface SSEUpdateEvent {
-  type: 'chain-update' | 'job-update' | 'session-update' | 'git-update';
+  type: 'chain-update' | 'job-update' | 'session-update' | 'git-update' | 'memory-update';
   workspaceId?: string | null;
   data?: Chain | Job | SessionState | GitStatus;
 }

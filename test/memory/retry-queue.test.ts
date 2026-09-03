@@ -41,6 +41,14 @@ class FakeMemoryClient implements IMemoryClient {
   delete(_id: string): Promise<void> {
     return Promise.resolve();
   }
+
+  list(_scope: MemoryScope, _pageSize: number, _cursor: string | null): Promise<{ memories: Memory[]; nextCursor: string | null; total: number }> {
+    return Promise.resolve({ memories: [], nextCursor: null, total: 0 });
+  }
+
+  get(_id: string): Promise<Memory | null> {
+    return Promise.resolve(null);
+  }
 }
 
 // ---------------------------------------------------------------------------

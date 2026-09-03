@@ -100,6 +100,12 @@ function makeNoopClient(): IMemoryClient {
     recall: async (_query: string, _scope: MemoryScope, _limit: number): Promise<Memory[]> => [],
     reflect: async (_topic: string, _scope: MemoryScope): Promise<string | null> => null,
     delete: async (_id: string): Promise<void> => {},
+    list: async (_scope: MemoryScope, _pageSize: number, _cursor: string | null) => ({
+      memories: [],
+      nextCursor: null,
+      total: 0,
+    }),
+    get: async (_id: string) => null,
   };
 }
 

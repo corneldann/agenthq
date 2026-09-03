@@ -79,6 +79,14 @@ class FakeMemoryClient implements IMemoryClient {
   async delete(_id: string): Promise<void> {
     return undefined;
   }
+
+  async list(_scope: MemoryScope, _pageSize: number, _cursor: string | null) {
+    return { memories: [], nextCursor: null, total: 0 };
+  }
+
+  async get(_id: string): Promise<Memory | null> {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------

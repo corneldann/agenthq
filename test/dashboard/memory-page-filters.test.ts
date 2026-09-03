@@ -69,7 +69,7 @@ describe('Memory Page Scope Filter Bar', () => {
 
     // Mock fetch
     originalFetch = global.fetch;
-    global.fetch = mock();
+    global.fetch = (mock() as unknown as typeof global.fetch) as unknown as typeof global.fetch;
   });
 
   afterEach(() => {
@@ -124,7 +124,7 @@ describe('Memory Page Scope Filter Bar', () => {
       const workspaceSelect = container.querySelector('#memory-workspace-filter') as HTMLSelectElement;
       
       // Mock successful API response
-      (global.fetch as ReturnType<typeof mock>).mockResolvedValueOnce({
+      (global.fetch as unknown as ReturnType<typeof mock>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ memories: [], nextCursor: null, total: 0 }),
       } as Response);
@@ -144,7 +144,7 @@ describe('Memory Page Scope Filter Bar', () => {
       const chainSelect = container.querySelector('#memory-chain-filter') as HTMLSelectElement;
       
       // Mock successful API response
-      (global.fetch as ReturnType<typeof mock>).mockResolvedValueOnce({
+      (global.fetch as unknown as ReturnType<typeof mock>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ memories: [], nextCursor: null, total: 0 }),
       } as Response);
@@ -170,7 +170,7 @@ describe('Memory Page Scope Filter Bar', () => {
       const agentSelect = container.querySelector('#memory-agent-filter') as HTMLSelectElement;
       
       // Mock successful API response
-      (global.fetch as ReturnType<typeof mock>).mockResolvedValueOnce({
+      (global.fetch as unknown as ReturnType<typeof mock>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ memories: [], nextCursor: null, total: 0 }),
       } as Response);
@@ -202,7 +202,7 @@ describe('Memory Page Scope Filter Bar', () => {
       const workspaceSelect = container.querySelector('#memory-workspace-filter') as HTMLSelectElement;
       
       // Mock successful API response
-      (global.fetch as ReturnType<typeof mock>).mockResolvedValueOnce({
+      (global.fetch as unknown as ReturnType<typeof mock>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ memories: [], nextCursor: null, total: 0 }),
       } as Response);
@@ -226,7 +226,7 @@ describe('Memory Page Scope Filter Bar', () => {
       const chainSelect = container.querySelector('#memory-chain-filter') as HTMLSelectElement;
       
       // Mock successful API response
-      (global.fetch as ReturnType<typeof mock>).mockResolvedValueOnce({
+      (global.fetch as unknown as ReturnType<typeof mock>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ memories: [], nextCursor: null, total: 0 }),
       } as Response);
@@ -256,7 +256,7 @@ describe('Memory Page Scope Filter Bar', () => {
       const agentSelect = container.querySelector('#memory-agent-filter') as HTMLSelectElement;
       
       // Mock successful API response
-      (global.fetch as ReturnType<typeof mock>).mockResolvedValueOnce({
+      (global.fetch as unknown as ReturnType<typeof mock>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ memories: [], nextCursor: null, total: 0 }),
       } as Response);
@@ -284,7 +284,7 @@ describe('Memory Page Scope Filter Bar', () => {
 
     it('should include all active filters in API call', async () => {
       // Mock successful API response
-      (global.fetch as ReturnType<typeof mock>).mockResolvedValue({
+      (global.fetch as unknown as ReturnType<typeof mock>).mockResolvedValue({
         ok: true,
         json: async () => ({ memories: [], nextCursor: null, total: 0 }),
       } as Response);
@@ -318,7 +318,7 @@ describe('Memory Page Scope Filter Bar', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
 
       // Check last call includes all filters
-      const mockFn = global.fetch as ReturnType<typeof mock>;
+      const mockFn = global.fetch as unknown as ReturnType<typeof mock>;
       const lastCall = mockFn.mock.calls[mockFn.mock.calls.length - 1][0] as string;
       
       expect(lastCall).toContain('workspaceId=workspace-1');

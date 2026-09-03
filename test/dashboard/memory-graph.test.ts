@@ -119,7 +119,8 @@ describe('renderMemoryGraph', () => {
         { id: '3', name: 'E3', type: 'primary' },
       ];
       const html = renderMemoryGraph(entities, []);
-      expect(html).toContain('<svg class="memory-graph__svg" role="application"');
+      expect(html).toContain('role="application"');
+      expect(html).toContain('class="memory-graph__svg"');
     });
 
     it('should include tabindex=0 on SVG container', () => {
@@ -236,5 +237,147 @@ describe('renderMemoryGraph', () => {
         { numRuns: 100 },
       );
     });
+
+    it('property: sr-only table contains all entity names and relations', () => {
+      // Feature: phase-6.4-memory-browser, Property 8: sr-only table contains all entity names and relations
+      // **Validates: Requirements 3.4**
+      //
+      // This property verifies that the sr-only accessibility table:
+      // 1. Contains exactly one row for each entity (no entities are omitted)
+      // 2. Contains all relations involving each entity in its relations column
+      // 3. Properly escapes entity names to prevent XSS
+      //
+      // The sr-only table is critical for screen reader accessibility — it provides
+      // the same information as the visual graph in a table format.
+
+      fc.assert(
+        fc.property(
+          // Generate array of entities with unique IDs and names
+          fc.array(
+            fc.record({
+              id: fc.uuid(),
+              name: fc.string({ minLength: 1, maxLength: 30 }),
+              type: fc.constantFrom('primary' as const, 'secondary' as const),
+            }),
+            { minLength: 3, maxLength: 15 },
+          ),
+          // Generate array of relations between the entities
+          fc.array(
+            fc.record({
+              from: fc.uuid(),
+              to: fc.uuid(),
+              label: fc.stringMatching(/^(has|contains|relates-to|depends-on)$/),
+            }),
+            { maxLength: 20 },
+          ),
+          (entities, relations) => {
+            // Import esc utility for verification
+            const esc = (s: string): string => {
+              return s
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+            };
+
+            // Act — render the graph
+            const html = renderMemoryGraph(entities, relations);
+
+            // Parse the HTML to extract table structure
+            const tableStartIndex = html.indexOf('<tbody>');
+            const tableEndIndex = html.indexOf('</tbody>');
+            
+            if (tableStartIndex === -1 || tableEndIndex === -1) {
+              // Table body is missing — property fails
+              return false;
+            }
+
+            const tableBodyHTML = html.substring(tableStartIndex + 7, tableEndIndex);
+
+            // Property 1: Verify every entity name appears exactly once in the table
+            for (const entity of entities) {
+              const escapedName = esc(entity.name);
+              
+              // Count occurrences of the entity name in the first column (entity name column)
+              // Use a regex to match <td>entityName</td> pattern
+              const entityNamePattern = new RegExp(`<td>${escapedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</td>`, 'g');
+              const matches = tableBodyHTML.match(entityNamePattern);
+              
+              // Each entity should appear exactly once
+              if (!matches || matches.length !== 1) {
+                return false;
+              }
+            }
+
+            // Property 2: Verify all relations involving each entity appear in its row
+            // Build a map of expected relations per entity (matching the implementation logic)
+            const entityNameById = new Map<string, string>();
+            for (const entity of entities) {
+              entityNameById.set(entity.id, entity.name);
+            }
+
+            const expectedRelationsByEntity: Record<string, string[]> = {};
+
+            for (const rel of relations) {
+              // Skip relations with non-existent entities (invalid relations)
+              const targetName = entityNameById.get(rel.to);
+              const sourceName = entityNameById.get(rel.from);
+              
+              if (!targetName || !sourceName) {
+                continue;
+              }
+
+              // Add outgoing relation for source entity
+              if (!expectedRelationsByEntity[rel.from]) {
+                expectedRelationsByEntity[rel.from] = [];
+              }
+              expectedRelationsByEntity[rel.from].push(`${rel.label} ${targetName}`);
+
+              // Add incoming relation for target entity
+              if (!expectedRelationsByEntity[rel.to]) {
+                expectedRelationsByEntity[rel.to] = [];
+              }
+              expectedRelationsByEntity[rel.to].push(`${sourceName} ${rel.label} (this)`);
+            }
+
+            // Verify each entity's relations appear in the table
+            for (const entity of entities) {
+              const escapedName = esc(entity.name);
+              const expectedRelations = expectedRelationsByEntity[entity.id] || [];
+
+              // Find the row for this entity
+              const rowPattern = new RegExp(
+                `<tr>\\s*<td>${escapedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</td>\\s*<td>([^<]*)</td>\\s*</tr>`,
+                's'
+              );
+              const rowMatch = tableBodyHTML.match(rowPattern);
+
+              if (!rowMatch) {
+                // Row not found for this entity
+                return false;
+              }
+
+              const relationsCellContent = rowMatch[1];
+
+              // Verify all expected relations appear in the relations cell
+              for (const expectedRelation of expectedRelations) {
+                const escapedRelation = esc(expectedRelation);
+                
+                if (!relationsCellContent.includes(escapedRelation)) {
+                  // Expected relation is missing
+                  return false;
+                }
+              }
+            }
+
+            // All properties verified
+            return true;
+          },
+        ),
+        { numRuns: 100 },
+      );
+    });
+
   });
 });

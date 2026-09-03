@@ -153,6 +153,12 @@ function makeFakeClient(config: FakeClientConfig = {}): FakeClient {
       deletedIds.push(id);
       if (config.deleteThrows) throw new Error('delete network failure');
     },
+    list: async (_scope: MemoryScope, _pageSize: number, _cursor: string | null) => ({
+      memories: [],
+      nextCursor: null,
+      total: 0,
+    }),
+    get: async (_id: string) => null,
   };
 }
 
@@ -769,6 +775,12 @@ describe('extractAndStore — sub-task 3.13 unit tests', () => {
         },
         reflect: async (_topic: string, _scope: MemoryScope): Promise<string | null> => null,
         delete: async (_id: string): Promise<void> => {},
+        list: async (_scope: MemoryScope, _pageSize: number, _cursor: string | null) => ({
+          memories: [],
+          nextCursor: null,
+          total: 0,
+        }),
+        get: async (_id: string) => null,
       };
 
       // Act
@@ -840,6 +852,12 @@ describe('extractAndStore — sub-task 3.13 unit tests', () => {
         },
         reflect: async (_topic: string, _scope: MemoryScope): Promise<string | null> => null,
         delete: async (_id: string): Promise<void> => {},
+        list: async (_scope: MemoryScope, _pageSize: number, _cursor: string | null) => ({
+          memories: [],
+          nextCursor: null,
+          total: 0,
+        }),
+        get: async (_id: string) => null,
       };
 
       // Act
@@ -994,6 +1012,12 @@ describe('extractAndStore — sub-task 3.13 unit tests', () => {
           if (id === retainedIds[0]) throw new Error('delete failed for first ID');
           successfulDeletes.push(id);
         },
+        list: async (_scope: MemoryScope, _pageSize: number, _cursor: string | null) => ({
+          memories: [],
+          nextCursor: null,
+          total: 0,
+        }),
+        get: async (_id: string) => null,
       };
 
       const originalExecute = db.execute.bind(db);

@@ -13,6 +13,34 @@ const document = window.document;
 (globalThis as Record<string, unknown>).HTMLElement = window.HTMLElement;
 (globalThis as Record<string, unknown>).Element = window.Element;
 (globalThis as Record<string, unknown>).Event = window.Event;
+(globalThis as Record<string, unknown>).CustomEvent = window.CustomEvent;
+
+// Mock EventSource for SSE tests
+class MockEventSource {
+  url: string;
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  onerror: ((event: Event) => void) | null = null;
+  onopen: ((event: Event) => void) | null = null;
+  readyState: number = 0;
+  
+  constructor(url: string) {
+    this.url = url;
+  }
+  
+  addEventListener(): void {
+    // Mock implementation
+  }
+  
+  removeEventListener(): void {
+    // Mock implementation
+  }
+  
+  close(): void {
+    // Mock implementation
+  }
+}
+
+(globalThis as Record<string, unknown>).EventSource = MockEventSource;
 
 // localStorage mock — MUST be set up before any imports
 const localStorageStore: Record<string, string> = {};

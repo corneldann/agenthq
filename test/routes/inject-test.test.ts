@@ -102,6 +102,14 @@ class FakeMemoryClient implements IMemoryClient {
   async delete(_id: string): Promise<void> {
     throw new Error('FakeMemoryClient.delete should not be called during inject-test');
   }
+
+  async list(_scope: MemoryScope, _pageSize: number, _cursor: string | null) {
+    return { memories: [], nextCursor: null, total: 0 };
+  }
+
+  async get(_id: string): Promise<Memory | null> {
+    return null;
+  }
 }
 
 function makeFakeCircuitBreaker(
@@ -407,6 +415,12 @@ describe('POST /api/memory/inject-test — MEMORY_ENABLED=true', () => {
       async delete(_id: string): Promise<void> {
         deleteCalled = true;
       }
+      async list(_scope: MemoryScope, _pageSize: number, _cursor: string | null) {
+        return { memories: [], nextCursor: null, total: 0 };
+      }
+      async get(_id: string): Promise<Memory | null> {
+        return null;
+      }
     }
     
     const { register } = await import('../../src/routes/memory.ts');
@@ -545,6 +559,12 @@ describe('Property-based tests', () => {
             }
             async delete(_id: string): Promise<void> {
               deleteCallCount += 1;
+            }
+            async list(_scope: MemoryScope, _pageSize: number, _cursor: string | null) {
+              return { memories: [], nextCursor: null, total: 0 };
+            }
+            async get(_id: string): Promise<Memory | null> {
+              return null;
             }
           }
 

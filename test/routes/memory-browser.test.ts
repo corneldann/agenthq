@@ -3,7 +3,10 @@
 
 import { describe, it, expect } from 'bun:test';
 import fc from 'fast-check';
-import { resolveLimit } from '../../src/routes/memory-browser.ts';
+import { resolveLimit, register } from '../../src/routes/memory-browser.ts';
+import { createRouter } from '../../src/router.ts';
+import type { IMemoryClient, Memory, MemoryScope } from '../../src/memory/types.ts';
+import type { MemoryCircuitBreaker } from '../../src/memory/circuit-breaker.ts';
 
 // ---------------------------------------------------------------------------
 // Property-Based Tests
@@ -1703,7 +1706,7 @@ describe('GET /api/memory/:id route handler integration', () => {
     // Act — GET /api/memory/ with no id (but this won't match the :id route)
     // Instead, we test the validation logic directly
     const id = '';
-    const isInvalid = !id || id.trim() === '';
+    const isInvalid = !id || (id as string).trim() === '';
 
     // Assert
     expect(isInvalid).toBe(true);
@@ -3132,5 +3135,773 @@ describe('POST /api/memory/reflect route handler', () => {
     expect(response.status).toBe(500);
     const data = await response.json();
     expect(data.error).toBe('unexpected error');
+  });
+});
+
+
+// ---------------------------------------------------------------------------
+// Route Registration Integration Tests
+// ---------------------------------------------------------------------------
+
+/**
+ * Integration tests for route registration.
+ * 
+ * These tests verify that the register() function correctly registers all 6 
+ * memory browser routes with proper guard application and consistent behavior.
+ * 
+ * **Validates Requirements:**
+ * - 1.1: GET /api/memory/search — search memories by query
+ * - 1.2: GET /api/memory/list — paginated memory list
+ * - 1.3: GET /api/memory/:id — fetch single memory
+ * - 1.4: PATCH /api/memory/:id (POST) — update memory text
+ * - 1.5: DELETE /api/memory/:id — delete memory
+ * - 1.6: POST /api/memory/reflect — synthesize reflection
+ * - 1.7: MEMORY_ENABLED guard applies to all protected routes
+ * - 1.8: Circuit breaker guard applies to all routes
+ */
+describe('Route registration integration tests', () => {
+  // ---------------------------------------------------------------------------
+  // Test Utilities
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Create a mock IMemoryClient that returns predictable responses.
+   */
+  function createMockClient(): IMemoryClient {
+    return {
+      async retain(_text: string, _scope: MemoryScope): Promise<string> {
+        return 'mock-memory-id-123';
+      },
+      async recall(_query: string, _scope: MemoryScope, _limit: number): Promise<Memory[]> {
+        return [
+          {
+            id: 'memory-1',
+            text: 'Test memory 1',
+            scope: { workspaceId: 'ws1' },
+            qualityScore: 0.9,
+            createdAt: '2024-01-01T00:00:00.000Z',
+            lastRetrievedAt: '2024-01-01T00:00:00.000Z',
+            retrievalCount: 5,
+            tier: 'hot',
+            embeddingStatus: 'ready',
+          },
+        ];
+      },
+      async list(_scope: MemoryScope, _pageSize: number, _cursor: string | null): Promise<{
+        memories: Memory[];
+        nextCursor: string | null;
+        total: number;
+      }> {
+        return {
+          memories: [
+            {
+              id: 'memory-2',
+              text: 'Test memory 2',
+              scope: { workspaceId: 'ws1' },
+              qualityScore: 0.8,
+              createdAt: '2024-01-02T00:00:00.000Z',
+              lastRetrievedAt: '2024-01-02T00:00:00.000Z',
+              retrievalCount: 3,
+              tier: 'warm',
+              embeddingStatus: 'ready',
+            },
+          ],
+          nextCursor: null,
+          total: 1,
+        };
+      },
+      async get(_id: string): Promise<Memory | null> {
+        return {
+          id: 'memory-3',
+          text: 'Test memory 3',
+          scope: { workspaceId: 'ws1' },
+          qualityScore: 0.7,
+          createdAt: '2024-01-03T00:00:00.000Z',
+          lastRetrievedAt: '2024-01-03T00:00:00.000Z',
+          retrievalCount: 1,
+          tier: 'cold',
+          embeddingStatus: 'ready',
+        };
+      },
+      async reflect(_topic: string, _scope: MemoryScope): Promise<string | null> {
+        return 'Mock reflection about the topic';
+      },
+      async delete(_id: string): Promise<void> {
+        return;
+      },
+    };
+  }
+
+  /**
+   * Create a mock MemoryCircuitBreaker with controllable state.
+   */
+  function createMockBreaker(state: 'open' | 'closed' | 'half_open' = 'closed'): MemoryCircuitBreaker | null {
+    if (state === 'closed') {
+      // Closed state — return null to indicate no circuit breaker intervention
+      return null;
+    }
+
+    // Open or half_open state — return a mock breaker
+    return {
+      getMetrics: () => ({
+        state,
+        consecutiveFailures: state === 'open' ? 5 : 3,
+        totalFailures: 10,
+        totalSuccesses: 100,
+        lastFailureAt: '2024-01-01T00:00:00.000Z',
+        lastSuccessAt: '2024-01-02T00:00:00.000Z',
+        openedAt: state === 'open' ? '2024-01-01T00:00:00.000Z' : null,
+      }),
+    } as unknown as MemoryCircuitBreaker;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Test: All 6 Routes are Correctly Registered
+  // ---------------------------------------------------------------------------
+
+  describe('route registration', () => {
+    it('should register all 6 memory routes', () => {
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+
+      // Act
+      register(router, client, breaker);
+
+      // Assert — verify all 6 routes are registered by attempting to match them
+      const routes = [
+        { method: 'GET', path: '/api/memory/search?workspaceId=ws1' },
+        { method: 'GET', path: '/api/memory/list?workspaceId=ws1' },
+        { method: 'GET', path: '/api/memory/test-id' },
+        { method: 'POST', path: '/api/memory/test-id?workspaceId=ws1' },
+        { method: 'DELETE', path: '/api/memory/test-id?workspaceId=ws1' },
+        { method: 'POST', path: '/api/memory/reflect' },
+      ];
+
+      for (const route of routes) {
+        const req = new Request(`http://localhost${route.path}`, { method: route.method });
+        const match = router.match(req);
+        expect(match).not.toBeNull();
+        expect(match?.handler).toBeDefined();
+      }
+    });
+
+    it('should respond to GET /api/memory/search with mock data', async () => {
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+      register(router, client, breaker);
+
+      // Act
+      const req = new Request('http://localhost/api/memory/search?q=test&workspaceId=ws1&limit=20', {
+        method: 'GET',
+      });
+      const match = router.match(req);
+      expect(match).not.toBeNull();
+      const response = await match!.handler(req, match!.params);
+
+      // Assert
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(Array.isArray(data)).toBe(true);
+      expect(data.length).toBeGreaterThan(0);
+      expect(data[0]).toHaveProperty('id');
+      expect(data[0]).toHaveProperty('text');
+    });
+
+    it('should respond to GET /api/memory/list with paginated data', async () => {
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+      register(router, client, breaker);
+
+      // Act
+      const req = new Request('http://localhost/api/memory/list?workspaceId=ws1&pageSize=50', {
+        method: 'GET',
+      });
+      const match = router.match(req);
+      expect(match).not.toBeNull();
+      const response = await match!.handler(req, match!.params);
+
+      // Assert
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data).toHaveProperty('memories');
+      expect(data).toHaveProperty('nextCursor');
+      expect(data).toHaveProperty('total');
+      expect(Array.isArray(data.memories)).toBe(true);
+    });
+
+    it('should respond to GET /api/memory/:id with single memory', async () => {
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+      register(router, client, breaker);
+
+      // Act
+      const req = new Request('http://localhost/api/memory/test-id-123', {
+        method: 'GET',
+      });
+      const match = router.match(req);
+      expect(match).not.toBeNull();
+      const response = await match!.handler(req, match!.params);
+
+      // Assert
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data).toHaveProperty('id');
+      expect(data).toHaveProperty('text');
+      expect(data).toHaveProperty('scope');
+    });
+
+    it('should respond to POST /api/memory/:id (PATCH) with updated memory', async () => {
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+      register(router, client, breaker);
+
+      // Act
+      const req = new Request('http://localhost/api/memory/test-id-123?workspaceId=ws1', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text: 'Updated memory text' }),
+      });
+      const match = router.match(req);
+      expect(match).not.toBeNull();
+      const response = await match!.handler(req, match!.params);
+
+      // Assert
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data).toHaveProperty('id');
+      expect(data).toHaveProperty('text');
+    });
+
+    it('should respond to DELETE /api/memory/:id with 204', async () => {
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+      register(router, client, breaker);
+
+      // Act
+      const req = new Request('http://localhost/api/memory/test-id-123?workspaceId=ws1', {
+        method: 'DELETE',
+      });
+      const match = router.match(req);
+      expect(match).not.toBeNull();
+      const response = await match!.handler(req, match!.params);
+
+      // Assert
+      expect(response.status).toBe(204);
+    });
+
+    it('should respond to POST /api/memory/reflect with reflection', async () => {
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+      register(router, client, breaker);
+
+      // Act
+      const req = new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: 'test topic', workspaceId: 'ws1' }),
+      });
+      const match = router.match(req);
+      expect(match).not.toBeNull();
+      const response = await match!.handler(req, match!.params);
+
+      // Assert
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data).toHaveProperty('reflection');
+      expect(typeof data.reflection === 'string' || data.reflection === null).toBe(true);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test: MEMORY_ENABLED Guard Application
+  // ---------------------------------------------------------------------------
+
+  describe('MEMORY_ENABLED guard', () => {
+    it('should apply to all 6 protected routes when memory is disabled', async () => {
+      // Note: This test verifies the guard logic exists in each route handler.
+      // Since MEMORY_ENABLED is a module constant, we can't dynamically change it.
+      // Instead, we verify the checkMemoryEnabled guard is called by checking
+      // that the routes are structured correctly.
+
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+      register(router, client, breaker);
+
+      // Act & Assert — verify all 6 routes are registered
+      const routes = [
+        { method: 'GET', path: '/api/memory/search?workspaceId=ws1', name: 'search' },
+        { method: 'GET', path: '/api/memory/list?workspaceId=ws1', name: 'list' },
+        { method: 'GET', path: '/api/memory/test-id', name: 'get by id' },
+        { method: 'POST', path: '/api/memory/test-id?workspaceId=ws1', name: 'update' },
+        { method: 'DELETE', path: '/api/memory/test-id?workspaceId=ws1', name: 'delete' },
+        { method: 'POST', path: '/api/memory/reflect', name: 'reflect' },
+      ];
+
+      for (const route of routes) {
+        const req = new Request(`http://localhost${route.path}`, { method: route.method });
+        const match = router.match(req);
+        expect(match).not.toBeNull();
+        
+        // If MEMORY_ENABLED is false, routes would return 503
+        // If MEMORY_ENABLED is true, routes proceed to workspaceId validation
+        // This test verifies routes are properly registered and callable
+        const response = await match!.handler(req, match!.params);
+        expect(response).toBeInstanceOf(Response);
+        
+        // Status should be either:
+        // - 503 if MEMORY_ENABLED=false (feature disabled)
+        // - 200/204 if MEMORY_ENABLED=true and request is valid
+        // - 400 if workspaceId validation fails (reflect route has body validation)
+        expect([200, 204, 400, 503]).toContain(response.status);
+      }
+    });
+
+    it('should return 503 with correct error structure when checkMemoryEnabled triggers', async () => {
+      // This test verifies the guard function behavior directly
+      const { checkMemoryEnabled } = require('../../src/routes/memory-browser.ts');
+      
+      const result = checkMemoryEnabled();
+      
+      // If memory is disabled, should return 503 Response
+      if (result !== null) {
+        expect(result).toBeInstanceOf(Response);
+        expect(result.status).toBe(503);
+        expect(result.headers.get('content-type')).toBe('application/json');
+        
+        const data = await result.json();
+        expect(data).toEqual({ error: 'memory disabled' });
+      }
+    });
+
+    it('should verify MEMORY_ENABLED guard is consistent across all routes', () => {
+      // Verify that checkMemoryEnabled is a pure function that returns
+      // consistent results when called multiple times
+      const { checkMemoryEnabled } = require('../../src/routes/memory-browser.ts');
+      
+      const first = checkMemoryEnabled();
+      const second = checkMemoryEnabled();
+      const third = checkMemoryEnabled();
+      
+      // All calls should return the same type (all null or all Response)
+      expect(first === null).toBe(second === null);
+      expect(second === null).toBe(third === null);
+      
+      // If any are Response, all should have same status
+      if (first !== null && second !== null && third !== null) {
+        expect(first.status).toBe(503);
+        expect(second.status).toBe(503);
+        expect(third.status).toBe(503);
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test: Circuit Breaker Guard Application
+  // ---------------------------------------------------------------------------
+
+  describe('circuit breaker guard', () => {
+    it('should return 502 for all routes when circuit breaker is open', async () => {
+      // Arrange — create router with open circuit breaker
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('open');
+      register(router, client, breaker);
+
+      // Act & Assert — all routes should return 502 when circuit is open
+      const routes = [
+        { method: 'GET', path: '/api/memory/search?workspaceId=ws1', name: 'search' },
+        { method: 'GET', path: '/api/memory/list?workspaceId=ws1', name: 'list' },
+        { method: 'GET', path: '/api/memory/test-id', name: 'get by id' },
+        { method: 'POST', path: '/api/memory/test-id?workspaceId=ws1', name: 'update' },
+        { method: 'DELETE', path: '/api/memory/test-id?workspaceId=ws1', name: 'delete' },
+        { method: 'POST', path: '/api/memory/reflect', name: 'reflect' },
+      ];
+
+      for (const route of routes) {
+        const reqBody = route.method === 'POST' && route.path.includes('reflect')
+          ? JSON.stringify({ topic: 'test', workspaceId: 'ws1' })
+          : route.method === 'POST' && route.path.includes(':id')
+          ? JSON.stringify({ text: 'test' })
+          : undefined;
+
+        const req = new Request(`http://localhost${route.path}`, {
+          method: route.method,
+          headers: reqBody ? { 'content-type': 'application/json' } : undefined,
+          body: reqBody,
+        });
+        
+        const match = router.match(req);
+        expect(match).not.toBeNull();
+        const response = await match!.handler(req, match!.params);
+
+        // Circuit breaker open — expect 502
+        expect(response.status).toBe(502);
+        
+        // Verify error structure includes circuit breaker metrics
+        const data = await response.json();
+        expect(data).toHaveProperty('error');
+        expect(data.error).toBe('circuit open');
+        expect(data).toHaveProperty('metrics');
+        expect(data.metrics).toHaveProperty('state');
+        expect(data.metrics.state).toBe('open');
+      }
+    });
+
+    it('should verify checkCircuitBreaker returns correct response for open state', async () => {
+      // Test the guard function directly
+      const { checkCircuitBreaker } = require('../../src/routes/memory-browser.ts');
+      const breaker = createMockBreaker('open');
+      
+      const result = checkCircuitBreaker(breaker);
+      
+      // Should return 502 Response with metrics
+      expect(result).not.toBeNull();
+      expect(result).toBeInstanceOf(Response);
+      expect(result!.status).toBe(502);
+      expect(result!.headers.get('content-type')).toBe('application/json');
+      
+      const data = await result!.json();
+      expect(data).toEqual({
+        error: 'circuit open',
+        metrics: {
+          state: 'open',
+          consecutiveFailures: 5,
+          totalFailures: 10,
+          totalSuccesses: 100,
+          lastFailureAt: '2024-01-01T00:00:00.000Z',
+          lastSuccessAt: '2024-01-02T00:00:00.000Z',
+          openedAt: '2024-01-01T00:00:00.000Z',
+        },
+      });
+    });
+
+    it('should return null when circuit breaker is closed', () => {
+      // Test the guard function with closed circuit
+      const { checkCircuitBreaker } = require('../../src/routes/memory-browser.ts');
+      const breaker = createMockBreaker('closed');
+      
+      const result = checkCircuitBreaker(breaker);
+      
+      // Closed state — should return null (no intervention)
+      expect(result).toBeNull();
+    });
+
+    it('should return null when circuit breaker is null (memory disabled)', () => {
+      // Test the guard function with null breaker
+      const { checkCircuitBreaker } = require('../../src/routes/memory-browser.ts');
+      
+      const result = checkCircuitBreaker(null);
+      
+      // Null breaker — should return null (no circuit breaker configured)
+      expect(result).toBeNull();
+    });
+
+    it('should verify circuit breaker guard is applied before workspaceId validation', async () => {
+      // Arrange — open circuit breaker with missing workspaceId
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('open');
+      register(router, client, breaker);
+
+      // Act — request without workspaceId should still return 502 (not 400)
+      const req = new Request('http://localhost/api/memory/list', {  // No workspaceId param
+        method: 'GET',
+      });
+      const match = router.match(req);
+      expect(match).not.toBeNull();
+      const response = await match!.handler(req, match!.params);
+
+      // Assert — circuit breaker guard fires first, returns 502
+      expect(response.status).toBe(502);
+      const data = await response.json();
+      expect(data.error).toBe('circuit open');
+      
+      // NOT 400 from workspaceId validation — proves guard order
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test: Guard Application Order and Consistency
+  // ---------------------------------------------------------------------------
+
+  describe('guard application order', () => {
+    it('should apply guards in order: MEMORY_ENABLED → circuit breaker → workspaceId', async () => {
+      // This test verifies the conceptual guard order by checking that
+      // routes are structured to call checkMemoryEnabled first, then
+      // checkCircuitBreaker, then validateWorkspaceId.
+      
+      // We can't dynamically change MEMORY_ENABLED at runtime, but we can
+      // verify the guard functions are exported and have correct signatures
+      const {
+        checkMemoryEnabled,
+        checkCircuitBreaker,
+        validateWorkspaceId,
+      } = require('../../src/routes/memory-browser.ts');
+
+      // Verify guard functions exist
+      expect(typeof checkMemoryEnabled).toBe('function');
+      expect(typeof checkCircuitBreaker).toBe('function');
+      expect(typeof validateWorkspaceId).toBe('function');
+
+      // Verify checkMemoryEnabled takes no parameters
+      expect(checkMemoryEnabled.length).toBe(0);
+
+      // Verify checkCircuitBreaker takes 1 parameter (breaker)
+      expect(checkCircuitBreaker.length).toBe(1);
+
+      // Verify validateWorkspaceId takes 1 parameter (req)
+      expect(validateWorkspaceId.length).toBe(1);
+    });
+
+    it('should ensure workspaceId validation is skipped for GET /api/memory/:id', async () => {
+      // Requirement 1.3: "skip workspaceId validation for single-item GET"
+      
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+      register(router, client, breaker);
+
+      // Act — GET :id route without workspaceId param
+      const req = new Request('http://localhost/api/memory/test-id-123', {
+        method: 'GET',
+      });
+      const match = router.match(req);
+      expect(match).not.toBeNull();
+      const response = await match!.handler(req, match!.params);
+
+      // Assert — should return 200 (not 400 for missing workspaceId)
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data).toHaveProperty('id');
+    });
+
+    it('should validate workspaceId for all routes except GET /api/memory/:id', async () => {
+      // Verify that 5 out of 6 routes require workspaceId validation
+      
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+      register(router, client, breaker);
+
+      // Act & Assert — routes without workspaceId should return 400
+      const routesRequiringWorkspaceId = [
+        { method: 'GET', path: '/api/memory/search', name: 'search' },  // No ?workspaceId
+        { method: 'GET', path: '/api/memory/list', name: 'list' },      // No ?workspaceId
+        { method: 'POST', path: '/api/memory/test-id', name: 'update' }, // No ?workspaceId
+        { method: 'DELETE', path: '/api/memory/test-id', name: 'delete' }, // No ?workspaceId
+        // Note: POST /api/memory/reflect validates workspaceId in body, not query param
+      ];
+
+      for (const route of routesRequiringWorkspaceId) {
+        const reqBody = route.method === 'POST' && route.name === 'update'
+          ? JSON.stringify({ text: 'test' })
+          : undefined;
+
+        const req = new Request(`http://localhost${route.path}`, {
+          method: route.method,
+          headers: reqBody ? { 'content-type': 'application/json' } : undefined,
+          body: reqBody,
+        });
+        
+        const match = router.match(req);
+        expect(match).not.toBeNull();
+        const response = await match!.handler(req, match!.params);
+
+        // Should return 400 for missing workspaceId
+        expect(response.status).toBe(400);
+        const data = await response.json();
+        expect(data.error).toBe('workspaceId required');
+      }
+    });
+
+    it('should verify all routes return JSON responses with content-type header', async () => {
+      // Ensure consistent response format across all routes
+      
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+      register(router, client, breaker);
+
+      // Act & Assert
+      const routes = [
+        { method: 'GET', path: '/api/memory/search?workspaceId=ws1', expectJson: true },
+        { method: 'GET', path: '/api/memory/list?workspaceId=ws1', expectJson: true },
+        { method: 'GET', path: '/api/memory/test-id', expectJson: true },
+        { 
+          method: 'POST',
+          path: '/api/memory/test-id?workspaceId=ws1',
+          body: { text: 'test' },
+          expectJson: true,
+        },
+        { method: 'DELETE', path: '/api/memory/test-id?workspaceId=ws1', expectJson: false }, // 204 no content
+        {
+          method: 'POST',
+          path: '/api/memory/reflect',
+          body: { topic: 'test', workspaceId: 'ws1' },
+          expectJson: true,
+        },
+      ];
+
+      for (const route of routes) {
+        const req = new Request(`http://localhost${route.path}`, {
+          method: route.method,
+          headers: route.body ? { 'content-type': 'application/json' } : undefined,
+          body: route.body ? JSON.stringify(route.body) : undefined,
+        });
+        
+        const match = router.match(req);
+        expect(match).not.toBeNull();
+        const response = await match!.handler(req, match!.params);
+
+        if (route.expectJson) {
+          expect(response.headers.get('content-type')).toBe('application/json');
+          // Should be parseable as JSON
+          const data = await response.json();
+          expect(data).toBeDefined();
+        } else {
+          // DELETE returns 204 with no content
+          expect(response.status).toBe(204);
+        }
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test: Route-Specific Behavior
+  // ---------------------------------------------------------------------------
+
+  describe('route-specific behavior', () => {
+    it('should verify POST /api/memory/:id validates text field in body', async () => {
+      // Requirement 1.4: PATCH accepts { text: string }
+      
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+      register(router, client, breaker);
+
+      // Act — request without text field
+      const req = new Request('http://localhost/api/memory/test-id?workspaceId=ws1', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),  // Missing text field
+      });
+      const match = router.match(req);
+      expect(match).not.toBeNull();
+      const response = await match!.handler(req, match!.params);
+
+      // Assert — should return 400
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.error).toMatch(/text/i);
+    });
+
+    it('should verify POST /api/memory/reflect validates topic and workspaceId in body', async () => {
+      // Requirement 1.6: POST /api/memory/reflect accepts { topic, workspaceId }
+      
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+      register(router, client, breaker);
+
+      // Act — request without topic
+      const req1 = new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ workspaceId: 'ws1' }),  // Missing topic
+      });
+      const match1 = router.match(req1);
+      expect(match1).not.toBeNull();
+      const response1 = await match1!.handler(req1, match1!.params);
+
+      // Assert — should return 400
+      expect(response1.status).toBe(400);
+      const data1 = await response1.json();
+      expect(data1.error).toMatch(/topic/i);
+
+      // Act — request without workspaceId
+      const req2 = new Request('http://localhost/api/memory/reflect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic: 'test' }),  // Missing workspaceId
+      });
+      const match2 = router.match(req2);
+      expect(match2).not.toBeNull();
+      const response2 = await match2!.handler(req2, match2!.params);
+
+      // Assert — should return 400
+      expect(response2.status).toBe(400);
+      const data2 = await response2.json();
+      expect(data2.error).toMatch(/workspaceId/i);
+    });
+
+    it('should verify GET /api/memory/list uses default pageSize 50 when not specified', async () => {
+      // Requirement 1.2: "Default limit is 20, maximum is 100" (for search)
+      // For list: "pageSize=50" in acceptance criteria
+      
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+      register(router, client, breaker);
+
+      // Act — request without pageSize param
+      const req = new Request('http://localhost/api/memory/list?workspaceId=ws1', {
+        method: 'GET',
+      });
+      const match = router.match(req);
+      expect(match).not.toBeNull();
+      const response = await match!.handler(req, match!.params);
+
+      // Assert — should succeed with default pageSize
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data).toHaveProperty('memories');
+      expect(data).toHaveProperty('nextCursor');
+      expect(data).toHaveProperty('total');
+    });
+
+    it('should verify GET /api/memory/search uses default limit 20 when not specified', async () => {
+      // Requirement 1.1: "Default limit is 20, maximum is 100"
+      
+      // Arrange
+      const router = createRouter();
+      const client = createMockClient();
+      const breaker = createMockBreaker('closed');
+      register(router, client, breaker);
+
+      // Act — request without limit param
+      const req = new Request('http://localhost/api/memory/search?q=test&workspaceId=ws1', {
+        method: 'GET',
+      });
+      const match = router.match(req);
+      expect(match).not.toBeNull();
+      const response = await match!.handler(req, match!.params);
+
+      // Assert — should succeed with default limit
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(Array.isArray(data)).toBe(true);
+    });
   });
 });

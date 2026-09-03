@@ -76,6 +76,7 @@ import { register as registerSystem }         from './routes/system.ts';
 import { register as registerSSE }            from './routes/sse.ts';
 import { register as registerStatic }         from './routes/static.ts';
 import { register as registerMemory }         from './routes/memory.ts';
+import { register as registerMemoryBrowser }  from './routes/memory-browser.ts';
 
 // ========== Phase 5.1: DB Layer Imports ==========
 import { loadDbConfig } from './config/db-config.ts';
@@ -172,6 +173,9 @@ if (MEMORY_ENABLED) {
 }
 
 registerMemory(router, memoryCircuitBreaker);
+if (memoryCircuitBreaker !== null) {
+  registerMemoryBrowser(router, memoryCircuitBreaker, memoryCircuitBreaker);
+}
 
 // ========== Phase 5.1: DB Startup Gating (Req 5.6, 8.3, 8.4, 9.1) ==========
 // Run migrations synchronously before opening the HTTP server so that
