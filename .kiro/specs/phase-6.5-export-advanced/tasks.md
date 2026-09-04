@@ -6,30 +6,30 @@ This plan implements the complete memory export/import infrastructure, lifecycle
 
 ## Tasks
 
-- [ ] 1. Database schema migration for memory lifecycle fields
+- [x] 1. Database schema migration for memory lifecycle fields
   - Create `migrations/005_memory_lifecycle.sql` adding `stale`, `superseded`, `last_retrieved_at`, and `retrieval_count` columns to `memory_extraction` table
   - Add indexes for decay worker query (`idx_memext_decay`) and analytics quality histogram query (`idx_memext_quality`)
   - Set appropriate DEFAULT values and constraints for all new columns
   - Update `src/db/schema.ts` or equivalent type definitions to reflect new columns
   - _Requirements: 3.1, 3.2, 5.5_
 
-- [ ] 1.1 Write property test for migration 005 schema correctness
+- [-] 1.1 Write property test for migration 005 schema correctness
   - **Property 12: Decay threshold correctness** — verify decay query logic
   - **Validates: Requirements 3.2**
 
 - [ ] 2. Extend Memory type and database adapter
-  - [ ] 2.1 Update `src/memory/types.ts` to add `stale` and `superseded` boolean fields to `Memory` type
+  - [~] 2.1 Update `src/memory/types.ts` to add `stale` and `superseded` boolean fields to `Memory` type
     - Add fields to match extended schema from migration 005
     - Ensure type compatibility with existing code
     - _Requirements: 3.1_
   
-  - [ ] 2.2 Update database adapter query methods to handle new fields
+  - [~] 2.2 Update database adapter query methods to handle new fields
     - Modify `list()` and `recall()` to filter out stale memories by default
     - Add `includeStale` parameter support to query methods
     - Update all INSERT and SELECT queries to include new columns
     - _Requirements: 3.3, 3.4_
   
-  - [ ] 2.3 Write property tests for stale filtering
+  - [~] 2.3 Write property tests for stale filtering
     - **Property 13: Default stale exclusion** — verify stale memories excluded without flag
     - **Property 14: Stale inclusion opt-in** — verify includeStale=true includes stale memories
     - **Validates: Requirements 3.3, 3.4**

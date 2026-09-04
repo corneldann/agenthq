@@ -164,14 +164,17 @@ export type SchemaVersion = {
 };
 
 /**
- * A row from the `memory_extraction` table (migration 004).
+ * A row from the `memory_extraction` table (migrations 004, 005).
  *
- * Tracks per-job memory extraction status, quality metrics, and embedding
- * tier assignment. `embedding_status` is constrained by a SQLite CHECK to
- * one of `'pending' | 'embedded' | 'failed'`; `tier` to `'hot' | 'cold'`.
+ * Tracks per-job memory extraction status, quality metrics, embedding
+ * tier assignment, and lifecycle state. `embedding_status` is constrained
+ * by a SQLite CHECK to one of `'pending' | 'embedded' | 'failed'`; `tier`
+ * to `'hot' | 'cold'`.
  *
  * `last_modified` is a Unix epoch millisecond timestamp (INTEGER in SQLite).
  * `deleted_at` is an ISO 8601 string or `null` — soft-delete sentinel.
+ * Lifecycle fields (`stale`, `superseded`, `last_retrieved_at`,
+ * `retrieval_count`) added in migration 005 for memory decay and analytics.
  */
 export type DbMemoryExtraction = {
   /** Auto-increment primary key. */
@@ -201,6 +204,33 @@ export type DbMemoryExtraction = {
   last_modified: number;
   /** ISO 8601 string when soft-deleted, or `null` if active. */
   deleted_at: string | null;
+  /**
+   * Memory decay flag — 0 (active) or 1 (stale).
+   * Set to 1 by decay worker when `last_retrieved_at` exceeds
+   * `MEMORY_DECAY_DAYS` threshold (default 90 days).
+   * SQLite uses INTEGER for booleans.
+   */
+  stale: number;
+  /**
+   * Consolidation flag — 0 (current) or 1 (superseded).
+   * Set to 1 when memory is replaced by newer contradictory information
+   * during Auto Dream consolidation cycle.
+   * SQLite uses INTEGER for booleans.
+   */
+  superseded: number;
+  /**
+   * ISO 8601 UTC timestamp string of last recall operation.
+   * `null` for memories never retrieved; updated each time memory is
+   * returned by a recall query. Used by decay worker to identify stale
+   * memories.
+   */
+  last_retrieved_at: string | null;
+  /**
+   * Total number of times this memory has been recalled.
+   * Incremented each time memory appears in recall query results.
+   * Used for analytics (top-retrieved memories) and quality signals.
+   */
+  retrieval_count: number;
 };
 
 // ---------------------------------------------------------------------------

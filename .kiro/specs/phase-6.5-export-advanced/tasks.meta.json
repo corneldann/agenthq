@@ -1,0 +1,29 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Database schema migration for memory lifecycle fields": [
+      {
+        "executionId": "d23f976e-9deb-4824-82af-61f4913721b0",
+        "chatSessionId": "sess_c5672b05-31f3-40db-b6cc-75b823d3f441",
+        "timestamp": 1788465195581
+      },
+      {
+        "executionId": "699f7f62-92b8-4572-a042-f358321c93a0",
+        "chatSessionId": "sess_48927e51-7908-40d7-87fb-ae35b1da3125",
+        "timestamp": 1788465250549
+      },
+      {
+        "executionId": "699f7f62-92b8-4572-a042-f358321c93a0",
+        "chatSessionId": "sess_48927e51-7908-40d7-87fb-ae35b1da3125",
+        "timestamp": 1788530940361
+      }
+    ],
+    "1.1 Write property test for migration 005 schema correctness": [
+      {
+        "executionId": "54e9231b-87da-4aaf-8289-bdd1d1dc5efb",
+        "chatSessionId": "sess_4e68c121-8445-4cb4-a75a-758a04070f81",
+        "timestamp": 1788531016751
+      }
+    ]
+  }
+}
