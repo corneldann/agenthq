@@ -48,6 +48,32 @@
         "chatSessionId": "sess_f0bd2480-3df6-4260-9a97-76c82f66025c",
         "timestamp": 1788535249603
       }
+    ],
+    "3.1 Create `src/memory/export.ts` with streaming export generator": [
+      {
+        "executionId": "34c021c1-4ed2-445a-b2b5-4f6970cc86d6",
+        "chatSessionId": "sess_739a5851-8e43-43c9-99f1-2be19430a8bc",
+        "timestamp": 1788544985484
+      }
+    ],
+    "3.3 Write property tests for export formats": [
+      {
+        "executionId": "f35f9afe-7d31-4261-ac1f-ad4d17780f6c",
+        "chatSessionId": "sess_97468592-2aa2-4773-b854-e45cf9161b6b",
+        "timestamp": 1788545768340
+      },
+      {
+        "executionId": "f35f9afe-7d31-4261-ac1f-ad4d17780f6c",
+        "chatSessionId": "sess_97468592-2aa2-4773-b854-e45cf9161b6b",
+        "timestamp": 1788545893446
+      }
+    ],
+    "3. Implement memory export service": [
+      {
+        "executionId": "f35f9afe-7d31-4261-ac1f-ad4d17780f6c",
+        "chatSessionId": "sess_97468592-2aa2-4773-b854-e45cf9161b6b",
+        "timestamp": 1788545893542
+      }
     ]
   }
 }

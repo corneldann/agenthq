@@ -17,7 +17,7 @@ This plan implements the complete memory export/import infrastructure, lifecycle
   - **Property 12: Decay threshold correctness** — verify decay query logic
   - **Validates: Requirements 3.2**
 
-- [ ] 2. Extend Memory type and database adapter
+- [x] 2. Extend Memory type and database adapter
   - [x] 2.1 Update `src/memory/types.ts` to add `stale` and `superseded` boolean fields to `Memory` type
     - Add fields to match extended schema from migration 005
     - Ensure type compatibility with existing code
@@ -34,20 +34,20 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - **Property 14: Stale inclusion opt-in** — verify includeStale=true includes stale memories
     - **Validates: Requirements 3.3, 3.4**
 
-- [ ] 3. Implement memory export service
-  - [ ] 3.1 Create `src/memory/export.ts` with streaming export generator
+- [x] 3. Implement memory export service
+  - [x] 3.1 Create `src/memory/export.ts` with streaming export generator
     - Implement `exportMemories()` AsyncGenerator function with 500-record batching
     - Support three formats: JSON, Markdown, CSV
     - Track malformed record count and yield formatted chunks
     - _Requirements: 1.2, 1.3, 1.4, 1.5, 1.6_
   
-  - [ ] 3.2 Implement format-specific serializers
+  - [x] 3.2 Implement format-specific serializers
     - Create `formatJSON()`, `formatMarkdown()`, and `formatCSV()` functions
     - Implement RFC 4180 CSV compliance with proper escaping
     - Include header/footer generation for each format
     - _Requirements: 1.2, 1.3, 1.4_
   
-  - [ ] 3.3 Write property tests for export formats
+  - [x] 3.3 Write property tests for export formats
     - **Property 1: JSON export completeness** — verify all fields present
     - **Property 2: Markdown export format compliance** — verify required sections
     - **Property 3: CSV RFC 4180 compliance** — verify escaping and structure
@@ -55,14 +55,14 @@ This plan implements the complete memory export/import infrastructure, lifecycle
     - **Validates: Requirements 1.2, 1.3, 1.4, 1.6**
 
 - [ ] 4. Implement memory export route
-  - [ ] 4.1 Create `GET /api/memory/export` route in new file or extend existing memory routes
+  - [~] 4.1 Create `GET /api/memory/export` route in new file or extend existing memory routes
     - Parse and validate `workspaceId` and `format` query parameters
     - Set appropriate `Content-Type` and `Content-Disposition` headers
     - Stream response using export service generator
     - Set `X-Memory-Export-Omitted` header with count
     - _Requirements: 1.1, 1.7, 1.8, 1.9_
   
-  - [ ] 4.2 Write property tests for export route
+  - [~] 4.2 Write property tests for export route
     - **Property 5: Content-Disposition header format** — verify filename pattern
     - **Property 6: Export parameter validation** — verify 400 on invalid params
     - **Validates: Requirements 1.7, 1.8**
