@@ -627,6 +627,8 @@ describe('extractAndStore — sub-task 3.13 unit tests', () => {
         retrievalCount: 3,
         tier: 'hot',
         embeddingStatus: 'ready',
+        stale: false,
+        superseded: false,
       };
       // Add similarityScore dynamically (not part of Memory type; checked as unknown)
       const dupWithScore = { ...duplicate, similarityScore: 0.95 } as unknown as Memory;

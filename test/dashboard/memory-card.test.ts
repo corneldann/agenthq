@@ -25,6 +25,8 @@ const createMinimalMemory = (overrides?: Partial<Memory>): Memory => ({
   retrievalCount: 0,
   tier: 'hot',
   embeddingStatus: 'ready',
+  stale: false,
+  superseded: false,
   ...overrides,
 });
 

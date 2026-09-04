@@ -707,6 +707,8 @@ describe('memory list sort order property-based tests', () => {
             retrievalCount: fc.nat({ max: 1000 }),
             tier: fc.constantFrom('hot', 'warm', 'cold') as fc.Arbitrary<'hot' | 'warm' | 'cold'>,
             embeddingStatus: fc.constantFrom('pending', 'ready', 'failed') as fc.Arbitrary<'pending' | 'ready' | 'failed'>,
+            stale: fc.boolean(),
+            superseded: fc.boolean(),
           }),
           { minLength: 0, maxLength: 50 }
         ),
@@ -3184,6 +3186,8 @@ describe('Route registration integration tests', () => {
             retrievalCount: 5,
             tier: 'hot',
             embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
           },
         ];
       },
@@ -3204,6 +3208,8 @@ describe('Route registration integration tests', () => {
               retrievalCount: 3,
               tier: 'warm',
               embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
             },
           ],
           nextCursor: null,
@@ -3221,6 +3227,8 @@ describe('Route registration integration tests', () => {
           retrievalCount: 1,
           tier: 'cold',
           embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
         };
       },
       async reflect(_topic: string, _scope: MemoryScope): Promise<string | null> {

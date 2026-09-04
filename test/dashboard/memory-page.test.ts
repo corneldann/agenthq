@@ -305,6 +305,8 @@ describe('renderMemoryCard — XSS prevention (Property 5)', () => {
     retrievalCount: fc.integer({ min: 0 }),
     tier: fc.constantFrom('hot' as const, 'warm' as const, 'cold' as const),
     embeddingStatus: fc.constantFrom('pending' as const, 'ready' as const, 'failed' as const),
+    stale: fc.boolean(),
+    superseded: fc.boolean(),
   });
 
   it('property: memory card text rendering escapes HTML metacharacters', () => {
@@ -327,6 +329,8 @@ describe('renderMemoryCard — XSS prevention (Property 5)', () => {
             retrievalCount: 0,
             tier: 'hot',
             embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
           };
 
           // Act — render card HTML
@@ -391,6 +395,8 @@ describe('renderMemoryCard — XSS prevention (Property 5)', () => {
             retrievalCount: 0,
             tier: 'hot',
             embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
           };
 
           // Act — render card HTML
@@ -431,6 +437,8 @@ describe('renderMemoryCard — XSS prevention (Property 5)', () => {
             retrievalCount: 0,
             tier: 'hot',
             embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
           };
 
           // Act — render card HTML
@@ -475,6 +483,8 @@ describe('renderMemoryCard — XSS prevention (Property 5)', () => {
             retrievalCount: 0,
             tier: 'hot',
             embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
           };
 
           // Act — render card HTML
@@ -584,6 +594,8 @@ describe('memory card edit interaction', () => {
       retrievalCount: 5,
       tier: 'hot',
       embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
     };
 
     // Act
@@ -607,6 +619,8 @@ describe('memory card edit interaction', () => {
       retrievalCount: 3,
       tier: 'warm',
       embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
     };
 
     // Act
@@ -630,6 +644,8 @@ describe('memory card edit interaction', () => {
       retrievalCount: 10,
       tier: 'hot',
       embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
     };
 
     // Act
@@ -651,6 +667,8 @@ describe('memory card edit interaction', () => {
       retrievalCount: 2,
       tier: 'cold',
       embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
     };
 
     // Act
@@ -739,6 +757,8 @@ describe('memory card edit flow', () => {
       retrievalCount: 5,
       tier: 'hot',
       embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
     };
 
     const { setState } = await import('../../src/dashboard/state.js');
@@ -788,6 +808,8 @@ describe('memory card edit flow', () => {
       retrievalCount: 3,
       tier: 'warm',
       embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
     };
 
     // Act
@@ -815,6 +837,8 @@ describe('memory card edit flow', () => {
       retrievalCount: 7,
       tier: 'hot',
       embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
     };
 
     // Act
@@ -888,6 +912,8 @@ describe('timeline loading — initial load', () => {
         retrievalCount: 1,
         tier: 'hot',
         embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
       },
     ];
 
@@ -1078,6 +1104,8 @@ describe('timeline loading — pagination', () => {
         retrievalCount: 1,
         tier: 'hot',
         embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
       },
     ];
 
@@ -1092,6 +1120,8 @@ describe('timeline loading — pagination', () => {
         retrievalCount: 2,
         tier: 'hot',
         embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
       },
     ];
 
@@ -1167,6 +1197,8 @@ describe('timeline loading — pagination', () => {
         retrievalCount: 5,
         tier: 'hot',
         embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
       },
     ];
 
@@ -1210,6 +1242,8 @@ describe('timeline loading — pagination', () => {
         retrievalCount: 3,
         tier: 'hot',
         embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
       },
     ];
 
@@ -1255,6 +1289,8 @@ describe('timeline loading — pagination', () => {
         retrievalCount: 1,
         tier: 'hot',
         embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
       },
       {
         id: 'mem-2',
@@ -1266,6 +1302,8 @@ describe('timeline loading — pagination', () => {
         retrievalCount: 2,
         tier: 'hot',
         embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
       },
     ];
 
@@ -1280,6 +1318,8 @@ describe('timeline loading — pagination', () => {
         retrievalCount: 3,
         tier: 'hot',
         embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
       },
     ];
 
@@ -1586,6 +1626,8 @@ describe('timeline loading — pagination', () => {
       retrievalCount: 4,
       tier: 'warm',
       embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
     };
 
     // Act — render card
@@ -1896,6 +1938,8 @@ describe('memory timeline pagination', () => {
           retrievalCount: 5,
           tier: 'hot',
           embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
         }],
         cursor: null, // No more pages available
         total: 1,
@@ -1932,6 +1976,8 @@ describe('memory timeline pagination', () => {
           retrievalCount: 5,
           tier: 'hot',
           embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
         }],
         cursor: 'next-page-cursor-123', // More pages available
         total: 50,
@@ -1970,6 +2016,8 @@ describe('memory timeline pagination', () => {
           retrievalCount: 5,
           tier: 'hot',
           embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
         }],
         cursor: 'next-page-cursor-123',
         total: 50,
@@ -2033,6 +2081,8 @@ describe('memory timeline pagination', () => {
           retrievalCount: 5,
           tier: 'hot',
           embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
         }],
         cursor: null,
         total: 1,
@@ -2117,6 +2167,8 @@ describe('memory timeline pagination - interaction tests', () => {
         retrievalCount: 5,
         tier: 'hot',
         embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
       },
       {
         id: 'memory-2',
@@ -2128,6 +2180,8 @@ describe('memory timeline pagination - interaction tests', () => {
         retrievalCount: 3,
         tier: 'warm',
         embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
       },
     ];
 
@@ -2166,6 +2220,8 @@ describe('memory timeline pagination - interaction tests', () => {
         retrievalCount: 2,
         tier: 'warm',
         embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
       },
       {
         id: 'memory-4',
@@ -2177,6 +2233,8 @@ describe('memory timeline pagination - interaction tests', () => {
         retrievalCount: 1,
         tier: 'cold',
         embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
       },
     ];
 
@@ -2248,6 +2306,8 @@ describe('memory timeline pagination - interaction tests', () => {
         retrievalCount: 10,
         tier: 'hot',
         embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
       },
     ];
 
@@ -2287,6 +2347,8 @@ describe('memory timeline pagination - interaction tests', () => {
                 retrievalCount: 5,
                 tier: 'hot',
                 embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
               },
             ],
             nextCursor: 'page-3-cursor',
@@ -2335,6 +2397,8 @@ describe('memory timeline pagination - interaction tests', () => {
             retrievalCount: 10,
             tier: 'hot',
             embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
           },
         ],
         cursor: 'page-2-cursor',
@@ -2375,6 +2439,8 @@ describe('memory timeline pagination - interaction tests', () => {
                   retrievalCount: 5,
                   tier: 'hot',
                   embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
                 },
               ],
               nextCursor: 'page-3-cursor',
@@ -2400,6 +2466,8 @@ describe('memory timeline pagination - interaction tests', () => {
                   retrievalCount: 2,
                   tier: 'warm',
                   embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
                 },
               ],
               nextCursor: null, // Last page

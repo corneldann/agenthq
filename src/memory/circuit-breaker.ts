@@ -102,7 +102,7 @@ export class MemoryCircuitBreaker implements IMemoryClient {
     }
   }
 
-  async recall(query: string, scope: MemoryScope, limit: number): Promise<Memory[]> {
+  async recall(query: string, scope: MemoryScope, limit: number, includeStale: boolean = false): Promise<Memory[]> {
     if (this.#isFallbackRequired()) {
       return [];
     }
@@ -113,7 +113,7 @@ export class MemoryCircuitBreaker implements IMemoryClient {
     }
 
     try {
-      const memories = await this.#inner.recall(query, scope, limit);
+      const memories = await this.#inner.recall(query, scope, limit, includeStale);
       this.#onSuccess(probing);
       return memories;
     } catch (err) {
@@ -122,7 +122,7 @@ export class MemoryCircuitBreaker implements IMemoryClient {
     }
   }
 
-  async list(scope: MemoryScope, pageSize: number, cursor: string | null): Promise<{
+  async list(scope: MemoryScope, pageSize: number, cursor: string | null, includeStale: boolean = false): Promise<{
     memories: Memory[];
     nextCursor: string | null;
     total: number;
@@ -137,7 +137,7 @@ export class MemoryCircuitBreaker implements IMemoryClient {
     }
 
     try {
-      const result = await this.#inner.list(scope, pageSize, cursor);
+      const result = await this.#inner.list(scope, pageSize, cursor, includeStale);
       this.#onSuccess(probing);
       return result;
     } catch (err) {

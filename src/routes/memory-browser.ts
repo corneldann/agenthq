@@ -262,6 +262,7 @@ export function register(
     const workspaceId = url.searchParams.get('workspaceId') ?? ''; // Already validated as non-empty
     const rawLimit = url.searchParams.get('limit');
     const limit = resolveLimit(rawLimit, 20, 100);
+    const includeStale = url.searchParams.get('includeStale') === 'true';
 
     try {
       // Call client.recall with parsed params
@@ -269,6 +270,7 @@ export function register(
         query,
         { workspaceId },
         limit,
+        includeStale,
       );
 
       return jsonResponse(memories);
@@ -298,6 +300,7 @@ export function register(
     const cursor = url.searchParams.get('cursor');
     const rawPageSize = url.searchParams.get('pageSize');
     const pageSize = resolveLimit(rawPageSize, 50, 100);
+    const includeStale = url.searchParams.get('includeStale') === 'true';
 
     try {
       // Call client.list with parsed params
@@ -305,6 +308,7 @@ export function register(
         { workspaceId },
         pageSize,
         cursor,
+        includeStale,
       );
 
       // Sort memories by createdAt DESC

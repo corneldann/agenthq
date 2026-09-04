@@ -46,11 +46,11 @@ export class NoOpMemoryClient implements IMemoryClient {
     return Promise.resolve('');
   }
 
-  recall(_query: string, _scope: MemoryScope, _limit: number): Promise<Memory[]> {
+  recall(_query: string, _scope: MemoryScope, _limit: number, _includeStale?: boolean): Promise<Memory[]> {
     return Promise.resolve([]);
   }
 
-  list(_scope: MemoryScope, _pageSize: number, _cursor: string | null): Promise<{
+  list(_scope: MemoryScope, _pageSize: number, _cursor: string | null, _includeStale?: boolean): Promise<{
     memories: Memory[];
     nextCursor: string | null;
     total: number;

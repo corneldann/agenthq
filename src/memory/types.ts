@@ -30,6 +30,8 @@ export type Memory = {
   retrievalCount: number;
   tier: 'hot' | 'warm' | 'cold';
   embeddingStatus: 'pending' | 'ready' | 'failed';
+  stale: boolean;            // true when not retrieved within MEMORY_DECAY_DAYS
+  superseded: boolean;       // true when marked contradictory during consolidation
 };
 
 // ---------------------------------------------------------------------------
@@ -40,11 +42,25 @@ export interface IMemoryClient {
   /** Store a memory and return its assigned ID. */
   retain(text: string, scope: MemoryScope): Promise<string>;
 
-  /** Retrieve memories ordered by descending relevance. */
-  recall(query: string, scope: MemoryScope, limit: number): Promise<Memory[]>;
+  /**
+   * Retrieve memories ordered by descending relevance.
+   * 
+   * @param query - Search query string
+   * @param scope - Memory scope for filtering
+   * @param limit - Maximum number of results
+   * @param includeStale - When true, include stale memories in results. Default: false
+   */
+  recall(query: string, scope: MemoryScope, limit: number, includeStale?: boolean): Promise<Memory[]>;
 
-  /** List memories with cursor-based pagination, sorted by createdAt DESC. */
-  list(scope: MemoryScope, pageSize: number, cursor: string | null): Promise<{
+  /**
+   * List memories with cursor-based pagination, sorted by createdAt DESC.
+   * 
+   * @param scope - Memory scope for filtering
+   * @param pageSize - Number of memories per page
+   * @param cursor - Pagination cursor (null for first page)
+   * @param includeStale - When true, include stale memories in results. Default: false
+   */
+  list(scope: MemoryScope, pageSize: number, cursor: string | null, includeStale?: boolean): Promise<{
     memories: Memory[];
     nextCursor: string | null;
     total: number;

@@ -33,6 +33,8 @@ interface Memory {
   retrievalCount: number;
   tier: 'hot' | 'warm' | 'cold';
   embeddingStatus: 'pending' | 'ready' | 'failed';
+  stale: boolean;
+  superseded: boolean;
 }
 
 interface MemoryScope {
@@ -285,6 +287,8 @@ describe('State extensions — MemoryPageState defaults', () => {
           retrievalCount: 1,
           tier: 'hot',
           embeddingStatus: 'ready',
+          stale: false,
+          superseded: false,
         },
       ],
       cursor: 'next-cursor',
@@ -390,6 +394,8 @@ describe('State extensions — MemoryPageState defaults', () => {
         retrievalCount: fc.nat(),
         tier: fc.constantFrom<'hot' | 'warm' | 'cold'>('hot', 'warm', 'cold'),
         embeddingStatus: fc.constantFrom<'pending' | 'ready' | 'failed'>('pending', 'ready', 'failed'),
+        stale: fc.boolean(),
+        superseded: fc.boolean(),
       })),
       cursor: fc.option(fc.string(), { nil: null }),
       total: fc.nat(),

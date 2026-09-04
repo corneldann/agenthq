@@ -144,6 +144,8 @@ export interface Memory {
   retrievalCount: number;
   tier: 'hot' | 'warm' | 'cold';
   embeddingStatus: 'pending' | 'ready' | 'failed';
+  stale: boolean;             // true when not retrieved within MEMORY_DECAY_DAYS (Phase 6.5)
+  superseded: boolean;        // true when marked contradictory during consolidation (Phase 6.5)
 }
 
 // MemoryScope — from Phase 6.1

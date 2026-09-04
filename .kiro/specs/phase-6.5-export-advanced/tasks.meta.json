@@ -23,6 +23,30 @@
         "executionId": "54e9231b-87da-4aaf-8289-bdd1d1dc5efb",
         "chatSessionId": "sess_4e68c121-8445-4cb4-a75a-758a04070f81",
         "timestamp": 1788531016751
+      },
+      {
+        "executionId": "54e9231b-87da-4aaf-8289-bdd1d1dc5efb",
+        "chatSessionId": "sess_4e68c121-8445-4cb4-a75a-758a04070f81",
+        "timestamp": 1788531741929
+      }
+    ],
+    "2.1 Update `src/memory/types.ts` to add `stale` and `superseded` boolean fields to `Memory` type": [
+      {
+        "executionId": "217f4780-1c41-45f7-bfff-72fe62f4b874",
+        "chatSessionId": "sess_f6d47b9e-0380-45e0-978b-ace25903f06b",
+        "timestamp": 1788531775216
+      },
+      {
+        "executionId": "e3357f45-37a4-434a-87e2-d4ebc7f48fd9",
+        "chatSessionId": "sess_29c38da6-2f75-42a7-936d-c9c8e0e488b7",
+        "timestamp": 1788533397373
+      }
+    ],
+    "2.2 Update database adapter query methods to handle new fields": [
+      {
+        "executionId": "c3ac6332-2f5f-432e-92a8-64ba32e64248",
+        "chatSessionId": "sess_f0bd2480-3df6-4260-9a97-76c82f66025c",
+        "timestamp": 1788535249603
       }
     ]
   }

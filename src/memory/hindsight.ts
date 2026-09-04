@@ -138,18 +138,18 @@ export class HindsightAdapter implements IMemoryClient {
     return extractString(result, 'id') ?? '';
   }
 
-  async recall(query: string, scope: MemoryScope, limit: number): Promise<Memory[]> {
+  async recall(query: string, scope: MemoryScope, limit: number, includeStale: boolean = false): Promise<Memory[]> {
     const result = await postMcp(this.#baseUrl, {
       method: 'tools/call',
       params: {
         name: 'memory_recall',
-        arguments: { query, scope, limit },
+        arguments: { query, scope, limit, includeStale },
       },
     });
     return extractArray(result) as Memory[];
   }
 
-  async list(scope: MemoryScope, pageSize: number, cursor: string | null): Promise<{
+  async list(scope: MemoryScope, pageSize: number, cursor: string | null, includeStale: boolean = false): Promise<{
     memories: Memory[];
     nextCursor: string | null;
     total: number;
@@ -158,7 +158,7 @@ export class HindsightAdapter implements IMemoryClient {
       method: 'tools/call',
       params: {
         name: 'memory_list',
-        arguments: { scope, pageSize, cursor },
+        arguments: { scope, pageSize, cursor, includeStale },
       },
     });
     

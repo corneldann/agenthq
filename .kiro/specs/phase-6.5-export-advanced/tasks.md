@@ -13,23 +13,23 @@ This plan implements the complete memory export/import infrastructure, lifecycle
   - Update `src/db/schema.ts` or equivalent type definitions to reflect new columns
   - _Requirements: 3.1, 3.2, 5.5_
 
-- [-] 1.1 Write property test for migration 005 schema correctness
+- [x] 1.1 Write property test for migration 005 schema correctness
   - **Property 12: Decay threshold correctness** — verify decay query logic
   - **Validates: Requirements 3.2**
 
 - [ ] 2. Extend Memory type and database adapter
-  - [~] 2.1 Update `src/memory/types.ts` to add `stale` and `superseded` boolean fields to `Memory` type
+  - [x] 2.1 Update `src/memory/types.ts` to add `stale` and `superseded` boolean fields to `Memory` type
     - Add fields to match extended schema from migration 005
     - Ensure type compatibility with existing code
     - _Requirements: 3.1_
   
-  - [~] 2.2 Update database adapter query methods to handle new fields
+  - [x] 2.2 Update database adapter query methods to handle new fields
     - Modify `list()` and `recall()` to filter out stale memories by default
     - Add `includeStale` parameter support to query methods
     - Update all INSERT and SELECT queries to include new columns
     - _Requirements: 3.3, 3.4_
   
-  - [~] 2.3 Write property tests for stale filtering
+  - [x] 2.3 Write property tests for stale filtering
     - **Property 13: Default stale exclusion** — verify stale memories excluded without flag
     - **Property 14: Stale inclusion opt-in** — verify includeStale=true includes stale memories
     - **Validates: Requirements 3.3, 3.4**

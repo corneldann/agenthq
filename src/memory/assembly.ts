@@ -161,16 +161,16 @@ export class ReadOnlyMemoryClient implements IMemoryClient {
     this.#inner = inner;
   }
 
-  recall(query: string, scope: MemoryScope, limit: number): Promise<Memory[]> {
-    return this.#inner.recall(query, scope, limit);
+  recall(query: string, scope: MemoryScope, limit: number, includeStale?: boolean): Promise<Memory[]> {
+    return this.#inner.recall(query, scope, limit, includeStale);
   }
 
-  list(scope: MemoryScope, pageSize: number, cursor: string | null): Promise<{
+  list(scope: MemoryScope, pageSize: number, cursor: string | null, includeStale?: boolean): Promise<{
     memories: Memory[];
     nextCursor: string | null;
     total: number;
   }> {
-    return this.#inner.list(scope, pageSize, cursor);
+    return this.#inner.list(scope, pageSize, cursor, includeStale);
   }
 
   get(id: string): Promise<Memory | null> {
